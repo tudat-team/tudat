@@ -25,14 +25,14 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
 # Package options
-option(USE_CSPICE "Build CSPICE libary, tudat with SPICE support and example applications." ON)
-option(USE_JSON "Build JSON library and example applications." ON)
-option(USE_NRLMSISE00 "Build NRLMISE-00 library and tudat with NRLMSISE support." ON)
-option(USE_SOFA "Build Sofa library." ON)
-option(USE_PAGMO "Build PaGMO2 library. Forced to ON if optimization package is enabled" OFF)
-option(USE_PYGMO "Build PaGMO library with Python bindings." OFF)
-option(USE_NLOPT "Build PaGMO library with Python bindings." OFF)
-option(USE_TUDAT_EXAMPLE_APPLICATIONS "Build Tudat with example applications." ON)
+option(TUDAT_WITH_CSPICE "Build CSPICE libary, tudat with SPICE support and example applications." ON)
+#option(USE_JSON "Build JSON library and example applications." ON)
+option(TUDAT_WITH_NRLMSISE00 "Build NRLMISE-00 library and tudat with NRLMSISE support." ON)
+option(TUDAT_WITH_SOFA "Build Sofa library." ON)
+option(TUDAT_WITH_PAGMO "Build PaGMO2 library. Forced to ON if optimization package is enabled" OFF)
+option(TUDAT_WITH_PYGMO "Build PaGMO library with Python bindings." OFF)
+option(TUDAT_WITH_NLOPT "Build PaGMO library with Python bindings." OFF)
+option(TUDAT_WITH_TUDAT_EXAMPLE_APPLICATIONS "Build Tudat with example applications." ON)
 
 # Set root-directory for code to current source directory.
 set(PROJECTROOT "${CMAKE_CURRENT_SOURCE_DIR}/")
@@ -83,7 +83,7 @@ set(BoostSHA1 51421ef259a4530edea0fbfc448460fcc5c64edb)
 #endif()
 
 # Minimum boost version required for PagMO2 is 1.55
-if(USE_PAGMO)
+if(TUDAT_WITH_PAGMO)
     # Explode the BoostVersion string ##.##.## into boost_version;boost_release;##
     string(REPLACE "." ";" boost_v_list ${BoostVersion})
     list(GET boost_v_list 0 boost_version)
@@ -106,7 +106,7 @@ include(add_boost)
 #
 # SPICE
 #
-if(USE_CSPICE)
+if(TUDAT_WITH_CSPICE)
     add_subdirectory( "${PROJECTROOT}/cspice/")
     set_property(TARGET cspice APPEND PROPERTY COMPILE_OPTIONS "-Wno-implicit-int")
     set_property(TARGET cspice APPEND PROPERTY COMPILE_OPTIONS "-Wno-incompatible-pointer-types")
@@ -122,15 +122,15 @@ endif()
 #
 # JSON
 #
-if(USE_JSON)
-    add_subdirectory( "${PROJECTROOT}/json/")
-endif()
+#if(USE_JSON)
+#    add_subdirectory( "${PROJECTROOT}/json/")
+#endif()
 
 #
 # NRLMSISE
 #
 # Add the NRLMSISE project and build
-if(USE_NRLMSISE00)
+if(TUDAT_WITH_NRLMSISE00)
     set(NRLMSISE00_WITH_TESTS OFF CACHE BOOL "Building of NRLMSISE00 tests.")
     add_subdirectory( "${PROJECTROOT}/nrlmsise-00/")
 endif()
@@ -138,14 +138,14 @@ endif()
 #
 # SOFA
 #
-if(USE_SOFA)
+if(TUDAT_WITH_SOFA)
     add_subdirectory( "${PROJECTROOT}/sofa/src")
 endif()
 
 #
 # PaGMO2
 #
-if(USE_PAGMO)
+if(TUDAT_WITH_PAGMO)
     option(PAGMO_BUILD_TESTS   "Build PaGMO2 with test set." ON)
     option(PAGMO_BUILD_EXAMPLES "Build PaGMO2 with examples." ON)
     option(PAGMO_BUILD_TUTORIALS "Build PaGMO2 with tutorials." ON)
@@ -160,19 +160,19 @@ if(USE_PAGMO)
     endif()
 
 
-    if(USE_NLOPT)
+    if(TUDAT_WITH_NLOPT)
         option(PAGMO_WITH_NLOPT "Build PaGMO2 with NLOPT." ON)
     endif()
 
-    if(USE_PYGMO)
+    if(TUDAT_WITH_PYGMO)
         option(PAGMO_BUILD_PAGMO "Do not build PaGMO2" OFF)
         option(PAGMO_BUILD_PYGMO "Build PaGMO2 with Python bindings" ON)
         message(STATUS "this")
-    else(USE_PYGMO)
+    else(TUDAT_WITH_PYGMO)
         option(PAGMO_BUILD_PAGMO "Build PaGMO2" ON)
         option(PAGMO_BUILD_PYGMO "Do not build PaGMO2 with Python bindings" OFF)
         message(STATUS "not this ${PAGMO_BUILD_PAGMO}")
-    endif(USE_PYGMO)
+    endif(TUDAT_WITH_PYGMO)
 
     message(STATUS "The things are: ${PAGMO_BUILD_PAGMO} ${PAGMO_BUILD_PYGMO} ${PAGMO_BUILD_TESTS} ${PAGMO_BUILD_EXAMPLES}")
     unset(pagmo_LIB_DEPENDS CACHE)
@@ -184,7 +184,7 @@ if(USE_PAGMO)
 
     add_subdirectory( "${PROJECTROOT}pagmo2/" )
 
-elseif(USE_PYGMO)
+elseif(TUDAT_WITH_PYGMO)
     option(PAGMO_BUILD_PAGMO "Do not build PaGMO2" OFF)
     option(PAGMO_BUILD_PYGMO "Do not build PaGMO2 with Python bindings" ON)
     unset(pagmo_LIB_DEPENDS CACHE)
@@ -194,7 +194,7 @@ endif()
 #
 # NLOPT
 #
-if(USE_NLOPT)
+if(TUDAT_WITH_NLOPT)
     if(PAGMO_AS_STATIC_LIB)
         option(BUILD_SHARED_LIBS "Building NLOPT as static libraries" OFF)
     else()
@@ -222,7 +222,7 @@ add_subdirectory( "${PROJECTROOT}/Tudat/")
 if(USE_TUDAT_EXAMPLE_APPLICATIONS)
     add_subdirectory( "${PROJECTROOT}/tudatExampleApplications/satellitePropagatorExamples/SatellitePropagatorExamples/")
 
-    if(USE_PAGMO)
+    if(TUDAT_WITH_PAGMO)
         add_subdirectory( "${PROJECTROOT}/tudatExampleApplications/libraryExamples/PaGMOEx")
     endif()
 endif()
