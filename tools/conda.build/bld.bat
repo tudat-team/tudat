@@ -9,6 +9,7 @@ cmake ^
     -DCMAKE_PREFIX_PATH=%LIBRARY_PREFIX% ^
     -DCMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% ^
     -DTUDAT_BUILD_TESTS=OFF ^
+    -DBOOST_BIND_GLOBAL_PLACEHOLDERS=ON ^
     ..
 if errorlevel 1 exit 1
 cmake --build . --config RelWithDebInfo --target install

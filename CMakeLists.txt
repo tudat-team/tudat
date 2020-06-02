@@ -191,8 +191,8 @@ endif ()
 
 # SOFA
 if (TUDAT_BUILD_WITH_SOFA_INTERFACE)
-#    add_subdirectory(external/sofa)
-    find_package(Sofa REQUIRED 1.0.0)
+    add_subdirectory(external/sofa)
+#    find_package(Sofa REQUIRED 1.0.0)
     add_definitions(-DTUDAT_BUILD_WITH_SOFA_INTERFACE=1)
 else ()
     add_definitions(-DTUDAT_BUILD_WITH_SPICE_INTERFACE=0)
@@ -241,10 +241,12 @@ if (MSVC)
     message(STATUS "Using [${CMAKE_C_COMPILER_ID}] compiler")
     if (CMAKE_C_COMPILER_ID MATCHES "MSVC")
         set(MSVC_DISABLED_WARNINGS_LIST
+                "C4305" # 'initializing': truncation from 'int' to 'bool'
                 "C4101" # : unreferenced local variable
                 "C4018" # 'expression' : signed/unsigned mismatch
                 "C4057" # 'operator' : 'identifier1' indirection to
                 # slightly different base types from 'identifier2'
+                "C4068" # : unknown pragma directive
                 "C4100" # 'identifier' : unreferenced formal parameter
                 "C4127" # conditional expression is constant
                 "C4146" # unary minus operator applied to unsigned type,
@@ -282,11 +284,9 @@ if (MSVC)
             ${MSVC_DISABLED_WARNINGS_LIST})
     string(REGEX REPLACE "[/-]W[1234][ ]?" "" CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -MP -W4 ${MSVC_DISABLED_WARNINGS_STR}")
+
     message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
     add_definitions(${MSVC_DISABLED_WARNINGS_STR})
-#    add_definitions("/NODEFAULTLIB")
-    set(CMAKE_EXE_LINKER_FLAGS
-            "${CMAKE_EXE_LINKER_FLAGS} /DEF:my_defs.def /NODEFAULTLIB")
 endif ()
 
 
