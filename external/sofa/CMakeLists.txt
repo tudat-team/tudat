@@ -333,7 +333,7 @@ if (SOFA_BUILD_STATIC_LIBRARY)
 else ()
     add_library(sofa SHARED "${SOFA_SOURCE_FILES}")
     # Link to .m lib
-    target_link_libraries(sofa PRIVATE m)
+#    target_link_libraries(sofa PRIVATE m)
 endif ()
 
 # Add headers to library target.
@@ -382,6 +382,13 @@ install(EXPORT sofa_export NAMESPACE Sofa:: DESTINATION "${${PROJECT_NAME_UPPER}
 # Configure cmake files.
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/sofa-config.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/sofa-config.cmake" @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/sofa-config.cmake" DESTINATION "${${PROJECT_NAME_UPPER}_INSTALL_CMAKE_DIR}")
+
+#set (Sofa_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/@RELATIVE_INCLUDE_DIRS@")
+
+set (Sofa_LIBRARY_DIRS "${INSTALL_INCLUDE_DIRS}")
+set (Sofa_LIBRARY_DIRS "${INSTALL_LIB_DIR}")
+
+#set (Sofa_DATA_DIRS "${CMAKE_CURRENT_LIST_DIR}/@RELATIVE_DATA_DIR@")
 
 # Take care of versioning.
 include(CMakePackageConfigHelpers)
