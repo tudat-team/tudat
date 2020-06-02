@@ -33,10 +33,11 @@ function(TUDAT_ADD_LIBRARY arg1 arg2 arg3)
             )
 
     target_link_libraries("${target_name}"
-            PUBLIC    ${PARSED_ARGS_PUBLIC_LINKS}
-            PRIVATE   ${PARSED_ARGS_PRIVATE_LINKS}
+            PUBLIC ${PARSED_ARGS_PUBLIC_LINKS}
+            PRIVATE ${PARSED_ARGS_PRIVATE_LINKS}
             INTERFACE ${PARSED_ARGS_INTERFACE_LINKS}
             )
+
     #==========================================================================
     # BUILD-TREE.
     #==========================================================================
@@ -52,11 +53,11 @@ function(TUDAT_ADD_LIBRARY arg1 arg2 arg3)
     #==========================================================================
     # INSTALL-TREE.
     #==========================================================================
-    install(TARGETS              "${target_name}"
-            EXPORT               tudat_export
-            LIBRARY DESTINATION  "${INSTALL_LIB_DIR}"
-            ARCHIVE DESTINATION  "${INSTALL_LIB_DIR}"
-            RUNTIME DESTINATION  "${INSTALL_BIN_DIR}"
+    install(TARGETS "${target_name}"
+            EXPORT tudat_export
+            LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+            ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
+            RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
             )
     unset(target_name)
 endfunction()

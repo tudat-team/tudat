@@ -24,7 +24,7 @@ project(Tudat VERSION 4.0.0 LANGUAGES C CXX)
 # Get lower string name of PROJECT_NAME for directory configuration.
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
-set(CMAKE_POSITION_INDEPENDENT_CODE True)
+#set(CMAKE_POSITION_INDEPENDENT_CODE True)
 
 #==============================================================================
 # TEMPORARILY HERE
@@ -170,8 +170,8 @@ include(TudatFindBoost)
 
 # CSPICE.
 if (TUDAT_BUILD_WITH_SPICE_INTERFACE)
-    add_subdirectory(external/cspice)
-    find_package(CSpice REQUIRED 1.0.0)
+#    add_subdirectory(external/cspice)
+    find_package(CSpice)
     add_definitions(-DTUDAT_BUILD_WITH_SPICE_INTERFACE=1)
     #    # Include CSpice directories.
     #    # Set CMake flag to suppress CSpice warnings (platform-dependent solution).
@@ -191,7 +191,7 @@ endif ()
 
 # SOFA
 if (TUDAT_BUILD_WITH_SOFA_INTERFACE)
-    add_subdirectory(external/sofa)
+#    add_subdirectory(external/sofa)
     find_package(Sofa REQUIRED 1.0.0)
     add_definitions(-DTUDAT_BUILD_WITH_SOFA_INTERFACE=1)
 else ()
@@ -234,6 +234,62 @@ if (BUILD_DOCUMENTATION)
     install(DIRECTORY "${CODEROOT}/Documentation"
             DESTINATION "${TUDAT_DISTRIBUTION_PATH}")
 endif ()
+
+
+if (MSVC)
+#    add_definitions(-Dinline=__inline)
+    message(STATUS "Using [${CMAKE_C_COMPILER_ID}] compiler")
+    if (CMAKE_C_COMPILER_ID MATCHES "MSVC")
+        set(MSVC_DISABLED_WARNINGS_LIST
+                "C4101" # : unreferenced local variable
+                "C4018" # 'expression' : signed/unsigned mismatch
+                "C4057" # 'operator' : 'identifier1' indirection to
+                # slightly different base types from 'identifier2'
+                "C4100" # 'identifier' : unreferenced formal parameter
+                "C4127" # conditional expression is constant
+                "C4146" # unary minus operator applied to unsigned type,
+                # result still unsigned
+                "C4244" # 'argument' : conversion from 'type1' to 'type2',
+                # possible loss of data
+                "C4245" # 'conversion' : conversion from 'type1' to 'type2',
+                # signed/unsigned mismatch
+                "C4267" # 'var' : conversion from 'size_t' to 'type',
+                # possible loss of data
+                "C4389" # 'operator' : signed/unsigned mismatch
+                "C4706" # assignment within conditional expression
+                "C4996" # The POSIX name for this item is deprecated.
+                # Instead, use the ISO C and C++ conformant name
+                )
+    elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
+        add_definitions(-D_CRT_SUPPRESS_RESTRICT)
+        set(MSVC_DISABLED_WARNINGS_LIST
+                "C111"  # Unreachable statement
+                "C128"  # Unreachable loop
+                "C167"  # Unexplict casting unsigned to signed
+                "C186"  # Pointless comparison of unsigned int with zero
+                "C188"  # Enumerated type mixed with another type
+                "C344"  # Redeclared type
+                "C556"  # Unexplict casting signed to unsigned
+                "C869"  # Unreferenced parameters
+                "C1786" # Deprecated functions
+                "C2545" # Empty else statement
+                "C2557" # Comparing signed to unsigned
+                "C2722" # List init syntax is c++11 feature
+                "C3280" # Declaration hides variable
+                )
+    endif ()
+    string(REPLACE "C" " -wd" MSVC_DISABLED_WARNINGS_STR
+            ${MSVC_DISABLED_WARNINGS_LIST})
+    string(REGEX REPLACE "[/-]W[1234][ ]?" "" CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -MP -W4 ${MSVC_DISABLED_WARNINGS_STR}")
+    message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
+    add_definitions(${MSVC_DISABLED_WARNINGS_STR})
+#    add_definitions("/NODEFAULTLIB")
+    set(CMAKE_EXE_LINKER_FLAGS
+            "${CMAKE_EXE_LINKER_FLAGS} /DEF:my_defs.def /NODEFAULTLIB")
+endif ()
+
+
 
 
 # Setup TUDAT_ADD_TEST_CASE function from yolo.
