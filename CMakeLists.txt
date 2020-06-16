@@ -143,13 +143,13 @@ endforeach ()
 # +============================================================================
 if (NOT TUDAT_BUILD_STATIC_LIBRARY)
     # https://stackoverflow.com/questions/30398238/cmake-rpath-not-working-could-not-find-shared-object-file
-    if (TUDAT_CONDA_BUILD)
-        # Going off intuition.
-        set(CMAKE_INSTALL_RPATH "")
-    else ()
-        set(CMAKE_INSTALL_RPATH "")
-    endif ()
-    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    #if (TUDAT_CONDA_BUILD)
+    #    # Going off intuition.
+    #    set(CMAKE_INSTALL_RPATH "")
+    #else ()
+    #    set(CMAKE_INSTALL_RPATH "")
+    #endif ()
+    #set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif ()
 
 
