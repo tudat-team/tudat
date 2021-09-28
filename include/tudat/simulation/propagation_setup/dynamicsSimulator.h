@@ -394,7 +394,6 @@ public:
             const bool clearNumericalSolutions = false,
             const bool setIntegratedResult = false,
             const bool printNumberOfFunctionEvaluations = false,
-            const std::chrono::steady_clock::time_point initialClockTime = std::chrono::steady_clock::now( ),
             const std::vector< std::shared_ptr< SingleStateTypeDerivative< StateScalarType, TimeType > > >& stateDerivativeModels =
             std::vector< std::shared_ptr< SingleStateTypeDerivative< StateScalarType, TimeType > > >( ),
             const bool printDependentVariableData = true ):
@@ -404,7 +403,7 @@ public:
         propagatorSettings_(
             std::dynamic_pointer_cast< SingleArcPropagatorSettings< StateScalarType > >( propagatorSettings ) ),
         initialPropagationTime_( integratorSettings_->initialTime_ ),
-        printNumberOfFunctionEvaluations_( printNumberOfFunctionEvaluations ), initialClockTime_( initialClockTime ),
+        printNumberOfFunctionEvaluations_( printNumberOfFunctionEvaluations ),
         propagationTerminationReason_( std::make_shared< PropagationTerminationDetails >( propagation_never_run ) ),
         printDependentVariableData_( printDependentVariableData )
     {
@@ -536,8 +535,7 @@ public:
                     cumulativeComputationTimeHistory_,
                     dependentVariablesFunctions_,
                     statePostProcessingFunction_,
-                    propagatorSettings_->getPrintInterval( ),
-                    initialClockTime_ );
+                    propagatorSettings_->getPrintInterval( ) );
         simulation_setup::setAreBodiesInPropagation( bodies_, false );
 
         // Convert numerical solution to conventional state
@@ -948,9 +946,6 @@ protected:
 
     //! Boolean denoting whether the number of function evaluations should be printed at the end of propagation.
     bool printNumberOfFunctionEvaluations_;
-
-    //! Initial clock time
-    std::chrono::steady_clock::time_point initialClockTime_;
 
     //! Event that triggered the termination of the propagation
     std::shared_ptr< PropagationTerminationDetails > propagationTerminationReason_;
