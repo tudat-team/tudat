@@ -17,15 +17,6 @@
  # Debug information
  ####################
 
- message("")
- message("*** COMPILER CONFIGURATION ***")
- message("")
- message(STATUS "CMAKE_C_COMPILER:   ${CMAKE_C_COMPILER}")
- message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
- message(STATUS "CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
- message(STATUS "CMAKE_CXX_SIMULATE_ID: ${CMAKE_CXX_SIMULATE_ID}")
- message(STATUS "CMAKE_CXX_COMPILER_VERSION: ${CMAKE_CXX_COMPILER_VERSION}")
-
  add_compile_definitions(CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
 
  # Provide options to force building with GNU or Clang, if the standard compiler is not desired

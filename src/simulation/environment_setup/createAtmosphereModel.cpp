@@ -13,7 +13,7 @@
 
 #include "tudat/astro/aerodynamics/exponentialAtmosphere.h"
 #include "tudat/astro/aerodynamics/tabulatedAtmosphere.h"
-#if TUDAT_BUILD_WITH_NRLMSISE
+#if TUDAT_BUILD_WITH_NRLMSISE00
 #include "tudat/astro/aerodynamics/nrlmsise00Atmosphere.h"
 #include "tudat/astro/aerodynamics/nrlmsise00InputFunctions.h"
 #endif
@@ -180,7 +180,7 @@ std::shared_ptr< aerodynamics::AtmosphereModel > createAtmosphereModel(
         }
         break;
     }
-#if TUDAT_BUILD_WITH_NRLMSISE
+#if TUDAT_BUILD_WITH_NRLMSISE00
     case nrlmsise00:
     {
         std::string spaceWeatherFilePath;

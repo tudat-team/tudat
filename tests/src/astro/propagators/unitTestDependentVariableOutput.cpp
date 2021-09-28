@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE( testDependentVariableOutput )
                 apolloInitialStateInKeplerianElements,
                 getBodyGravitationalParameter( "Earth" ) );
 
-#if TUDAT_BUILD_WITH_NRLMSISE
+#if TUDAT_BUILD_WITH_NRLMSISE00
     unsigned int maximumTestCase = 4;
 #else
     unsigned int maximumTestCase = 2;

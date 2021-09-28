@@ -7,8 +7,6 @@
 #    a copy of the license with this file. If not, please or visit:
 #    http://tudat.tudelft.nl/LICENSE.
 
-# TODO: https://dev.azure.com/tudat-team/feedstock-builds/_build/results?buildId=26&view=logs&j=4b3757f9-99c5-5891-6c0c-93d7030cdf7d&t=f047df50-a233-5ae9-bf8f-c7dd8e5684ad -> https://stackoverflow.com/questions/36567072/why-do-i-get-ld-warning-direct-access-in-main-to-global-weak-symbol-in-this
-
 # Specify minimum cmake version required to compile Tudat.
 cmake_minimum_required(VERSION 3.3)
 
@@ -38,8 +36,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/yolo")
 
 # General system information.
 message(STATUS "System name: ${CMAKE_SYSTEM_NAME}")
-enable_testing()
-set(Tudat_DEFINITIONS "")
 
 # +============================================================================
 # BUILD OPTIONS
@@ -47,11 +43,6 @@ set(Tudat_DEFINITIONS "")
 # +============================================================================
 # Build option: enable the test suite.
 option(TUDAT_BUILD_TESTS "Build the test suite." ON)
-
-option(TUDAT_DOWNLOAD_AND_BUILD_BOOST "Downloads and builds boost" OFF)
-
-# Build option: include default data suite.
-#option(TUDAT_FETCH_DATA_SUITE "Downloads default data suite during build." OFF)
 
 # Build with propagation tests.
 option(TUDAT_BUILD_WITH_PROPAGATION_TESTS "Build tudat with propagation tests. (>30 s propagations - Total test time > 10 minutes.)" OFF)
@@ -77,30 +68,21 @@ option(TUDAT_BUILD_WITH_JSON_INTERFACE "Build Tudat with json interface." OFF)
 # Build with nrlmsise-00 atmosphere model.
 option(TUDAT_BUILD_WITH_NRLMSISE00 "Build with nrlmsise-00 atmosphere model." OFF)
 
-# Build pagmo-dependent code
+# Build pagmo-dependent code.
 option(TUDAT_BUILD_WITH_PAGMO "Build Tudat with pagmo." OFF)
 
 # Build extended precision propagation tools.
 option(TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS "Build tudat with extended precision propagation tools." OFF)
 
-message(STATUS "******************** BUILD CONFIGURATION ********************")
-message(STATUS "TUDAT_BUILD_TESTS                                     ${TUDAT_BUILD_TESTS}")
-message(STATUS "TUDAT_BUILD_WITH_PROPAGATION_TESTS                    ${TUDAT_BUILD_WITH_PROPAGATION_TESTS}")
-message(STATUS "TUDAT_BUILD_WITH_ESTIMATION_TOOLS                     ${TUDAT_BUILD_WITH_ESTIMATION_TOOLS}")
-message(STATUS "TUDAT_BUILD_TUDAT_TUTORIALS                           ${TUDAT_BUILD_TUDAT_TUTORIALS}")
-message(STATUS "TUDAT_BUILD_STATIC_LIBRARY                            ${TUDAT_BUILD_STATIC_LIBRARY}")
-message(STATUS "TUDAT_BUILD_WITH_FILTERS                              ${TUDAT_BUILD_WITH_FILTERS}")
-message(STATUS "TUDAT_BUILD_WITH_SOFA_INTERFACE                       ${TUDAT_BUILD_WITH_SOFA_INTERFACE}")
-message(STATUS "TUDAT_BUILD_WITH_JSON_INTERFACE                       ${TUDAT_BUILD_WITH_JSON_INTERFACE}")
-message(STATUS "TUDAT_BUILD_WITH_NRLMSISE00                           ${TUDAT_BUILD_WITH_NRLMSISE00}")
-message(STATUS "TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS ${TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS}")
-message(STATUS "TUDAT_DOWNLOAD_AND_BUILD_BOOST                        ${TUDAT_DOWNLOAD_AND_BUILD_BOOST}")
-
+# Add all build settings as definitions for downstream projects.
 set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_FILTERS=${TUDAT_BUILD_WITH_FILTERS}")
 set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_NRLMSISE00=${TUDAT_BUILD_WITH_NRLMSISE00}")
 set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_SOFA_INTERFACE=${TUDAT_BUILD_WITH_SOFA_INTERFACE}")
 set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_JSON_INTERFACE=${TUDAT_BUILD_WITH_JSON_INTERFACE}")
+set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_ESTIMATION_TOOLS=${TUDAT_BUILD_WITH_ESTIMATION_TOOLS}")
 set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS=${TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS}")
+add_definitions(${Tudat_DEFINITIONS})
+
 # +============================================================================
 # INSTALL TREE CONFIGURATION (Project name independent)
 #  Offer the user the choice of overriding the installation directories.
@@ -140,107 +122,84 @@ endforeach ()
 # DEPENDENCIES SPECIFIC TO BUILD OPTIONS
 # +============================================================================
 if (NOT TUDAT_BUILD_STATIC_LIBRARY)
+    # Required settings for shared library build type. See provided link for
+    # more info.
     # https://stackoverflow.com/questions/30398238/cmake-rpath-not-working-could-not-find-shared-object-file
     set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif ()
 
-# Set required boost components.
-set(_TUDAT_REQUIRED_BOOST_LIBS filesystem system regex date_time thread
-        chrono atomic)
+# Set required boost components. This variable is used to indicate required
+# boost libraries inside the `tudat/cmake_modules/TudatFindBoost.cmake` file.
+set(_TUDAT_REQUIRED_BOOST_LIBS filesystem system regex date_time thread chrono atomic)
 
 if (TUDAT_BUILD_TESTS)
-    # Add the unit test framework, if needed.
+    # If tests are built, then the boost unit_test_framework is needed.
     list(APPEND _TUDAT_REQUIRED_BOOST_LIBS unit_test_framework)
 endif ()
 
-# Download boost if option is used.
-if (TUDAT_DOWNLOAD_AND_BUILD_BOOST OR (TUDAT_BOOST_VERSION AND TUDAT_BOOST_SHA1))
-    set(TUDAT_DOWNLOAD_AND_BUILD_BOOST ON)
-    # Set the required boost components (for tudat)
-    set(BoostComponents ${_TUDAT_REQUIRED_BOOST_LIBS})
-    # Pick a boost version
-    if (TUDAT_BOOST_VERSION AND TUDAT_BOOST_SHA1)
-        set(BoostVersion ${TUDAT_BOOST_VERSION})
-        set(BoostSHA1 ${TUDAT_BOOST_SHA1})
-    else ()
-        set(BoostVersion 1.67.0)
-        set(BoostSHA1 694ae3f4f899d1a80eb7a3b31b33be73c423c1ae)
-    endif ()
-    message(STATUS "Downloading Boost Version ${BoostVersion}")
-    include(cmake_modules/add_boost.cmake)
-    message(STATUS "Downloading Boost Version ${BoostVersion} - done")
-    #    set(BOOST_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/boost)
-    #    set(Boost_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/boost/stage/lib)
-    #    set(Boost_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/boost)
-    #    set(Boost_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/boost)
-endif ()
-
-# Set cmake build-type. If it not supplied by the user (either directly as an argument of through
-# the "UserSettings.txt" file, the default built type is "Release".
+# Set cmake build-type. If it not supplied by the user via a build argument,
+# the default built type is "Release".
 if ((NOT CMAKE_BUILD_TYPE) OR (CMAKE_BUILD_TYPE STREQUAL "Release"))
     set(CMAKE_BUILD_TYPE Release)
 elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_BUILD_TYPE Debug)
 endif ()
 
-message(STATUS "<< ${PROJECT_NAME} (${CMAKE_BUILD_TYPE} - ${BUILD_STYLE}) >>")
+# Summarize the build configuration related section for debugging.
+message(STATUS "=============================================================")
+message(STATUS "******************** BUILD CONFIGURATION ********************")
+message(STATUS "=============================================================")
+message(STATUS "PROJECT_NAME ........................................ ${PROJECT_NAME}")
+message(STATUS "CMAKE_BUILD_TYPE .................................... ${CMAKE_BUILD_TYPE}")
+message(STATUS "BUILD_STYLE ......................................... ${BUILD_STYLE}")
+message(STATUS "TUDAT_BUILD_TESTS ................................... ${TUDAT_BUILD_TESTS}")
+message(STATUS "TUDAT_BUILD_WITH_PROPAGATION_TESTS .................. ${TUDAT_BUILD_WITH_PROPAGATION_TESTS}")
+message(STATUS "TUDAT_BUILD_WITH_ESTIMATION_TOOLS ................... ${TUDAT_BUILD_WITH_ESTIMATION_TOOLS}")
+message(STATUS "TUDAT_BUILD_TUDAT_TUTORIALS ......................... ${TUDAT_BUILD_TUDAT_TUTORIALS}")
+message(STATUS "TUDAT_BUILD_STATIC_LIBRARY .......................... ${TUDAT_BUILD_STATIC_LIBRARY}")
+message(STATUS "TUDAT_BUILD_WITH_FILTERS ............................ ${TUDAT_BUILD_WITH_FILTERS}")
+message(STATUS "TUDAT_BUILD_WITH_SOFA_INTERFACE ..................... ${TUDAT_BUILD_WITH_SOFA_INTERFACE}")
+message(STATUS "TUDAT_BUILD_WITH_JSON_INTERFACE ..................... ${TUDAT_BUILD_WITH_JSON_INTERFACE}")
+message(STATUS "TUDAT_BUILD_WITH_NRLMSISE00 ......................... ${TUDAT_BUILD_WITH_NRLMSISE00}")
+message(STATUS "TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS ${TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS}")
 
+# +============================================================================
+# COMPILER + SYSTEM SPECIFIC
+# +============================================================================
 
-# Set compiler based on preferences (e.g. USE_CLANG) and system.
+# Include compiler.cmake which takes care of ALL compiler related CMake
+# configurations, including known warning suppression for specific compilers
+# and systems.
 include(compiler)
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
+# Summarize the build configuration related section for debugging.
+message(STATUS "=============================================================")
+message(STATUS "************* COMPILER/SYSTEM CONFIGURATION *****************")
+message(STATUS "=============================================================")
+message(STATUS "CMAKE_C_COMPILER .................................... ${CMAKE_C_COMPILER}")
+message(STATUS "CMAKE_CXX_COMPILER .................................. ${CMAKE_CXX_COMPILER}")
+message(STATUS "CMAKE_CXX_COMPILER_ID ............................... ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "CMAKE_CXX_SIMULATE_ID ............................... ${CMAKE_CXX_SIMULATE_ID}")
+message(STATUS "CMAKE_SYSTEM_PROCESSOR .............................. ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "CMAKE_CXX_COMPILER_VERSION .......................... ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "CMAKE_SYSTEM_NAME ................................... ${CMAKE_SYSTEM_NAME}")
+message(STATUS "WIN32 ............................................... ${WIN32}")
+message(STATUS "UNIX ................................................ ${UNIX}")
+message(STATUS "APPLE ............................................... ${APPLE}")
 
-#if (NOT TUDAT_DOWNLOAD_AND_BUILD_BOOST)
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-#    set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -D_GLIBCXX_USE_CXX11_ABI=0")
-#endif ()
+# +============================================================================
+# MANDATORY DEPENDENCIES
+# +============================================================================
+
+# Include TudatFindBoost.cmake which is adapted from Pagmo directly.
 include(TudatFindBoost)
-message(STATUS "Checking for _GLIBCXX_USE_CXX11_ABI definition...")
-if (DEFINED _GLIBCXX_USE_CXX11_ABI)
-    if (_GLIBCXX_USE_CXX11_ABI)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=1")
-        set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -D_GLIBCXX_USE_CXX11_ABI=1")
-        message(STATUS "-D_GLIBCXX_USE_CXX11_ABI=1 added to CMAKE_CXX_FLAGS!")
-    elseif (NOT _GLIBCXX_USE_CXX11_ABI)
-        message(Boost_VERSION_MAJOR: ${Boost_VERSION_MAJOR})
-        message(Boost_VERSION_MINOR: ${Boost_VERSION_MINOR})
-        message(TUDAT_BUILD_GNU: ${TUDAT_BUILD_GNU})
-        if ((${Boost_VERSION_MAJOR} LESS_EQUAL "1") AND (${Boost_VERSION_MINOR} LESS_EQUAL "67") AND ${TUDAT_BUILD_GNU})
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-            set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -D_GLIBCXX_USE_CXX11_ABI=0")
-            message(STATUS "-D_GLIBCXX_USE_CXX11_ABI=0 added to CMAKE_CXX_FLAGS!")
-        elseif ((${Boost_VERSION_MAJOR} GREATER_EQUAL "1") AND (${Boost_VERSION_MINOR} GREATER_EQUAL "70") AND ${TUDAT_BUILD_GNU})
-            #            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-            #            set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -D_GLIBCXX_USE_CXX11_ABI=0")
-            #            message(STATUS "-D_GLIBCXX_USE_CXX11_ABI=0 added to CMAKE_CXX_FLAGS!")
-        elseif (${TUDAT_BUILD_MSVC})
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-            set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -D_GLIBCXX_USE_CXX11_ABI=0")
-            message(STATUS "-D_GLIBCXX_USE_CXX11_ABI=0 added to CMAKE_CXX_FLAGS!")
-        else ()
-            message(STATUS "_GLIBCXX_USE_CXX11_ABI was set as 0, but since the boost version is >=1.68|>1.70 [${Boost_VERSION}] and compiler_id is GNU, it's being ignored!")
-            add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
-        endif ()
-    endif ()
-
-else ()
-    message(STATUS "_GLIBCXX_USE_CXX11_ABI was not found.")
+if (UNIX OR (WIN32 AND CLANG))
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${Boost_INCLUDE_DIRS}\"")
 endif ()
 
-#if (NOT TUDAT_DOWNLOAD_AND_BUILD_BOOST)
-#    if (Boost_MAJOR LESS_EQUAL 1)
-#        if (Boost_MINOR LESS 67)
-#            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-#            set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -D_GLIBCXX_USE_CXX11_ABI=0")
-#        endif ()
-#    endif ()
-#endif ()
-
-# Get tudat resource manager dependency.
+# Get the Tudat resources dependency.
 find_package(TudatResources REQUIRED)
-message(${TudatResources_INCLUDE_DIRS})
 include_directories(TudatResources_INCLUDE_DIRS)
 
 # Find Eigen3 library on local system and include directories.
@@ -250,85 +209,60 @@ if (APPLE OR (WIN32 AND CLANG))
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${EIGEN3_INCLUDE_DIR}\"")
 endif ()
 
-
-# Sofa dependency if in build settings.
-if (TUDAT_BUILD_WITH_PAGMO)
-    #
-    add_definitions(-DTUDAT_BUILD_WITH_PAGMO1)
-    if (${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
-        find_package(Pagmo REQUIRED)
-    elseif (NOT ${TUDAT_BUNDLE_BUILD})
-        find_package(Pagmo REQUIRED)
-    else ()
-        set(Pagmo_INCLUDE_DIRS ${Pagmo_BUILD_INCLUDE_DIRS})
-    endif ()
-else ()
-    add_definitions(-DTUDAT_BUILD_WITH_PAGMO=0)
-endif ()
-
-
-# Adds Boost_UNIT_TEST_FRAMEWORK_LIBRARY if required.
-# Configure Boost libraries.
-
-#if (TUDAT_DOWNLOAD_AND_BUILD_BOOST)
-#    include(TudatFindBoost)
-#    #    # Configure Boost libraries.
-#    #    set(Boost_USE_STATIC_LIBS ON)
-#    #    set(Boost_USE_MULTITHREADED ON)
-#    #    set(Boost_USE_STATIC_RUNTIME ON)
-#    #    # Find Boost libraries on local system.
-#    #    find_package(Boost ${BoostVersion} COMPONENTS ${_TUDAT_REQUIRED_BOOST_LIBS} REQUIRED)
-#else ()
-#    include(TudatFindBoost)
-#endif ()
-if (UNIX OR (WIN32 AND CLANG))
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${Boost_INCLUDE_DIRS}\"")
-endif ()
-
 # CSpice dependency
 find_package(CSpice REQUIRED 1.0.0)
 
+# Summarize the build configuration related section for debugging.
+message(STATUS "=============================================================")
+message(STATUS "***************** MANDATORY DEPENDENCIES ********************")
+message(STATUS "=============================================================")
+message(STATUS "CSpice_LIBRARIES .................................... ${CSpice_LIBRARIES}")
+message(STATUS "CSpice_VERSION ...................................... ${CSpice_VERSION}")
+message(STATUS "TudatResources_INCLUDE_DIRS ......................... ${TudatResources_INCLUDE_DIRS}")
+message(STATUS "TudatResources_VERSION .............................. ${TudatResources_VERSION}")
+message(STATUS "EIGEN3_INCLUDE_DIR: ................................. ${EIGEN3_INCLUDE_DIR}")
+message(STATUS "EIGEN3_VERSION ...................................... ${EIGEN3_VERSION}")
+message(STATUS "Boost_LIBRARIES  .................................... ${Boost_LIBRARIES}")
+message(STATUS "Boost_VERSION_STRING  ............................... ${Boost_VERSION_STRING}")
+
+
+# +============================================================================
+# OPTIONAL DEPENDENCIES
+# +============================================================================
+
+# Sofa dependency if in build settings.
+if (TUDAT_BUILD_WITH_PAGMO)
+    # If Tudat builds with Pagmo, then the Sims Flannagan method is available.
+    find_package(Pagmo REQUIRED)
+endif ()
+
 if (TUDAT_BUILD_WITH_SOFA_INTERFACE)
     find_package(Sofa REQUIRED 1.0.0)
-    add_definitions(-DTUDAT_BUILD_WITH_SOFA_INTERFACE=1)
 endif ()
 
 if (TUDAT_BUILD_WITH_NRLMSISE00)
-    find_package(nrlmsise00 REQUIRED 0.1)
-    message(STATUS ${NRLMSISE00_LIBRARIES})
-    add_definitions(-DTUDAT_BUILD_WITH_NRLMSISE=1)
-else( )
-    add_definitions(-DTUDAT_BUILD_WITH_NRLMSISE=0)
+    find_package(NRLMSISE00 REQUIRED 0.1)
 endif ()
 
-# JSON
 if (TUDAT_BUILD_WITH_JSON_INTERFACE)
     find_package(nlohmann_json REQUIRED 3.7.3)
 endif ()
 
-# PRECOMPILE EXTENDED PRECISION STUFF
-if (NOT TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS)
-    message(STATUS "Extended precision propagation disabled!")
-    add_definitions(-DTUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS=0)
-else ()
-    message(STATUS "Extended precision propagation enabled!")
-    add_definitions(-DTUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS=1)
-endif ()
-
-if (NOT TUDAT_BUILD_WITH_ESTIMATION_TOOLS)
-    add_definitions(-DTUDAT_BUILD_WITH_ESTIMATION_TOOLS=0)
-else ()
-    add_definitions(-DTUDAT_BUILD_WITH_ESTIMATION_TOOLS=1)
-endif ()
-
-
-include(YOLOProjectAddTestCase)
-include(YOLOProjectAddLibrary)
-include(YOLOProjectAddExecutable)
-include(YOLOProjectAddExternalData)
+# +============================================================================
+# SETUP ALL LIBRARIES AND CMAKE RELATED TOOLS
+# +============================================================================
 
 # Set compiler based on preferences (e.g. USE_CLANG) and system.
 include(TudatLinkLibraries)
+
+# Include all the custom scripts which provide the following functions for
+# making life easier:
+# - TUDAT_ADD_EXECUTABLE
+# - TUDAT_ADD_LIBRARY
+# - TUDAT_ADD_TEST_CASE
+include(YOLOProjectAddTestCase)
+include(YOLOProjectAddLibrary)
+include(YOLOProjectAddExecutable)
 
 # Add to parent scope if project is added via add_subdirectory().
 if (NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
@@ -346,18 +280,11 @@ add_subdirectory(examples)
 
 
 if (TUDAT_BUILD_TESTS)
+    enable_testing()
     add_subdirectory(tests)
 endif ()
 
-# Cleanup YOLO global project variables.
-#include(YOLOProjectCleanup)
-
 file(RELATIVE_PATH TUDAT_DATA_DIR_RELATIVE_TO_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" "${INSTALL_DATA_DIR}/tudat")
-
-#configure_file( # Really dirty trick, and should be removed.
-#        "${PROJECT_SOURCE_DIR}/paths.hpp.in"
-#        "${PROJECT_BINARY_DIR}/include/tudat/paths.hpp" @ONLY
-#        )
 
 configure_file(
         "${PROJECT_SOURCE_DIR}/config.hpp.in"
@@ -396,10 +323,6 @@ configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME_LOWER}-config.cmake.in"
         "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME_LOWER}-config.cmake" @ONLY
 )
-
-# Configure file path for tudat data loading.
-#set(Tudat_DATA_DIRS ${INSTALL_CMAKE_DIR}/${RELATIVE_INSTALL_DATA_DIR})
-
 
 file(
         COPY "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/TudatFindBoost.cmake"
