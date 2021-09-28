@@ -265,6 +265,23 @@ void setAerodynamicOrientationFunctions(
                 angleOfAttackFunction, angleOfSideslipFunction, bankAngleFunction, angleUpdateFunction );
 }
 
+void setAerodynamicOrientationFunctions(
+        const std::shared_ptr< simulation_setup::Body > body,
+        const std::function< Eigen::Vector3d( const double ) > bodyOrientationAnglesFunction )
+{
+    if( body->getFlightConditions( ) == nullptr )
+    {
+        throw std::runtime_error( "Error when setting aerodynamic angle functions, body " + body->getBodyName( ) + " has no FlightConditions" );
+    }
+
+    std::shared_ptr< aerodynamics::FlightConditions > vehicleFlightConditions =
+            body->getFlightConditions( );
+    vehicleFlightConditions->getAerodynamicAngleCalculator( )->setOrientationAngleFunctions(
+                bodyOrientationAnglesFunction );
+}
+
+
+
 } // namespace simulation_setup
 
 } // namespace tudat

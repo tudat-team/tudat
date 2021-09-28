@@ -98,6 +98,38 @@ std::string getAerodynamicAngleName( const AerodynamicsReferenceFrameAngles angl
     return angleName;
 }
 
+std::function< Eigen::Vector3d( const double ) > getBodyOrientationAnglesFunction(
+        const std::function< double( ) > angleOfAttackFunction,
+        const std::function< double( ) > angleOfSideslipFunction,
+        const std::function< double( ) > bankAngleFunction,
+        const std::function< void( const double ) > angleUpdateFunction )
+{
+    return [=]( const double currentTime )
+    {
+        Eigen::Vector3d currentAngles = Eigen::Vector3d::Constant( TUDAT_NAN );
+        if( angleUpdateFunction != nullptr )
+        {
+            angleUpdateFunction( currentTime );
+        }
+
+        if( angleOfAttackFunction != nullptr )
+        {
+            currentAngles( 0 ) = angleOfAttackFunction( );
+        }
+
+        if( angleOfSideslipFunction != nullptr )
+        {
+            currentAngles( 1 ) = angleOfSideslipFunction( );
+        }
+
+        if( bankAngleFunction != nullptr )
+        {
+            currentAngles( 2 ) = bankAngleFunction( );
+        }
+        return currentAngles;
+    };
+}
+
 
 //! Function to update the orientation angles to the current state.
 void AerodynamicAngleCalculator::update( const double currentTime, const bool updateBodyOrientation )
@@ -153,24 +185,21 @@ void AerodynamicAngleCalculator::update( const double currentTime, const bool up
 
     if( updateBodyOrientation  && !( currentBodyAngleTime_ == currentTime ) )
     {
-        if( !( angleUpdateFunction_ == nullptr ) )
+        Eigen::Vector3d currentBodyAngles = bodyOrientationAnglesFunction_( currentTime );
+
+        if( currentBodyAngles( 0 ) == currentBodyAngles( 0 ) )
         {
-            angleUpdateFunction_( currentTime );
+            currentAerodynamicAngles_[ angle_of_attack ] = currentBodyAngles( 0 );
         }
 
-        if( !( angleOfAttackFunction_ == nullptr ) )
+        if( currentBodyAngles( 1 ) == currentBodyAngles( 1 ) )
         {
-            currentAerodynamicAngles_[ angle_of_attack ] = angleOfAttackFunction_( );
+            currentAerodynamicAngles_[ angle_of_sideslip ] = currentBodyAngles( 1 );
         }
 
-        if( !( angleOfSideslipFunction_ == nullptr ) )
+        if( currentBodyAngles( 2 ) == currentBodyAngles( 2 ) )
         {
-            currentAerodynamicAngles_[ angle_of_sideslip ] = angleOfSideslipFunction_( );
-        }
-
-        if( !( bankAngleFunction_ == nullptr ) )
-        {
-            currentAerodynamicAngles_[ bank_angle ] = bankAngleFunction_( );
+            currentAerodynamicAngles_[ bank_angle ] = currentBodyAngles( 2 );
         }
 
         currentBodyAngleTime_ = currentTime;
@@ -392,41 +421,13 @@ void AerodynamicAngleCalculator::setOrientationAngleFunctions(
         const std::function< double( ) > bankAngleFunction,
         const std::function< void( const double ) > angleUpdateFunction )
 {
-    if( !( angleOfAttackFunction == nullptr ) )
-    {
-        if( !( angleOfAttackFunction_ == nullptr ) )
-        {
-            std::cerr << "Warning, overriding existing angle of attack function in AerodynamicAngleCalculator" << std::endl;
-        }
-        angleOfAttackFunction_ = angleOfAttackFunction;
-    }
 
-    if( !( angleOfSideslipFunction == nullptr ) )
+    if( !( bodyOrientationAnglesFunction_ == nullptr ) )
     {
-        if( !( angleOfSideslipFunction_ == nullptr ) )
-        {
-            std::cerr << "Warning, overriding existing angle of sideslip function in AerodynamicAngleCalculator" << std::endl;
-        }
-        angleOfSideslipFunction_ = angleOfSideslipFunction;
+        std::cerr << "Warning, overriding existing body angles function in AerodynamicAngleCalculator" << std::endl;
     }
-
-    if( !( bankAngleFunction == nullptr ) )
-    {
-        if( !( bankAngleFunction_ == nullptr ) )
-        {
-            std::cerr << "Warning, overriding existing bank angle function in AerodynamicAngleCalculator" << std::endl;
-        }
-        bankAngleFunction_ = bankAngleFunction;
-    }
-
-    if( !( angleUpdateFunction == nullptr ) )
-    {
-        if( !( angleUpdateFunction_ == nullptr ) )
-        {
-            std::cerr << "Warning, overriding existing aerodynamic angle update function in AerodynamicAngleCalculator" << std::endl;
-        }
-        angleUpdateFunction_ = angleUpdateFunction;
-    }
+    bodyOrientationAnglesFunction_ = getBodyOrientationAnglesFunction(
+                angleOfAttackFunction, angleOfSideslipFunction, bankAngleFunction, angleUpdateFunction );
 }
 
 //! Function to set constant trajectory<->body-fixed orientation angles.
@@ -442,6 +443,16 @@ void AerodynamicAngleCalculator::setOrientationAngleFunctions(
     std::function< double( ) > bankAngleFunction =
             ( ( bankAngle == bankAngle ) ? [ = ]( ){ return bankAngle; }: std::function< double( ) >( ) );
     setOrientationAngleFunctions( angleOfAttackFunction, angleOfSideslipFunction, bankAngleFunction );
+}
+
+void AerodynamicAngleCalculator::setOrientationAngleFunctions(
+        const std::function< Eigen::Vector3d( const double ) > bodyOrientationAnglesFunction )
+{
+    if( !( bodyOrientationAnglesFunction_ == nullptr ) )
+    {
+        std::cerr << "Warning, overriding existing body angles function in AerodynamicAngleCalculator" << std::endl;
+    }
+    bodyOrientationAnglesFunction_ = bodyOrientationAnglesFunction;
 }
 
 //! Get a function to transform aerodynamic force from local to propagation frame.

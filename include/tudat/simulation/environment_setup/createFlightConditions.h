@@ -115,6 +115,15 @@ void setAerodynamicOrientationFunctions(
         const std::function< double( ) > bankAngleFunction =  std::function< double( ) >( ),
         const std::function< void( const double ) > angleUpdateFunction = std::function< void( const double ) >( ) );
 
+void setAerodynamicOrientationFunctions(
+        const std::shared_ptr< simulation_setup::Body > body,
+        const std::function< Eigen::Vector3d( const double ) > bodyOrientationAnglesFunction );
+
+void setAerodynamicOrientationFunctions(
+        const std::shared_ptr< simulation_setup::Body > body,
+        const std::function< Eigen::Vector3d( const double ) > anglesFunction );
+
+
 } // namespace simulation_setup
 
 } // namespace tudat

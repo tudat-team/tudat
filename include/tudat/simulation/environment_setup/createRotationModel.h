@@ -181,7 +181,7 @@ private:
     double rotationRate_;
 };
 
-#ifdef TUDAT_BUILD_WITH_SOFA_INTERFACE
+//#ifdef TUDAT_BUILD_WITH_SOFA_INTERFACE
 
 //Struct that holds settings for EOP short-period variation
 struct EopCorrectionSettings
@@ -346,7 +346,7 @@ private:
     std::shared_ptr< EopCorrectionSettings > polarMotionCorrectionSettings_;
 
 };
-#endif
+//#endif
 
 
 //RotationModelSettings derived class for defining settings of a synchronous rotational ephemeris (body-fixed x-axis always

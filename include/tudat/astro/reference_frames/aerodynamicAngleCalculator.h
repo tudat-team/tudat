@@ -55,6 +55,12 @@ enum AerodynamicsReferenceFrameAngles
  */
 std::string getAerodynamicAngleName( const AerodynamicsReferenceFrameAngles angle );
 
+std::function< Eigen::Vector3d( const double ) > getBodyOrientationAnglesFunction(
+        const std::function< double( ) > angleOfAttackFunction = std::function< double( ) >( ),
+        const std::function< double( ) > angleOfSideslipFunction = std::function< double( ) >( ),
+        const std::function< double( ) > bankAngleFunction = std::function< double( ) >( ),
+        const std::function< void( const double ) > angleUpdateFunction = std::function< void( const double ) >( ) );
+
 //! Object to calculate aerodynamic orientation angles from current vehicle state.
 /*!
  *  Object to calculate aerodynamic orientation angles from current vehicle state.
@@ -92,12 +98,10 @@ public:
         rotationFromCorotatingToInertialFrame_( rotationFromCorotatingToInertialFrame ),
         centralBodyName_( centralBodyName ),
         calculateVerticalToAerodynamicFrame_( calculateVerticalToAerodynamicFrame ),
-        angleOfAttackFunction_( angleOfAttackFunction ),
-        angleOfSideslipFunction_( angleOfSideslipFunction ),
-        bankAngleFunction_( bankAngleFunction ),
-        angleUpdateFunction_( angleUpdateFunction ),
         currentBodyAngleTime_( TUDAT_NAN )
     {
+        bodyOrientationAnglesFunction_ = getBodyOrientationAnglesFunction(
+                    angleOfAttackFunction, angleOfSideslipFunction, bankAngleFunction, angleUpdateFunction );
         currentAerodynamicAngles_.resize( 7 );
     }
 
@@ -219,6 +223,10 @@ public:
             const double angleOfSideslip = TUDAT_NAN,
             const double bankAngle = TUDAT_NAN );
 
+    void setOrientationAngleFunctions(
+            const std::function< Eigen::Vector3d( const double ) > angleOfAttackFunction );
+
+
     //! Function to get the function returning the quaternion that rotates from the corotating to the inertial frame.
     /*!
      * Function to get the function returning the quaternion that rotates from the corotating to the inertial frame.
@@ -321,17 +329,7 @@ private:
     //! when calling update function.
     bool calculateVerticalToAerodynamicFrame_;
 
-    //! Function to determine the angle of attack of the vehicle.
-    std::function< double( ) > angleOfAttackFunction_;
-
-    //! Function to determine the angle of sideslip of the vehicle.
-    std::function< double( ) > angleOfSideslipFunction_;
-
-    //! Function to determine the bank angle of the vehicle.
-    std::function< double( ) > bankAngleFunction_;
-
-    //! Function to update the bank, attack and sideslip angles to current time.
-    std::function< void( const double ) > angleUpdateFunction_;
+    std::function< Eigen::Vector3d( const double ) > bodyOrientationAnglesFunction_;
 
     //! Current time to which the bank, attack and sideslip angles have been updated.
     double currentBodyAngleTime_;
