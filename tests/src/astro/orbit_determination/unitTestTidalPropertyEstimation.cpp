@@ -497,7 +497,7 @@ BOOST_AUTO_TEST_CASE( test_LoveNumberEstimationFromOrbiterData )
     for( int i = 0; i < 3; i++ )
     {
         BOOST_CHECK_SMALL( std::fabs( estimationError( i ) ), 1.0E-4 );
-        BOOST_CHECK_SMALL( std::fabs( estimationError( i + 3 ) ), 1.0E-8 );
+        BOOST_CHECK_SMALL( std::fabs( estimationError( i + 3 ) ), 2.0E-8 );
     }
 
     for( int i = 0; i < estimationError.rows( ) - 6; i++ )

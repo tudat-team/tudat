@@ -480,7 +480,7 @@ BOOST_AUTO_TEST_CASE( testSpiceWrappers_7 )
     spiceKernelsLoaded = getTotalCountOfKernelsLoaded( );
 
     // Loaded kernels should be 4.
-    BOOST_CHECK_EQUAL( spiceKernelsLoaded, 4 );
+    BOOST_CHECK_EQUAL( spiceKernelsLoaded, 7 );
 
     // Clear all Spice kernels.
     clearSpiceKernels( );

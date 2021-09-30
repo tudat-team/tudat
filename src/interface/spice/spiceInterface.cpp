@@ -300,10 +300,12 @@ std::vector<std::string> getStandardSpiceKernels(const std::vector<std::string> 
 
   std::string kernelPath = paths::getSpiceKernelPath();
   standardSpiceKernels.push_back(kernelPath + "/pck00010.tpc");
-  standardSpiceKernels.push_back(kernelPath + "/gm_de431.tpc");
+  loadSpiceKernelInTudat(kernelPath + "/gm_de431.tpc");
 
   if (alternativeEphemerisKernels.size() == 0) {
-    standardSpiceKernels.push_back(kernelPath + "/tudat_merged_spk_kernel.bsp");
+      loadSpiceKernelInTudat(kernelPath + "/de440.bsp");
+      loadSpiceKernelInTudat(kernelPath + "/jup310.bsp");
+      loadSpiceKernelInTudat(kernelPath + "/mar097.bsp");
   } else {
     for (unsigned int i = 0; i < alternativeEphemerisKernels.size(); i++) {
       standardSpiceKernels.push_back(alternativeEphemerisKernels.at(i));
@@ -320,7 +322,10 @@ void loadStandardSpiceKernels(const std::vector<std::string> alternativeEphemeri
   loadSpiceKernelInTudat(kernelPath + "/gm_de431.tpc");
 
   if (alternativeEphemerisKernels.size() == 0) {
-    loadSpiceKernelInTudat(kernelPath + "/tudat_merged_spk_kernel.bsp");
+    loadSpiceKernelInTudat(kernelPath + "/de440.bsp");
+    loadSpiceKernelInTudat(kernelPath + "/sat425.bsp");
+    loadSpiceKernelInTudat(kernelPath + "/jup310.bsp");
+    loadSpiceKernelInTudat(kernelPath + "/mar097.bsp");
   } else {
     for (unsigned int i = 0; i < alternativeEphemerisKernels.size(); i++) {
       loadSpiceKernelInTudat(alternativeEphemerisKernels.at(i));
