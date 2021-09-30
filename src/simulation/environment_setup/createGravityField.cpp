@@ -33,8 +33,12 @@ std::string getPathForSphericalHarmonicsModel( const SphericalHarmonicsModel sph
         return paths::getGravityModelsPath( ) + "/Earth/ggm02c.txt";
     case ggm02s:
         return paths::getGravityModelsPath( ) + "/Earth/ggm02s.txt";
+    case goco05c:
+        return paths::getGravityModelsPath( ) + "/Earth/GOCO05c.txt";
     case glgm3150:
         return paths::getGravityModelsPath( ) + "/Moon/glgm3150.txt";
+    case gggrx1200:
+        return paths::getGravityModelsPath( ) + "/Moon/gggrx_1200l_sha.tab";
     case lpe200:
         return paths::getGravityModelsPath( ) + "/Moon/lpe200.txt";
     case jgmro120d:
@@ -53,8 +57,10 @@ std::string getReferenceFrameForSphericalHarmonicsModel( const SphericalHarmonic
     case egm96:
     case ggm02c:
     case ggm02s:
+    case goco05c:
         return "IAU_Earth";
     case glgm3150:
+    case gggrx1200:
     case lpe200:
         return "IAU_Moon";
     case jgmro120d:
@@ -173,7 +179,7 @@ std::pair< double, double  > readGravityFieldFile(
         // data file.
         boost::algorithm::split( vectorOfIndividualStrings,
                                  line,
-                                 boost::algorithm::is_any_of( ", " ),
+                                 boost::algorithm::is_any_of( ", \t" ),
                                  boost::algorithm::token_compress_on );
 
         // Check current line for consistency
@@ -188,9 +194,8 @@ std::pair< double, double  > readGravityFieldFile(
             else
             {
                 // Read current degree and orde from line.
-                currentDegree = std::stoi( vectorOfIndividualStrings[ 0 ] );
-                currentOrder = std::stoi( vectorOfIndividualStrings[ 1 ] );
-
+                currentDegree = static_cast< int >( std::round( std::stod( vectorOfIndividualStrings[ 0 ] ) ) );
+                currentOrder = static_cast< int >( std::round( std::stod( vectorOfIndividualStrings[ 1 ] ) ) );
                 // Set cosine and sine coefficients for current degree and order.
                 if( currentDegree <= maximumDegree && currentOrder <= maximumOrder )
                 {

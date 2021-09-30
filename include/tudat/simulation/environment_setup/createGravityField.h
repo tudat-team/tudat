@@ -256,8 +256,10 @@ enum SphericalHarmonicsModel
     egm96,
     ggm02c,
     ggm02s,
+    goco05c,
     glgm3150,
     lpe200,
+    gggrx1200,
     jgmro120d
 };
 
