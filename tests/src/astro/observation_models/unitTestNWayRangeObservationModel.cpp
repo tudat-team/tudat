@@ -399,14 +399,14 @@ BOOST_AUTO_TEST_CASE( testNWayRangeModel )
 
                 // Check if link end states are consistent
                 TUDAT_CHECK_MATRIX_CLOSE_FRACTION( firstlinkLinkEndStates.at( 0 ), fourWayLinkEndStates.at( 0 ),
-                                                   std::numeric_limits< double >::epsilon( ) );
+                                                   ( 10.0 * std::numeric_limits< double >::epsilon( ) ) );
                 TUDAT_CHECK_MATRIX_CLOSE_FRACTION( firstlinkLinkEndStates.at( 1 ), fourWayLinkEndStates.at( 1 ),
-                                                   std::numeric_limits< double >::epsilon( ) );
+                                                   ( 10.0 * std::numeric_limits< double >::epsilon( ) ) );
 
                 TUDAT_CHECK_MATRIX_CLOSE_FRACTION( secondlinkLinkEndStates.at( 0 ), fourWayLinkEndStates.at( 2 ),
-                                                   std::numeric_limits< double >::epsilon( ) );
+                                                   ( 10.0 * std::numeric_limits< double >::epsilon( ) ) );
                 TUDAT_CHECK_MATRIX_CLOSE_FRACTION( secondlinkLinkEndStates.at( 1 ), fourWayLinkEndStates.at( 3 ),
-                                                   std::numeric_limits< double >::epsilon( ) );
+                                                   ( 10.0 * std::numeric_limits< double >::epsilon( ) ) );
 
                 TUDAT_CHECK_MATRIX_CLOSE_FRACTION( thirdlinkLinkEndStates.at( 0 ), fourWayLinkEndStates.at( 4 ),
                                                    ( 10.0 * std::numeric_limits< double >::epsilon( ) ) );

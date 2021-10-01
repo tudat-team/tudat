@@ -335,7 +335,7 @@ void testObservationPartials(
             {
                 Eigen::MatrixXd testPartial = ( bodyRotationalStatePartial.block( 0, 0, ObservableSize, 4 ) * appliedQuaternionPerturbation.at( i ).segment( 0, 4 ) );
                 BOOST_CHECK_SMALL(
-                            std::fabs( testPartial( 0 ) - changeDueToQuaternionChange( i ) ), 1.0E-4 );
+                            std::fabs( testPartial( 0 ) - changeDueToQuaternionChange( i ) ), 2.0E-4 );
             }
 
             TUDAT_CHECK_MATRIX_CLOSE_FRACTION(

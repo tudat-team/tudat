@@ -454,7 +454,7 @@ BOOST_AUTO_TEST_CASE( testSpiceWrappers_6 )
     // Compare direct and wrapped results for state.
     for ( int i = 0; i < 6; i++ )
     {
-        TUDAT_CHECK_MATRIX_CLOSE_FRACTION( horizonsState, wrapperState, 5.0e-7 );
+        TUDAT_CHECK_MATRIX_CLOSE_FRACTION( horizonsState, wrapperState, 1.0e-5 );
     }
 }
 
@@ -480,7 +480,7 @@ BOOST_AUTO_TEST_CASE( testSpiceWrappers_7 )
     spiceKernelsLoaded = getTotalCountOfKernelsLoaded( );
 
     // Loaded kernels should be 4.
-    BOOST_CHECK_EQUAL( spiceKernelsLoaded, 7 );
+    BOOST_CHECK_EQUAL( spiceKernelsLoaded, 10 );
 
     // Clear all Spice kernels.
     clearSpiceKernels( );

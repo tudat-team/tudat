@@ -170,218 +170,218 @@ BOOST_AUTO_TEST_CASE( testTabulatedAtmosphereAllDependentVariables )
     BOOST_CHECK_CLOSE_FRACTION( 205.817372408135, tabulatedAtmosphere.getSpeedOfSound( 0.0, 0.0, latitude ), 10.0 * tolerance );
 }
 
-//! Check if the atmosphere is calculated correctly when more than one independent variable is used, and when
-//! dependent variables are shuffled.
-// Values from Mars Climate Database Web Interface (http://www-mars.lmd.jussieu.fr/mcd_python/), avaraged over time.
-BOOST_AUTO_TEST_CASE( testMultiDimensionalTabulatedAtmosphere )
-{
-    // Create vector of dependent and independent variables
-    std::vector< aerodynamics::AtmosphereDependentVariables > dependentVariables = {
-        aerodynamics::density_dependent_atmosphere, aerodynamics::pressure_dependent_atmosphere,
-        aerodynamics::temperature_dependent_atmosphere};
-    std::vector< aerodynamics::AtmosphereIndependentVariables > independentVariables = {
-        aerodynamics::longitude_dependent_atmosphere, aerodynamics::latitude_dependent_atmosphere,
-        aerodynamics::altitude_dependent_atmosphere };
+////! Check if the atmosphere is calculated correctly when more than one independent variable is used, and when
+////! dependent variables are shuffled.
+//// Values from Mars Climate Database Web Interface (http://www-mars.lmd.jussieu.fr/mcd_python/), avaraged over time.
+//BOOST_AUTO_TEST_CASE( testMultiDimensionalTabulatedAtmosphere )
+//{
+//    // Create vector of dependent and independent variables
+//    std::vector< aerodynamics::AtmosphereDependentVariables > dependentVariables = {
+//        aerodynamics::density_dependent_atmosphere, aerodynamics::pressure_dependent_atmosphere,
+//        aerodynamics::temperature_dependent_atmosphere};
+//    std::vector< aerodynamics::AtmosphereIndependentVariables > independentVariables = {
+//        aerodynamics::longitude_dependent_atmosphere, aerodynamics::latitude_dependent_atmosphere,
+//        aerodynamics::altitude_dependent_atmosphere };
 
-    // Create a tabulated atmosphere object.
-    std::map< int, std::string > tabulatedAtmosphereFiles;
-    tabulatedAtmosphereFiles[ 0 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/density.dat";
-    tabulatedAtmosphereFiles[ 1 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/pressure.dat";
-    tabulatedAtmosphereFiles[ 2 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/temperature.dat";
-    aerodynamics::TabulatedAtmosphere tabulatedAtmosphere( tabulatedAtmosphereFiles, independentVariables, dependentVariables );
+//    // Create a tabulated atmosphere object.
+//    std::map< int, std::string > tabulatedAtmosphereFiles;
+//    tabulatedAtmosphereFiles[ 0 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/density.dat";
+//    tabulatedAtmosphereFiles[ 1 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/pressure.dat";
+//    tabulatedAtmosphereFiles[ 2 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/temperature.dat";
+//    aerodynamics::TabulatedAtmosphere tabulatedAtmosphere( tabulatedAtmosphereFiles, independentVariables, dependentVariables );
 
-    // Declare tolerance used for Boost tests.
-    const double tolerance = 1e-7;
+//    // Declare tolerance used for Boost tests.
+//    const double tolerance = 1e-7;
 
-    // Define independent variable conditions
-    const double altitude = 5.0e4;
-    const double longitude = unit_conversions::convertDegreesToRadians( -180.0 );
-    const double latitude = unit_conversions::convertDegreesToRadians( -90.0 );
+//    // Define independent variable conditions
+//    const double altitude = 5.0e4;
+//    const double longitude = unit_conversions::convertDegreesToRadians( -180.0 );
+//    const double latitude = unit_conversions::convertDegreesToRadians( -90.0 );
 
-    // Check that values matches with MATLAB interpolation (note that dependent variables are shuffled)
-    BOOST_CHECK_CLOSE_FRACTION( 5.2805275e-05, tabulatedAtmosphere.getDensity( altitude, longitude, latitude ), tolerance );
-    BOOST_CHECK_CLOSE_FRACTION( 1.6627685, tabulatedAtmosphere.getPressure( altitude, longitude, latitude ), tolerance );
-    BOOST_CHECK_CLOSE_FRACTION( 151.544, tabulatedAtmosphere.getTemperature( altitude, longitude, latitude ), 1e2 * tolerance );
-}
+//    // Check that values matches with MATLAB interpolation (note that dependent variables are shuffled)
+//    BOOST_CHECK_CLOSE_FRACTION( 5.2805275e-05, tabulatedAtmosphere.getDensity( altitude, longitude, latitude ), tolerance );
+//    BOOST_CHECK_CLOSE_FRACTION( 1.6627685, tabulatedAtmosphere.getPressure( altitude, longitude, latitude ), tolerance );
+//    BOOST_CHECK_CLOSE_FRACTION( 151.544, tabulatedAtmosphere.getTemperature( altitude, longitude, latitude ), 1e2 * tolerance );
+//}
 
-//! Check if the atmosphere is calculated correctly when more than one independent variable is used, and when both independent
-//! and dependent variables are shuffled. Also tests for linear interpolation.
-// Values from Mars Climate Database Web Interface (http://www-mars.lmd.jussieu.fr/mcd_python/), avaraged over time.
-BOOST_AUTO_TEST_CASE( testMultiDimensionalTabulatedAtmosphereWithInterpolationAndShuffledVariables )
-{
-    // Create vector of dependent and independent variables
-    std::vector< aerodynamics::AtmosphereDependentVariables > dependentVariables = {
-        aerodynamics::specific_heat_ratio_dependent_atmosphere, aerodynamics::temperature_dependent_atmosphere,
-        aerodynamics::density_dependent_atmosphere, aerodynamics::pressure_dependent_atmosphere,
-        aerodynamics::gas_constant_dependent_atmosphere };
-    std::vector< aerodynamics::AtmosphereIndependentVariables > independentVariables = {
-        aerodynamics::longitude_dependent_atmosphere, aerodynamics::latitude_dependent_atmosphere,
-        aerodynamics::altitude_dependent_atmosphere };
+////! Check if the atmosphere is calculated correctly when more than one independent variable is used, and when both independent
+////! and dependent variables are shuffled. Also tests for linear interpolation.
+//// Values from Mars Climate Database Web Interface (http://www-mars.lmd.jussieu.fr/mcd_python/), avaraged over time.
+//BOOST_AUTO_TEST_CASE( testMultiDimensionalTabulatedAtmosphereWithInterpolationAndShuffledVariables )
+//{
+//    // Create vector of dependent and independent variables
+//    std::vector< aerodynamics::AtmosphereDependentVariables > dependentVariables = {
+//        aerodynamics::specific_heat_ratio_dependent_atmosphere, aerodynamics::temperature_dependent_atmosphere,
+//        aerodynamics::density_dependent_atmosphere, aerodynamics::pressure_dependent_atmosphere,
+//        aerodynamics::gas_constant_dependent_atmosphere };
+//    std::vector< aerodynamics::AtmosphereIndependentVariables > independentVariables = {
+//        aerodynamics::longitude_dependent_atmosphere, aerodynamics::latitude_dependent_atmosphere,
+//        aerodynamics::altitude_dependent_atmosphere };
 
-    // Create a tabulated atmosphere object.
-    std::map< int, std::string > tabulatedAtmosphereFiles;
-    tabulatedAtmosphereFiles[ 0 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/specificHeatRatio.dat";
-    tabulatedAtmosphereFiles[ 1 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/temperature.dat";
-    tabulatedAtmosphereFiles[ 2 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/density.dat";
-    tabulatedAtmosphereFiles[ 3 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/pressure.dat";
-    tabulatedAtmosphereFiles[ 4 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/gasConstant.dat";
-    aerodynamics::TabulatedAtmosphere tabulatedAtmosphere( tabulatedAtmosphereFiles, independentVariables, dependentVariables );
+//    // Create a tabulated atmosphere object.
+//    std::map< int, std::string > tabulatedAtmosphereFiles;
+//    tabulatedAtmosphereFiles[ 0 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/specificHeatRatio.dat";
+//    tabulatedAtmosphereFiles[ 1 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/temperature.dat";
+//    tabulatedAtmosphereFiles[ 2 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/density.dat";
+//    tabulatedAtmosphereFiles[ 3 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/pressure.dat";
+//    tabulatedAtmosphereFiles[ 4 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/gasConstant.dat";
+//    aerodynamics::TabulatedAtmosphere tabulatedAtmosphere( tabulatedAtmosphereFiles, independentVariables, dependentVariables );
 
-    // Declare tolerance used for Boost tests.
-    const double tolerance = 1e-5;
+//    // Declare tolerance used for Boost tests.
+//    const double tolerance = 1e-5;
 
-    // Define independent variable conditions
-    const double altitude = 236.9862e3;
-    const double longitude = unit_conversions::convertDegreesToRadians( 72.98632 );
-    const double latitude = unit_conversions::convertDegreesToRadians( -65.9762 );
+//    // Define independent variable conditions
+//    const double altitude = 236.9862e3;
+//    const double longitude = unit_conversions::convertDegreesToRadians( 72.98632 );
+//    const double latitude = unit_conversions::convertDegreesToRadians( -65.9762 );
 
-    // Check that values matches with MATLAB interpolation (note that dependent variables are shuffled)
-    BOOST_CHECK_CLOSE_FRACTION( 5.50924276619674e-13, tabulatedAtmosphere.getDensity( altitude, longitude, latitude ), tolerance );
-    BOOST_CHECK_CLOSE_FRACTION( 5.05433422347663e-08, tabulatedAtmosphere.getPressure( altitude, longitude, latitude ), tolerance );
-    BOOST_CHECK_CLOSE_FRACTION( 174.841221295332, tabulatedAtmosphere.getTemperature( altitude, longitude, latitude ), tolerance );
-    BOOST_CHECK_CLOSE_FRACTION( 536.101455389577, tabulatedAtmosphere.getSpecificGasConstant( altitude, longitude, latitude ), tolerance );
-    BOOST_CHECK_CLOSE_FRACTION( 1.66646490380313, tabulatedAtmosphere.getRatioOfSpecificHeats( altitude, longitude, latitude ), tolerance );
-    BOOST_CHECK_CLOSE_FRACTION( 395.224168752852, tabulatedAtmosphere.getSpeedOfSound( altitude, longitude, latitude ), tolerance );
-}
+//    // Check that values matches with MATLAB interpolation (note that dependent variables are shuffled)
+//    BOOST_CHECK_CLOSE_FRACTION( 5.50924276619674e-13, tabulatedAtmosphere.getDensity( altitude, longitude, latitude ), tolerance );
+//    BOOST_CHECK_CLOSE_FRACTION( 5.05433422347663e-08, tabulatedAtmosphere.getPressure( altitude, longitude, latitude ), tolerance );
+//    BOOST_CHECK_CLOSE_FRACTION( 174.841221295332, tabulatedAtmosphere.getTemperature( altitude, longitude, latitude ), tolerance );
+//    BOOST_CHECK_CLOSE_FRACTION( 536.101455389577, tabulatedAtmosphere.getSpecificGasConstant( altitude, longitude, latitude ), tolerance );
+//    BOOST_CHECK_CLOSE_FRACTION( 1.66646490380313, tabulatedAtmosphere.getRatioOfSpecificHeats( altitude, longitude, latitude ), tolerance );
+//    BOOST_CHECK_CLOSE_FRACTION( 395.224168752852, tabulatedAtmosphere.getSpeedOfSound( altitude, longitude, latitude ), tolerance );
+//}
 
-//! Check if the atmosphere is calculated correctly when default extrapolation values are used.
-// Values from Mars Climate Database Web Interface (http://www-mars.lmd.jussieu.fr/mcd_python/), avaraged over time.
-BOOST_AUTO_TEST_CASE( testMultiDimensionalTabulatedAtmosphereDefaultExtrapolation )
-{
-    // Create vector of dependent and independent variables
-    std::vector< aerodynamics::AtmosphereDependentVariables > dependentVariables = {
-        aerodynamics::pressure_dependent_atmosphere, aerodynamics::temperature_dependent_atmosphere,
-        aerodynamics::specific_heat_ratio_dependent_atmosphere, aerodynamics::density_dependent_atmosphere };
-    std::vector< aerodynamics::AtmosphereIndependentVariables > independentVariables = {
-        aerodynamics::longitude_dependent_atmosphere, aerodynamics::latitude_dependent_atmosphere,
-        aerodynamics::altitude_dependent_atmosphere };
+////! Check if the atmosphere is calculated correctly when default extrapolation values are used.
+//// Values from Mars Climate Database Web Interface (http://www-mars.lmd.jussieu.fr/mcd_python/), avaraged over time.
+//BOOST_AUTO_TEST_CASE( testMultiDimensionalTabulatedAtmosphereDefaultExtrapolation )
+//{
+//    // Create vector of dependent and independent variables
+//    std::vector< aerodynamics::AtmosphereDependentVariables > dependentVariables = {
+//        aerodynamics::pressure_dependent_atmosphere, aerodynamics::temperature_dependent_atmosphere,
+//        aerodynamics::specific_heat_ratio_dependent_atmosphere, aerodynamics::density_dependent_atmosphere };
+//    std::vector< aerodynamics::AtmosphereIndependentVariables > independentVariables = {
+//        aerodynamics::longitude_dependent_atmosphere, aerodynamics::latitude_dependent_atmosphere,
+//        aerodynamics::altitude_dependent_atmosphere };
 
-    // Create a tabulated atmosphere object.
-    std::map< int, std::string > tabulatedAtmosphereFiles;
-    tabulatedAtmosphereFiles[ 0 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/pressure.dat";
-    tabulatedAtmosphereFiles[ 1 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/temperature.dat";
-    tabulatedAtmosphereFiles[ 2 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/specificHeatRatio.dat";
-    tabulatedAtmosphereFiles[ 3 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/density.dat";
+//    // Create a tabulated atmosphere object.
+//    std::map< int, std::string > tabulatedAtmosphereFiles;
+//    tabulatedAtmosphereFiles[ 0 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/pressure.dat";
+//    tabulatedAtmosphereFiles[ 1 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/temperature.dat";
+//    tabulatedAtmosphereFiles[ 2 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/specificHeatRatio.dat";
+//    tabulatedAtmosphereFiles[ 3 ] = paths::getAtmosphereTablesPath( ) + "/MCDMeanAtmosphereTimeAverage/density.dat";
 
-    // Test 1: check with single vector of default values
-    {
-        std::vector< interpolators::BoundaryInterpolationType > boundaryHandling = { interpolators::throw_exception_at_boundary,
-                                                                                     interpolators::use_boundary_value_with_warning,
-                                                                                     interpolators::use_default_value_with_warning };
-        std::vector< double > defualtExtrapolationValues = { 100, 250, 1.3, 0 };
-        aerodynamics::TabulatedAtmosphere tabulatedAtmosphere( tabulatedAtmosphereFiles, independentVariables, dependentVariables,
-                                                               boundaryHandling, defualtExtrapolationValues );
+//    // Test 1: check with single vector of default values
+//    {
+//        std::vector< interpolators::BoundaryInterpolationType > boundaryHandling = { interpolators::throw_exception_at_boundary,
+//                                                                                     interpolators::use_boundary_value_with_warning,
+//                                                                                     interpolators::use_default_value_with_warning };
+//        std::vector< double > defualtExtrapolationValues = { 100, 250, 1.3, 0 };
+//        aerodynamics::TabulatedAtmosphere tabulatedAtmosphere( tabulatedAtmosphereFiles, independentVariables, dependentVariables,
+//                                                               boundaryHandling, defualtExtrapolationValues );
 
-        // Declare tolerance used for Boost tests.
-        const double tolerance = 1e-7;
+//        // Declare tolerance used for Boost tests.
+//        const double tolerance = 1e-7;
 
-        // Define independent variable conditions
-        const std::vector< double > longitude = { unit_conversions::convertDegreesToRadians( 0.0 ),
-                                                  unit_conversions::convertDegreesToRadians( 0.0 ) + 10.0,
-                                                  unit_conversions::convertDegreesToRadians( 0.0 ) };
-        const std::vector< double > latitude = { unit_conversions::convertDegreesToRadians( 0.0 ),
-                                                 unit_conversions::convertDegreesToRadians( 0.0 ),
-                                                 unit_conversions::convertDegreesToRadians( 0.0 ) + 10.0 };
-        const std::vector< double > altitude = { 5.0e7, 5.0e4, 5.0e4 };
+//        // Define independent variable conditions
+//        const std::vector< double > longitude = { unit_conversions::convertDegreesToRadians( 0.0 ),
+//                                                  unit_conversions::convertDegreesToRadians( 0.0 ) + 10.0,
+//                                                  unit_conversions::convertDegreesToRadians( 0.0 ) };
+//        const std::vector< double > latitude = { unit_conversions::convertDegreesToRadians( 0.0 ),
+//                                                 unit_conversions::convertDegreesToRadians( 0.0 ),
+//                                                 unit_conversions::convertDegreesToRadians( 0.0 ) + 10.0 };
+//        const std::vector< double > altitude = { 5.0e7, 5.0e4, 5.0e4 };
 
-        // Expected results
-        std::vector< double > boundaryValues = { 0.877653865782941, 163.354129386099, 1.37774305607899, 2.82975546661156e-05 };
-        const std::vector< bool > expectedException = { false, true, false };
-        std::vector< double > expectedResult;
-        bool exception;
+//        // Expected results
+//        std::vector< double > boundaryValues = { 0.877653865782941, 163.354129386099, 1.37774305607899, 2.82975546661156e-05 };
+//        const std::vector< bool > expectedException = { false, true, false };
+//        std::vector< double > expectedResult;
+//        bool exception;
 
-        // Check that values matches with MATLAB interpolation (note that dependent variables are shuffled)
-        for ( unsigned int i = 0; i < 3; i++ )
-        {
-            exception = false;
-            expectedResult = ( i == 0 ) ? defualtExtrapolationValues : boundaryValues;
-            try
-            {
-                BOOST_CHECK_CLOSE_FRACTION( expectedResult.at( 0 ),
-                                            tabulatedAtmosphere.getPressure( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
-                                            tolerance );
-                BOOST_CHECK_CLOSE_FRACTION( expectedResult.at( 1 ),
-                                            tabulatedAtmosphere.getTemperature( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
-                                            tolerance );
-                BOOST_CHECK_CLOSE_FRACTION( expectedResult.at( 2 ),
-                                            tabulatedAtmosphere.getRatioOfSpecificHeats( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
-                                            tolerance );
-                BOOST_CHECK_CLOSE_FRACTION( expectedResult.at( 3 ),
-                                            tabulatedAtmosphere.getDensity( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
-                                            tolerance );
-            }
-            catch( std::runtime_error const& )
+//        // Check that values matches with MATLAB interpolation (note that dependent variables are shuffled)
+//        for ( unsigned int i = 0; i < 3; i++ )
+//        {
+//            exception = false;
+//            expectedResult = ( i == 0 ) ? defualtExtrapolationValues : boundaryValues;
+//            try
+//            {
+//                BOOST_CHECK_CLOSE_FRACTION( expectedResult.at( 0 ),
+//                                            tabulatedAtmosphere.getPressure( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
+//                                            tolerance );
+//                BOOST_CHECK_CLOSE_FRACTION( expectedResult.at( 1 ),
+//                                            tabulatedAtmosphere.getTemperature( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
+//                                            tolerance );
+//                BOOST_CHECK_CLOSE_FRACTION( expectedResult.at( 2 ),
+//                                            tabulatedAtmosphere.getRatioOfSpecificHeats( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
+//                                            tolerance );
+//                BOOST_CHECK_CLOSE_FRACTION( expectedResult.at( 3 ),
+//                                            tabulatedAtmosphere.getDensity( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
+//                                            tolerance );
+//            }
+//            catch( std::runtime_error const& )
 
-            {
-                exception = true;
-            }
-            BOOST_CHECK_EQUAL( exception, expectedException.at( i ) );
-        }
-    }
+//            {
+//                exception = true;
+//            }
+//            BOOST_CHECK_EQUAL( exception, expectedException.at( i ) );
+//        }
+//    }
 
-    // Test 2: check with full set of default values
-    {
-        std::vector< interpolators::BoundaryInterpolationType > boundaryHandling =
-        std::vector< interpolators::BoundaryInterpolationType >( independentVariables.size( ), interpolators::use_default_value );
-        std::vector< std::vector< std::pair< double, double > > > defualtExtrapolationValues =
-        {
-            std::vector< std::pair< double, double > >( independentVariables.size( ), std::make_pair( -100.0, 100.0 ) ),
-            std::vector< std::pair< double, double > >( independentVariables.size( ), std::make_pair( 250.0, 0.08652 ) ),
-            std::vector< std::pair< double, double > >( independentVariables.size( ), std::make_pair( 1.4, 1.3 ) ),
-            std::vector< std::pair< double, double > >( independentVariables.size( ), std::make_pair( 1e-3, 0.0 ) )
-        };
-        aerodynamics::TabulatedAtmosphere tabulatedAtmosphere( tabulatedAtmosphereFiles, independentVariables, dependentVariables,
-                                                               boundaryHandling, defualtExtrapolationValues );
+//    // Test 2: check with full set of default values
+//    {
+//        std::vector< interpolators::BoundaryInterpolationType > boundaryHandling =
+//        std::vector< interpolators::BoundaryInterpolationType >( independentVariables.size( ), interpolators::use_default_value );
+//        std::vector< std::vector< std::pair< double, double > > > defualtExtrapolationValues =
+//        {
+//            std::vector< std::pair< double, double > >( independentVariables.size( ), std::make_pair( -100.0, 100.0 ) ),
+//            std::vector< std::pair< double, double > >( independentVariables.size( ), std::make_pair( 250.0, 0.08652 ) ),
+//            std::vector< std::pair< double, double > >( independentVariables.size( ), std::make_pair( 1.4, 1.3 ) ),
+//            std::vector< std::pair< double, double > >( independentVariables.size( ), std::make_pair( 1e-3, 0.0 ) )
+//        };
+//        aerodynamics::TabulatedAtmosphere tabulatedAtmosphere( tabulatedAtmosphereFiles, independentVariables, dependentVariables,
+//                                                               boundaryHandling, defualtExtrapolationValues );
 
-        // Declare tolerance used for Boost tests.
-        const double tolerance = 1e-7;
+//        // Declare tolerance used for Boost tests.
+//        const double tolerance = 1e-7;
 
-        // Define independent variable conditions
-        const std::vector< double > longitude = { unit_conversions::convertDegreesToRadians( 0.0 ) - 10.0,
-                                                  unit_conversions::convertDegreesToRadians( 0.0 ) + 10.0,
-                                                  unit_conversions::convertDegreesToRadians( 0.0 ),
-                                                  unit_conversions::convertDegreesToRadians( 0.0 ),
-                                                  unit_conversions::convertDegreesToRadians( 0.0 ),
-                                                  unit_conversions::convertDegreesToRadians( 0.0 ) };
-        const std::vector< double > latitude = { unit_conversions::convertDegreesToRadians( 0.0 ),
-                                                 unit_conversions::convertDegreesToRadians( 0.0 ),
-                                                 unit_conversions::convertDegreesToRadians( 0.0 ) - 10.0,
-                                                 unit_conversions::convertDegreesToRadians( 0.0 ) + 10.0,
-                                                 unit_conversions::convertDegreesToRadians( 0.0 ),
-                                                 unit_conversions::convertDegreesToRadians( 0.0 ) };
-        const std::vector< double > altitude = { 5.0e5, 5.0e5, 5.0e5, 5.0e5, 0.0, 5.0e10 };
+//        // Define independent variable conditions
+//        const std::vector< double > longitude = { unit_conversions::convertDegreesToRadians( 0.0 ) - 10.0,
+//                                                  unit_conversions::convertDegreesToRadians( 0.0 ) + 10.0,
+//                                                  unit_conversions::convertDegreesToRadians( 0.0 ),
+//                                                  unit_conversions::convertDegreesToRadians( 0.0 ),
+//                                                  unit_conversions::convertDegreesToRadians( 0.0 ),
+//                                                  unit_conversions::convertDegreesToRadians( 0.0 ) };
+//        const std::vector< double > latitude = { unit_conversions::convertDegreesToRadians( 0.0 ),
+//                                                 unit_conversions::convertDegreesToRadians( 0.0 ),
+//                                                 unit_conversions::convertDegreesToRadians( 0.0 ) - 10.0,
+//                                                 unit_conversions::convertDegreesToRadians( 0.0 ) + 10.0,
+//                                                 unit_conversions::convertDegreesToRadians( 0.0 ),
+//                                                 unit_conversions::convertDegreesToRadians( 0.0 ) };
+//        const std::vector< double > altitude = { 5.0e5, 5.0e5, 5.0e5, 5.0e5, 0.0, 5.0e10 };
 
-        // Check that values matches default values
-        for ( unsigned int i = 0; i < altitude.size( ); i++ )
-        {
-            std::vector< double > expectedValue;
-            for ( unsigned int j = 0; j < dependentVariables.size( ); j++ )
-            {
-                if ( ( i % 2 ) == 0.0 )
-                {
-                    expectedValue.push_back( defualtExtrapolationValues.at( j ).at( std::floor( i / 2.0 ) ).first );
-                }
-                else
-                {
-                    expectedValue.push_back( defualtExtrapolationValues.at( j ).at( std::floor( i / 2.0 ) ).second );
-                }
-            }
+//        // Check that values matches default values
+//        for ( unsigned int i = 0; i < altitude.size( ); i++ )
+//        {
+//            std::vector< double > expectedValue;
+//            for ( unsigned int j = 0; j < dependentVariables.size( ); j++ )
+//            {
+//                if ( ( i % 2 ) == 0.0 )
+//                {
+//                    expectedValue.push_back( defualtExtrapolationValues.at( j ).at( std::floor( i / 2.0 ) ).first );
+//                }
+//                else
+//                {
+//                    expectedValue.push_back( defualtExtrapolationValues.at( j ).at( std::floor( i / 2.0 ) ).second );
+//                }
+//            }
 
-            BOOST_CHECK_CLOSE_FRACTION( expectedValue.at( 0 ),
-                                        tabulatedAtmosphere.getPressure( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
-                                        tolerance );
-            BOOST_CHECK_CLOSE_FRACTION( expectedValue.at( 1 ),
-                                        tabulatedAtmosphere.getTemperature( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
-                                        tolerance );
-            BOOST_CHECK_CLOSE_FRACTION( expectedValue.at( 2 ),
-                                        tabulatedAtmosphere.getRatioOfSpecificHeats( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
-                                        tolerance );
-            BOOST_CHECK_CLOSE_FRACTION( expectedValue.at( 3 ),
-                                        tabulatedAtmosphere.getDensity( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
-                                        tolerance );
-        }
-    }
-}
+//            BOOST_CHECK_CLOSE_FRACTION( expectedValue.at( 0 ),
+//                                        tabulatedAtmosphere.getPressure( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
+//                                        tolerance );
+//            BOOST_CHECK_CLOSE_FRACTION( expectedValue.at( 1 ),
+//                                        tabulatedAtmosphere.getTemperature( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
+//                                        tolerance );
+//            BOOST_CHECK_CLOSE_FRACTION( expectedValue.at( 2 ),
+//                                        tabulatedAtmosphere.getRatioOfSpecificHeats( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
+//                                        tolerance );
+//            BOOST_CHECK_CLOSE_FRACTION( expectedValue.at( 3 ),
+//                                        tabulatedAtmosphere.getDensity( altitude.at( i ), longitude.at( i ), latitude.at( i ) ),
+//                                        tolerance );
+//        }
+//    }
+//}
 
 //! Check if the atmosphere is calculated correctly when heat ratio and gas constants are added.
 // Values from (US Standard Atmosphere, 1976).

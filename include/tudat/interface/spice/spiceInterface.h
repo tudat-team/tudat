@@ -117,9 +117,9 @@ int getTotalCountOfKernelsLoaded();
 //! @get_docstring(clear_kernels)
 void clearSpiceKernels();
 
-//! @get_docstring(get_standard_kernels)
-std::vector<std::string> getStandardSpiceKernels(const std::vector<std::string> alternativeEphemerisKernels =
-                                                     std::vector<std::string>());
+////! @get_docstring(get_standard_kernels)
+//std::vector<std::string> getStandardSpiceKernels(const std::vector<std::string> alternativeEphemerisKernels =
+//                                                     std::vector<std::string>());
 
 //! @get_docstring(load_standard_kernels)
 void loadStandardSpiceKernels(const std::vector<std::string> alternativeEphemerisKernels =

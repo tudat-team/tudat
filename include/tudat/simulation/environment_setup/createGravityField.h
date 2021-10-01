@@ -271,6 +271,8 @@ enum SphericalHarmonicsModel
  */
 std::string getPathForSphericalHarmonicsModel( const SphericalHarmonicsModel sphericalHarmonicsModel );
 
+int getMaximumGravityFieldDegreeOrder( const SphericalHarmonicsModel sphericalHarmonicsModel );
+
 // Get the associated reference frame for a SH model.
 /*
  * @copybrief getReferenceFrameForSphericalHarmonicsModel

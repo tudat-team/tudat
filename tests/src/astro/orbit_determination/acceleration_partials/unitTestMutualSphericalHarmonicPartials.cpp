@@ -87,7 +87,7 @@ std::shared_ptr< GravityFieldSettings > getMarsGravityFieldSettings( )
 BOOST_AUTO_TEST_CASE( testMutualSphericalHarmonicGravityPartials )
 {
     // Load spice kernel.
-    spice_interface::loadStandardSpiceKernels( { paths::getSpiceKernelPath( ) + "/de430_mar097_small.bsp" } );
+    spice_interface::loadStandardSpiceKernels( );
 
     std::vector< std::string > bodyList;
     bodyList.push_back( "Sun" );

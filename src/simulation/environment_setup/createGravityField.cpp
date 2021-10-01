@@ -49,6 +49,42 @@ std::string getPathForSphericalHarmonicsModel( const SphericalHarmonicsModel sph
     }
 }
 
+int getMaximumGravityFieldDegreeOrder( const SphericalHarmonicsModel sphericalHarmonicsModel )
+{
+    int maximumDegreeOrder = 0;
+    switch ( sphericalHarmonicsModel )
+    {
+    case egm96:
+        maximumDegreeOrder = 360;
+        break;
+    case ggm02c:
+        maximumDegreeOrder = 200;
+        break;
+    case ggm02s:
+        maximumDegreeOrder = 160;
+        break;
+    case goco05c:
+        maximumDegreeOrder = 719;
+        break;
+    case glgm3150:
+        maximumDegreeOrder = 150;
+        break;
+    case gggrx1200:
+        maximumDegreeOrder = 1199;
+        break;
+    case lpe200:
+        maximumDegreeOrder = 200;
+        break;
+    case jgmro120d:
+        maximumDegreeOrder = 120;
+        break;
+    default:
+        throw std::runtime_error( "No maximum degree known for Spherical Harmonics Model " + std::to_string(
+                                      static_cast< int >( sphericalHarmonicsModel ) ) );
+    }
+    return maximumDegreeOrder;
+}
+
 //! Get the associated reference frame for a SH model.
 std::string getReferenceFrameForSphericalHarmonicsModel( const SphericalHarmonicsModel sphericalHarmonicsModel )
 {
@@ -100,7 +136,8 @@ FromFileSphericalHarmonicsGravityFieldSettings::FromFileSphericalHarmonicsGravit
         const SphericalHarmonicsModel sphericalHarmonicsModel ) :
     FromFileSphericalHarmonicsGravityFieldSettings( getPathForSphericalHarmonicsModel( sphericalHarmonicsModel ),
                                                     getReferenceFrameForSphericalHarmonicsModel( sphericalHarmonicsModel ),
-                                                    50, 50, 0, 1 )
+                                                    getMaximumGravityFieldDegreeOrder( sphericalHarmonicsModel ),
+                                                    getMaximumGravityFieldDegreeOrder( sphericalHarmonicsModel ), 0, 1 )
 {
     sphericalHarmonicsModel_ = sphericalHarmonicsModel;
 }

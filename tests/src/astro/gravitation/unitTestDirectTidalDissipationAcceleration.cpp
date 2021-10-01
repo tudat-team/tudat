@@ -269,9 +269,10 @@ BOOST_AUTO_TEST_CASE( testTidalDissipationInPlanetAndSatellite )
         }
         else if( i == 2 )
         {
-            toleranceMultiplier = 20.0;
+            toleranceMultiplier = 30.0;
         }
 
+        std::cout<<"Tol "<<toleranceMultiplier<<std::endl;
         BOOST_CHECK_CLOSE_FRACTION( elementRates.first, theoreticalSemiMajorAxisRateFromIoTide, toleranceMultiplier * 1.0E-3 );
         BOOST_CHECK_CLOSE_FRACTION( elementRates.second, theoreticaEccentricityRateFromIoTide, toleranceMultiplier * 1.0E-3 );
 
