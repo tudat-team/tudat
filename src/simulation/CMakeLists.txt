@@ -13,3 +13,22 @@ add_subdirectory(propagation_setup)
 if (TUDAT_BUILD_WITH_ESTIMATION_TOOLS)
     add_subdirectory(estimation_setup)
 endif ()
+
+# Add source files.
+set(numerical_simulation_HEADERS
+        helpers.h
+        BaseSimulator.h
+        ../../include/tudat/simulation/SingleArcSimulator.h
+        )
+
+# Add header files.
+set(numerical_simulation_SOURCES
+        BaseSimulator.cpp
+        SingleArcSimulator.cpp
+        )
+
+# Add library.
+TUDAT_ADD_LIBRARY("numerical_simulation"
+        "${numerical_simulation_SOURCES}"
+        "${numerical_simulation_HEADERS}"
+        )

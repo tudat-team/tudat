@@ -509,7 +509,7 @@ std::shared_ptr< PropagationTerminationDetails > integrateEquationsFromIntegrato
 
     // Set initial time step and total integration time.
     TimeStepType timeStep = initialTimeStep;
-    TimeType previousTime = currentTime;
+    TimeType previousTime;
     TimeType previousPrintTime = TUDAT_NAN;
 
     int saveIndex = 0;
@@ -780,6 +780,262 @@ public:
                     initialClockTime );
     }
 
+};
+
+//template<typename IndexType, typename StateType = Eigen::MatrixXd>
+//class Dataframe {
+//
+//    using Series< double, IndexType >;
+//    using Series< int, IndexType >;
+//    using Series< std::string, IndexType >;
+//
+//    Dataframe(){
+//
+//    }
+//
+//private:
+//    std::vector<std::string> columns_;
+//    std::vector<Series> series_;
+//};
+//
+//
+//template< typename SeriesType, typename IndexType >
+//class Series {
+//
+//    Series(std::vector<SeriesType> data=nullptr,
+//           std::vector<IndexType> index=nullptr,
+//           std::string name=nullptr){
+//
+//    }
+//
+//    void append(std::vector<SeriesType> toAppend,
+//                bool ignoreIndex = false,
+//                bool verifyIntegrity = false){
+//
+//    }
+//
+//private:
+//    std::vector<IndexType> index_;
+//    std::vector<SeriesType> values_;
+//    std::string name_;
+//};
+
+//! @get_docstring(IntegrationInterface)
+template<
+        typename StateScalarType = double,
+        typename StateType = Eigen::MatrixXd,
+        typename TimeType = double,
+        typename TimeStepType = double>
+class IntegrationInterface
+{
+public:
+    using IntegratorType = std::shared_ptr< numerical_integrators::NumericalIntegrator< TimeType, StateType, StateType, TimeType > >;
+    using TerminationConditionType = std::shared_ptr< PropagationTerminationCondition >;
+    using DependentFunctionType = const std::function< Eigen::VectorXd( ) >;
+    using TerminationReasonType = std::shared_ptr< PropagationTerminationDetails >;
+
+    //! @get_docstring(IntegrationInterface.ctor)
+    IntegrationInterface(
+            const IntegratorType integrator,
+            const TimeType initialTimeStep,
+            const TerminationConditionType terminationCondition,
+            DependentFunctionType dependentVariableFunction,
+            std::map< TimeType, StateType >& solutionHistory,
+            std::map< TimeType, Eigen::VectorXd >& dependentVariableHistory,
+            std::map< TimeType, double >& cumulativeComputationTimeHistory,
+            std::function<void(Eigen::Matrix<StateScalarType, Eigen::Dynamic, 1> &)> statePostProcessingFunction,
+            const int saveFrequency)
+            : integrator_(integrator),
+              timeStep_(initialTimeStep),
+              terminationCondition_(terminationCondition),
+              dependentVariableFunction_(dependentVariableFunction),
+              saveFrequency_(saveFrequency),
+              dependentHistory_(dependentVariableHistory),
+              solutionHistory_(solutionHistory),
+              statePostProcessingFunction_(statePostProcessingFunction),
+              cumulativeComputationTimeHistory_(cumulativeComputationTimeHistory){
+
+        this->reset();
+
+    }
+
+    //! @get_docstring(IntegrationInterface.isTerminal)
+    bool isTerminal () {return breakPropagation_;}
+
+    //! @get_docstring(IntegrationInterface.step)
+    void step(const int steps) {
+        int step = 0;
+        do {
+            try {
+                if ((newState_.allFinite() == true) && (!newState_.hasNaN())) {
+                    previousTime_ = currentTime_;
+
+                    // Perform integration step.
+                    newState_ = integrator_->performIntegrationStep(timeStep_);
+                    if (statePostProcessingFunction_ != nullptr) {
+                        statePostProcessingFunction_(newState_);
+                        integrator_->modifyCurrentState(newState_, true);
+                    }
+
+                    // Check if the termination condition was reached during evaluation of integration sub-steps.
+                    // If evaluation of the termination condition during integration sub-steps is disabled,
+                    // this function returns always `false`.
+                    // If the termination condition was reached, the last step could not be computed correctly because some
+                    // of the integrator sub-steps were not computed. Thus, return immediately without saving the `newState`.
+                    if (integrator_->getPropagationTerminationConditionReached()) {
+                        propagationTerminationReason_ = std::make_shared<PropagationTerminationDetails>(
+                                termination_condition_reached);
+                        break;
+                    }
+
+                    // Update epoch and step-size
+                    currentTime_ = integrator_->getCurrentIndependentVariable();
+                    timeStep_ = integrator_->getNextStepSize();
+
+                    // Save integration result in map
+                    saveIndex_++;
+                    saveIndex_ = saveIndex_ % saveFrequency_;
+                    if (saveIndex_ == 0) {
+                        solutionHistory_[currentTime_] = newState_;
+
+                        if (!(dependentVariableFunction_ == nullptr)) {
+                            integrator_->getStateDerivativeFunction()(currentTime_, newState_);
+                            dependentHistory_[currentTime_] = dependentVariableFunction_();
+                        }
+                    }
+                } else {
+                    std::cerr << "Error, propagation terminated at t=" +
+                                 std::to_string(static_cast< double >( currentTime_ )) +
+                                 ", found NaN/Inf entry, returning propagation data up to current time" << std::endl;
+                    breakPropagation_ = true;
+                    propagationTerminationReason_ = std::make_shared<PropagationTerminationDetails>(
+                            nan_or_inf_detected_in_state);
+                }
+
+                if (terminationCondition_->checkStopCondition(static_cast< double >( currentTime_ ),
+                                                                        currentCPUTime_)) {
+                    if (terminationCondition_->getcheckTerminationToExactCondition()) {
+                        propagateToExactTerminationCondition(
+                                integrator_,
+                                terminationCondition_,
+                                timeStep_,
+                                dependentVariableFunction_,
+                                solutionHistory_,
+                                dependentHistory_,
+                                currentCPUTime_);
+                    }
+
+                    // Set termination details
+                    if (terminationCondition_->getTerminationType() != hybrid_stopping_condition) {
+                        propagationTerminationReason_ = std::make_shared<PropagationTerminationDetails>(
+                                termination_condition_reached,
+                                terminationCondition_->getcheckTerminationToExactCondition());
+                    } else {
+                        if (std::dynamic_pointer_cast<HybridPropagationTerminationCondition>(
+                                terminationCondition_)
+                            == nullptr) {
+                            throw std::runtime_error(
+                                    "Error when saving termination reason, type is hybrid, but class is not.");
+                        }
+                        propagationTerminationReason_ = std::make_shared<PropagationTerminationDetailsFromHybridCondition>(
+                                terminationCondition_->getcheckTerminationToExactCondition(),
+                                std::dynamic_pointer_cast<HybridPropagationTerminationCondition>(
+                                        terminationCondition_));
+                    }
+                    breakPropagation_ = true;
+                }
+                step ++;
+            }
+            catch (const std::exception &caughtException) {
+                std::cerr << caughtException.what() << std::endl;
+                std::cerr << "Error, propagation terminated at t=" +
+                             std::to_string(static_cast< double >( currentTime_ )) +
+                             ", returning propagation data up to current time." << std::endl;
+                breakPropagation_ = true;
+                propagationTerminationReason_ = std::make_shared<PropagationTerminationDetails>(
+                        runtime_error_caught_in_propagation);
+            }
+        } while (!breakPropagation_ && (step < steps));
+    }
+
+    //! @get_docstring(IntegrationInterface.complete)
+//    TerminationReasonType complete() {
+//
+//    }
+
+    //! @get_docstring(IntegrationInterface.reset)
+    void reset() {
+
+        solutionHistory_.clear();
+        dependentHistory_.clear();
+
+        // Get Initial state and time.
+        currentTime_ = integrator_->getCurrentIndependentVariable( );
+        initialTime_ = currentTime_;
+        newState_ = integrator_->getCurrentState( );
+
+        // Reset dependent variable history.
+        dependentHistory_.clear( );
+        if( !( dependentVariableFunction_ == nullptr ) )
+        {
+            this->integrator_->getStateDerivativeFunction( )( currentTime_, newState_ );
+            this->dependentHistory_[ currentTime_ ] = dependentVariableFunction_( );
+        }
+
+        // Reset solution history.
+        this->solutionHistory_.clear( );
+        solutionHistory_[ currentTime_ ] = newState_;
+
+        // CPU time
+        this->cumulativeComputationTimeHistory_.clear( );
+//        double currentCPUTime = std::chrono::duration_cast< std::chrono::nanoseconds >(
+//                std::chrono::steady_clock::now( ) - initialClockTime ).count( ) * 1.0e-9;
+//        cumulativeComputationTimeHistory_[ currentTime_ ] = currentCPUTime;
+
+        // Set initial time step and total integration time.
+//        TimeType timeStep = initialTimeStep;
+//        TimeType previousTime = currentTime;
+
+        saveIndex_ = 0;
+        propagationTerminationReason_ = std::make_shared< PropagationTerminationDetails >(
+                unknown_propagation_termination_reason );
+        breakPropagation_ = 0;
+
+    }
+
+private:
+    int saveIndex_;
+    int saveFrequency_;
+    bool breakPropagation_;
+    StateType newState_;
+
+    // Integration observation.
+
+    // CPU time observation.
+    double currentCPUTime_;
+
+    TimeStepType timeStep_;
+    TimeType currentTime_;
+    TimeType previousTime_;
+    TimeType initialTime_;
+    TerminationReasonType propagationTerminationReason_;
+
+    // Observation logs.
+    std::map< TimeType, Eigen::VectorXd >& solutionHistory_;
+    std::map< TimeType, Eigen::VectorXd >& dependentHistory_;
+    std::map< TimeType, double >& cumulativeComputationTimeHistory_;
+
+//    Dataframe<TimeType, Eigen::VectorXd>& solutionHistory_;
+//    Dataframe<TimeType, Eigen::VectorXd>& dependentHistory_;
+//    Dataframe<TimeType, double>& cumulativeComputationTimeHistory_;
+
+    std::function< Eigen::VectorXd( ) > dependentVariableFunction_;
+    std::function< void( StateType& ) > statePostProcessingFunction_;
+
+    TerminationConditionType terminationCondition_;
+
+    IntegratorType integrator_;
+    bool isTerminal_;
 };
 
 //! Interface class for integrating some state derivative function.

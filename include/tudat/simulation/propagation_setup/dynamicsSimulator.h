@@ -572,6 +572,7 @@ public:
 
         if( this->setIntegratedResult_ )
         {
+
             processNumericalEquationsOfMotionSolution( );
         }
     }

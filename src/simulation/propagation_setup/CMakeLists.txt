@@ -10,6 +10,7 @@
 
 # Add source files.
 set(propagation_HEADERS
+        ../../../include/tudat/simulation/BaseSimulator.h
         createAccelerationModels.h
         dynamicsSimulator.h
         propagationCR3BPFullProblem.h
@@ -36,6 +37,7 @@ set(propagation_HEADERS
 
 # Add header files.
 set(propagation_SOURCES
+        ../BaseSimulator.cpp
         createStateDerivativeModel.cpp
 #        propagationLambertTargeterFullProblem.cpp
         createThrustModelGuidance.cpp
