@@ -1,0 +1,10 @@
+//
+// Created by ggarr on 23/10/2021.
+//
+
+#ifndef TUDATBUNDLE_NUMERICALSOLUTION_H
+#define TUDATBUNDLE_NUMERICALSOLUTION_H
+
+class NumericalSolution {};
+
+#endif  // TUDATBUNDLE_NUMERICALSOLUTION_H

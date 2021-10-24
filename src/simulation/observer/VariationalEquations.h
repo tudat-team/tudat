@@ -1,0 +1,10 @@
+//
+// Created by ggarr on 23/10/2021.
+//
+
+#ifndef TUDATBUNDLE_VARIATIONALEQUATIONS_H
+#define TUDATBUNDLE_VARIATIONALEQUATIONS_H
+
+class VariationalEquations {};
+
+#endif  // TUDATBUNDLE_VARIATIONALEQUATIONS_H
