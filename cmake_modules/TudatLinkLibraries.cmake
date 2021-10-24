@@ -49,6 +49,7 @@ endif ()
 
 
 list(APPEND Tudat_PROPAGATION_LIBRARIES
+        Tudat::tudat_numerical_simulation
         Tudat::tudat_propagation_setup
         Tudat::tudat_shape_based_methods
         Tudat::tudat_low_thrust_trajectories

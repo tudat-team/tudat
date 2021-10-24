@@ -1,0 +1,10 @@
+//
+// Created by ggarr on 23/10/2021.
+//
+
+#ifndef TUDATBUNDLE_DEPENDENTVARIABLES_H
+#define TUDATBUNDLE_DEPENDENTVARIABLES_H
+
+class DependentVariables {};
+
+#endif  // TUDATBUNDLE_DEPENDENTVARIABLES_H

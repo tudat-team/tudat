@@ -12,18 +12,16 @@
 
 namespace tudat {
 
-    namespace numerical_simulation {
+namespace numerical_simulation {
 
-        extern template
-        class BaseSimulator<double, double>;
+extern template class BaseSimulator<double, double>;
 
-#if(TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS)
-        extern template class BaseSimulator< long double, double >;
-        extern template class BaseSimulator< double, Time >;
-        extern template class BaseSimulator< long double, Time >;
+#if (TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS)
+extern template class BaseSimulator<long double, double>;
+extern template class BaseSimulator<double, Time>;
+extern template class BaseSimulator<long double, Time>;
 #endif
 
-    } // namespace numerical_simulation
+}  // namespace numerical_simulation
 
-} // namespace tudat
-
+}  // namespace tudat

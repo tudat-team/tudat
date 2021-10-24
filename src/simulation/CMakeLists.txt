@@ -7,24 +7,21 @@
 #    a copy of the license with this file. If not, please or visit:
 #    http://tudat.tudelft.nl/LICENSE.
 #
-
-add_subdirectory(environment_setup)
-add_subdirectory(propagation_setup)
-if (TUDAT_BUILD_WITH_ESTIMATION_TOOLS)
-    add_subdirectory(estimation_setup)
-endif ()
-
 # Add source files.
 set(numerical_simulation_HEADERS
         helpers.h
         BaseSimulator.h
-        ../../include/tudat/simulation/SingleArcSimulator.h
+        SingleArcSimulator.h
+        BaseObserver.h
+        ComputationExpense.h
         )
 
 # Add header files.
 set(numerical_simulation_SOURCES
         BaseSimulator.cpp
         SingleArcSimulator.cpp
+        BaseObserver.cpp
+        ComputationExpense.cpp
         )
 
 # Add library.
@@ -32,3 +29,11 @@ TUDAT_ADD_LIBRARY("numerical_simulation"
         "${numerical_simulation_SOURCES}"
         "${numerical_simulation_HEADERS}"
         )
+
+add_subdirectory(environment_setup)
+add_subdirectory(propagation_setup)
+if (TUDAT_BUILD_WITH_ESTIMATION_TOOLS)
+    add_subdirectory(estimation_setup)
+endif ()
+
+

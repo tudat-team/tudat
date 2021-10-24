@@ -1,0 +1,10 @@
+//
+// Created by ggarr on 23/10/2021.
+//
+
+#ifndef TUDATBUNDLE_FUNCTIONEVALUATIONS_H
+#define TUDATBUNDLE_FUNCTIONEVALUATIONS_H
+
+class FunctionEvaluations {};
+
+#endif  // TUDATBUNDLE_FUNCTIONEVALUATIONS_H
