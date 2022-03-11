@@ -65,7 +65,7 @@ std::shared_ptr< basic_astrodynamics::AccelerationModel< Eigen::Vector3d > > cre
     std::shared_ptr< basic_astrodynamics::AccelerationModel< Eigen::Vector3d > > accelerationModel;
     switch( accelerationSettings->accelerationType_ )
     {
-    case central_gravity:
+    case point_mass_gravity:
         accelerationModel = createCentralGravityAcceleratioModel(
                     bodyUndergoingAcceleration,
                     bodyExertingAcceleration,
@@ -115,7 +115,7 @@ std::shared_ptr< basic_astrodynamics::AccelerationModel< Eigen::Vector3d > > cre
     std::shared_ptr< basic_astrodynamics::AccelerationModel< Eigen::Vector3d > > accelerationModel;
     switch( accelerationSettings->accelerationType_ )
     {
-    case central_gravity:
+    case point_mass_gravity:
         accelerationModel = std::make_shared< ThirdBodyCentralGravityAcceleration >(
                     std::dynamic_pointer_cast< CentralGravitationalAccelerationModel3d >(
                         createDirectGravitationalAcceleration(
@@ -173,7 +173,7 @@ std::shared_ptr< AccelerationModel< Eigen::Vector3d > > createGravitationalAccel
 {
 
     std::shared_ptr< AccelerationModel< Eigen::Vector3d > > accelerationModelPointer;
-    if( accelerationSettings->accelerationType_ != central_gravity &&
+    if( accelerationSettings->accelerationType_ != point_mass_gravity &&
             accelerationSettings->accelerationType_ != spherical_harmonic_gravity &&
             accelerationSettings->accelerationType_ != mutual_spherical_harmonic_gravity )
     {
@@ -1095,7 +1095,7 @@ createThrustAcceleratioModel(
         else if(thrustAccelerationSettings->thrustFrame_ != inertial_thrust_frame )
         {
             // Create rotation function from thrust-frame to propagation frame.
-            if( thrustAccelerationSettings->thrustFrame_ == lvlh_thrust_frame )
+            if( thrustAccelerationSettings->thrustFrame_ == tnw_thrust_frame )
             {
                 std::function< Eigen::Vector6d( ) > vehicleStateFunction =
                         std::bind( &Body::getState, bodies.at( nameOfBodyUndergoingThrust ) );
@@ -1115,7 +1115,7 @@ createThrustAcceleratioModel(
                             std::bind( &Body::getState, bodies.at( thrustAccelerationSettings->centralBody_ ) );
                 }
                 thrustAccelerationSettings->interpolatorInterface_->resetRotationFunction(
-                            std::bind( &reference_frames::getVelocityBasedLvlhToInertialRotationFromFunctions,
+                            std::bind( &reference_frames::getTnwToInertialRotationFromFunctions,
                                        vehicleStateFunction, centralBodyStateFunction, true ) );
             }
             else
@@ -1327,7 +1327,7 @@ std::shared_ptr< AccelerationModel< Eigen::Vector3d > > createAccelerationModel(
     // Switch to call correct acceleration model type factory function.
     switch( accelerationSettings->accelerationType_ )
     {
-    case central_gravity:
+    case point_mass_gravity:
         accelerationModelPointer = createGravitationalAccelerationModel(
                     bodyUndergoingAcceleration, bodyExertingAcceleration, accelerationSettings,
                     nameOfBodyUndergoingAcceleration, nameOfBodyExertingAcceleration,

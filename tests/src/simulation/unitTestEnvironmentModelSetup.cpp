@@ -171,11 +171,10 @@ BOOST_AUTO_TEST_CASE( test_ephemerisSetup )
 
     {
         // Create settings for approximate planet positions.
-        ephemerides::ApproximatePlanetPositionsBase::BodiesWithEphemerisData bodyIdentifier =
-                ephemerides::ApproximatePlanetPositionsBase::mars;
+        std::string bodyIdentifier = "Mars";
         bool useCircularCoplanarApproximation = 0;
-        std::shared_ptr< ApproximatePlanetPositionSettings > approximateEphemerisSettings =
-                std::make_shared< ApproximatePlanetPositionSettings >(
+        std::shared_ptr< ApproximateJplEphemerisSettings > approximateEphemerisSettings =
+                std::make_shared< ApproximateJplEphemerisSettings >(
                     bodyIdentifier, useCircularCoplanarApproximation );
 
         // Create ephemeris using setup function.
@@ -183,7 +182,7 @@ BOOST_AUTO_TEST_CASE( test_ephemerisSetup )
                 createBodyEphemeris( approximateEphemerisSettings, "Earth" );
 
         // Create manual ephemeris.
-        ephemerides::ApproximatePlanetPositions manualApproximateEphemeris(
+        ephemerides::ApproximateJplEphemeris manualApproximateEphemeris(
                     bodyIdentifier );
 
         // Verify equivalence of automatically set up and manual models.
@@ -774,7 +773,6 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldVariationSetup )
         // Test for separate or joint deforming bodies
         for( int bodyTest = 0; bodyTest < 3; bodyTest++ )
         {
-            std::cout<<"Test: "<<functionTest<<" "<<bodyTest<<std::endl;
 
             // Clear for current test
             bodySettings.at( "Earth" )->gravityFieldVariationSettings.clear( );
@@ -1607,6 +1605,8 @@ BOOST_AUTO_TEST_CASE( test_panelledRadiationPressureInterfaceSetup )
                 initialKeplerElements, 0.0, spice_interface::getBodyGravitationalParameter( "Earth" ), "Earth", "ECLIPJ2000" );
 
 
+
+
     // Create radiation pressure properties
     std::vector< double > areas;
     areas.push_back( 4.0 );
@@ -1660,6 +1660,11 @@ BOOST_AUTO_TEST_CASE( test_panelledRadiationPressureInterfaceSetup )
     // Create bodies
     SystemOfBodies bodies = createSystemOfBodies( bodySettings );
     
+
+    Eigen::Vector7d unitRotationalState = Eigen::Vector7d::Zero( );
+    unitRotationalState.segment( 0, 4 ) = linear_algebra::convertQuaternionToVectorFormat(
+                Eigen::Quaterniond( Eigen::Matrix3d::Identity( ) ) );
+    bodies.at( "Vehicle" )->setCurrentRotationalStateToLocalFrame( unitRotationalState );
 
     BOOST_CHECK_EQUAL( bodies.at( "Vehicle" )->getRadiationPressureInterfaces( ).size( ), 1 );
     BOOST_CHECK_EQUAL( bodies.at( "Vehicle" )->getRadiationPressureInterfaces( ).count( "Sun" ), 1 );

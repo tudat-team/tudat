@@ -42,7 +42,8 @@ enum RotationModelType
     spice_rotation_model,
     gcrs_to_itrs_rotation_model,
     synchronous_rotation_model,
-    planetary_rotation_model
+    planetary_rotation_model,
+    tabulated_rotation_model
 };
 
 //Class for providing settings for rotation model.
@@ -181,7 +182,7 @@ private:
     double rotationRate_;
 };
 
-#ifdef TUDAT_BUILD_WITH_SOFA_INTERFACE
+//#ifdef TUDAT_BUILD_WITH_SOFA_INTERFACE
 
 //Struct that holds settings for EOP short-period variation
 struct EopCorrectionSettings
@@ -346,7 +347,7 @@ private:
     std::shared_ptr< EopCorrectionSettings > polarMotionCorrectionSettings_;
 
 };
-#endif
+//#endif
 
 
 //RotationModelSettings derived class for defining settings of a synchronous rotational ephemeris (body-fixed x-axis always
@@ -383,6 +384,32 @@ private:
 
     // Name of central body to which this body is locked.
     std::string centralBodyName_;
+};
+
+class TabulatedRotationSettings: public RotationModelSettings
+{
+public:
+
+    TabulatedRotationSettings(
+            const std::map< double, Eigen::Vector7d >& rotationalStateHistory,
+            const std::string& baseFrameOrientation,
+            const std::string& targetFrameOrientation,
+            const std::shared_ptr< interpolators::InterpolatorSettings > interpolatorSettings =
+            std::make_shared< interpolators::LagrangeInterpolatorSettings >( 8 ) ):
+        RotationModelSettings( tabulated_rotation_model, baseFrameOrientation, targetFrameOrientation ),
+        rotationalStateHistory_( rotationalStateHistory ), interpolatorSettings_( interpolatorSettings ){ }
+
+    std::map< double, Eigen::Vector7d > getBodyStateHistory( )
+    { return rotationalStateHistory_; }
+
+    std::shared_ptr< interpolators::InterpolatorSettings > getInterpolatorSettings( )
+    { return interpolatorSettings_; }
+
+private:
+
+    std::map< double, Eigen::Vector7d > rotationalStateHistory_;
+
+    const std::shared_ptr< interpolators::InterpolatorSettings > interpolatorSettings_;
 };
 
 //Function to retrieve a state from one of two functions
@@ -429,9 +456,6 @@ public:
                                     const std::string originalFrame,
                                     const std::string targetFrame,
                                     const std::string centralBody,
-                                    const double initialTime,
-                                    const double finalTime,
-                                    const double timeStep = 150.0,
                                     const std::map< double, std::pair< double, double > > meanMotionDirectNutationCorrections =
             ( std::map< double, std::pair< double, double > >( ) ),
                                     std::vector< std::map< double, std::pair< double, double > > > meanMotionTimeDependentPhaseNutationCorrections =
@@ -454,7 +478,7 @@ public:
         timeDependentPhaseCorrectionFunctions_( timeDependentPhaseCorrectionFunctions ),
         rotationRateCorrections_( rotationRateCorrections ),
         xPolarMotionCoefficients_( xPolarMotionCoefficients ), yPolarMotionCoefficients_( yPolarMotionCoefficients ),
-        centralBody_( centralBody ), initialTime_( initialTime ), finalTime_( finalTime ), timeStep_( timeStep ){ }
+        centralBody_( centralBody ){ }
 
     void updateAnglesAtEpoch( Eigen::Vector3d anglesAtEpoch )
     {
@@ -542,20 +566,6 @@ public:
         return yPolarMotionCoefficients_;
     }
 
-    double getInitialTime( )
-    {
-        return initialTime_;
-    }
-
-    double getFinalTime( )
-    {
-        return finalTime_;
-    }
-
-    double getTimeStep( )
-    {
-        return timeStep_;
-    }
 
     std::string getCentralBody( )
     {
@@ -610,10 +620,6 @@ private:
     std::map< double, std::pair< double, double > > yPolarMotionCoefficients_;
 
     std::string centralBody_;
-
-    double initialTime_;
-    double finalTime_;
-    double timeStep_;
 };
 
 
@@ -732,6 +738,17 @@ inline std::shared_ptr< RotationModelSettings > synchronousRotationModelSettings
 {
     return std::make_shared< SynchronousRotationModelSettings >(
             centralBodyName, baseFrameOrientation, targetFrameOrientation );
+}
+
+inline std::shared_ptr< RotationModelSettings > tabulatedRotationSettings(
+        const std::map< double, Eigen::Vector7d >& rotationalStateHistory,
+        const std::string& baseFrameOrientation,
+        const std::string& targetFrameOrientation,
+        const std::shared_ptr< interpolators::InterpolatorSettings > interpolatorSettings =
+        std::make_shared< interpolators::LagrangeInterpolatorSettings >( 8 ) )
+{
+    return std::make_shared< TabulatedRotationSettings >(
+            rotationalStateHistory, baseFrameOrientation, targetFrameOrientation, interpolatorSettings );
 }
 
 } // namespace simulation_setup
