@@ -294,43 +294,33 @@ int getTotalCountOfKernelsLoaded() {
 //! Clear all Spice kernels.
 void clearSpiceKernels() { kclear_c(); }
 
-////! Get all standard Spice kernels used in tudat.
-//std::vector<std::string> getStandardSpiceKernels(const std::vector<std::string> alternativeEphemerisKernels) {
-//  std::vector<std::string> standardSpiceKernels;
+//! Get all standard Spice kernels used in tudat.
+std::vector<std::string> getStandardSpiceKernels(const std::vector<std::string> alternativeEphemerisKernels) {
+  std::vector<std::string> standardSpiceKernels;
 
-////  std::string kernelPath = paths::getSpiceKernelPath();
-////  standardSpiceKernels.push_back(kernelPath + "/pck00010.tpc");
-////  loadSpiceKernelInTudat(kernelPath + "/gm_de431.tpc");
+  std::string kernelPath = paths::getSpiceKernelPath();
+  standardSpiceKernels.push_back(kernelPath + "/pck00010.tpc");
+  standardSpiceKernels.push_back(kernelPath + "/gm_de431.tpc");
 
-////  if (alternativeEphemerisKernels.size()s == 0) {
-////      loadSpiceKernelInTudat(kernelPath + "/de440s.bsp");
-////      loadSpiceKernelInTudat(kernelPath + "/NOE-4-2020s.bsp");
-////      loadSpiceKernelInTudat(kernelPath + "/NOE-5-2021s.bsp");
-////      loadSpiceKernelInTudat(kernelPath + "/NOE-6-2019s.bsp");
-////  } else {
-////    for (unsigned int i = 0; i < alternativeEphemerisKernels.size(); i++) {
-////      standardSpiceKernels.push_back(alternativeEphemerisKernels.at(i));
-////    }
-////  }
-////  standardSpiceKernels.push_back(kernelPath + "/naif0012.tls");
-//  return standardSpiceKernels;
-//}
+  if (alternativeEphemerisKernels.size() == 0) {
+    standardSpiceKernels.push_back(kernelPath + "/tudat_merged_spk_kernel.bsp");
+  } else {
+    for (unsigned int i = 0; i < alternativeEphemerisKernels.size(); i++) {
+      standardSpiceKernels.push_back(alternativeEphemerisKernels.at(i));
+    }
+  }
+  standardSpiceKernels.push_back(kernelPath + "/naif0012.tls");
+  return standardSpiceKernels;
+}
 
 void loadStandardSpiceKernels(const std::vector<std::string> alternativeEphemerisKernels) {
 
   std::string kernelPath = paths::getSpiceKernelPath();
   loadSpiceKernelInTudat(kernelPath + "/pck00010.tpc");
   loadSpiceKernelInTudat(kernelPath + "/gm_de431.tpc");
-  loadSpiceKernelInTudat(kernelPath + "/NOE-4-2020.tpc");
-  loadSpiceKernelInTudat(kernelPath + "/NOE-5-2021.tpc");
-  loadSpiceKernelInTudat(kernelPath + "/NOE-6-2018-MAIN-v2.tpc");
-
 
   if (alternativeEphemerisKernels.size() == 0) {
-    loadSpiceKernelInTudat(kernelPath + "/de440s.bsp");
-    loadSpiceKernelInTudat(kernelPath + "/NOE-4-2020s.bsp");
-    loadSpiceKernelInTudat(kernelPath + "/NOE-5-2021s.bsp");
-    loadSpiceKernelInTudat(kernelPath + "/NOE-6-2018s.bsp");
+    loadSpiceKernelInTudat(kernelPath + "/tudat_merged_spk_kernel.bsp");
   } else {
     for (unsigned int i = 0; i < alternativeEphemerisKernels.size(); i++) {
       loadSpiceKernelInTudat(alternativeEphemerisKernels.at(i));
