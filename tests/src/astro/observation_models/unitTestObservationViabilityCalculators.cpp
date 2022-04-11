@@ -108,6 +108,9 @@ BOOST_AUTO_TEST_CASE( testSeparateObservationViabilityCalculators )
         std::shared_ptr< ObservationViabilityCalculator > minimumElevationCalculator =
                 std::make_shared< MinimumElevationAngleCalculator >(
                     linkEndIndices, testAngle, pointingAngleCalculator );
+        std::shared_ptr< ObservationViabilityCalculator > maximumElevationCalculator =
+                std::make_shared< MaximumElevationAngleCalculator >(
+                        linkEndIndices, testAngle, pointingAngleCalculator );
         std::shared_ptr< ObservationViabilityCalculator > bodyAvoidanceCalculator =
                 std::make_shared< BodyAvoidanceAngleCalculator >(
                     linkEndIndices, testAngle, [=](const double){return testBodyState;}, "TestBody" );
@@ -150,6 +153,24 @@ BOOST_AUTO_TEST_CASE( testSeparateObservationViabilityCalculators )
                 bool isObservationViable = minimumElevationCalculator->isObservationViable(
                             linkEndStates, linkEndTimes );
                 if( manualElevationAngle > testAngle )
+                {
+                    BOOST_CHECK_EQUAL( isObservationViable, 1 );
+                }
+                else
+                {
+                    BOOST_CHECK_EQUAL( isObservationViable, 0 );
+                }
+            }
+
+            // Test elevation angle
+            {
+                double manualElevationAngle = mathematical_constants::PI / 2.0 -
+                                              std::acos( manualGroundStationInertialPosition.normalized( ).dot( vectorToTarget.normalized( ) ) );
+
+                // Compute viability and check against manual calculation
+                bool isObservationViable = maximumElevationCalculator->isObservationViable(
+                        linkEndStates, linkEndTimes );
+                if( manualElevationAngle < testAngle )
                 {
                     BOOST_CHECK_EQUAL( isObservationViable, 1 );
                 }

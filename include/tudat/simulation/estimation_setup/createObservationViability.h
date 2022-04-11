@@ -87,7 +87,7 @@ protected:
     double doubleParameter_;
 };
 
-inline std::vector< std::shared_ptr< ObservationViabilitySettings > > elevationAngleViabilitySettings(
+inline std::vector< std::shared_ptr< ObservationViabilitySettings > > minimumElevationAngleViabilitySettings(
         const std::vector< std::pair< std::string, std::string > > associatedLinkEnds,
         const double elevationAngle )
 {
@@ -101,7 +101,7 @@ inline std::vector< std::shared_ptr< ObservationViabilitySettings > > elevationA
     return viabilitySettingsList;
 }
 
-inline std::shared_ptr< ObservationViabilitySettings > elevationAngleViabilitySettings(
+inline std::shared_ptr< ObservationViabilitySettings > minimumElevationAngleViabilitySettings(
         const std::pair< std::string, std::string > associatedLinkEnd,
         const double elevationAngle )
 {
@@ -109,7 +109,27 @@ inline std::shared_ptr< ObservationViabilitySettings > elevationAngleViabilitySe
                 minimum_elevation_angle, associatedLinkEnd, "", elevationAngle );
 }
 
+inline std::vector< std::shared_ptr< ObservationViabilitySettings > > maximumElevationAngleViabilitySettings(
+        const std::vector< std::pair< std::string, std::string > > associatedLinkEnds,
+        const double elevationAngle )
+{
+    std::vector< std::shared_ptr< ObservationViabilitySettings > > viabilitySettingsList;
+    for( unsigned int i = 0; i < associatedLinkEnds.size( ); i++ )
+    {
+        viabilitySettingsList.push_back(
+                std::make_shared< ObservationViabilitySettings >(
+                        maximum_elevation_angle, associatedLinkEnds.at( i ), "", elevationAngle ) );
+    }
+    return viabilitySettingsList;
+}
 
+inline std::shared_ptr< ObservationViabilitySettings > maximumElevationAngleViabilitySettings(
+        const std::pair< std::string, std::string > associatedLinkEnd,
+        const double elevationAngle )
+{
+    return std::make_shared< ObservationViabilitySettings >(
+            maximum_elevation_angle, associatedLinkEnd, "", elevationAngle );
+}
 
 inline std::vector< std::shared_ptr< ObservationViabilitySettings > > bodyAvoidanceAngleViabilitySettings(
         const std::vector< std::pair< std::string, std::string > > associatedLinkEnds,
@@ -189,6 +209,26 @@ ObservationViabilitySettingsList filterObservationViabilitySettings(
  * \return Object to check if a minimum elevation angle condition is met for an observation
  */
 std::shared_ptr< MinimumElevationAngleCalculator > createMinimumElevationAngleCalculator(
+        const simulation_setup::SystemOfBodies& bodies,
+        const LinkEnds linkEnds,
+        const ObservableType observationType,
+        const std::shared_ptr< ObservationViabilitySettings > observationViabilitySettings,
+        const std::string& stationName );
+
+//! Function to create an object to check if a maximum elevation angle condition is met for an observation
+/*!
+ * Function to create an object to check if a maximum elevation angle condition is met for an observation
+ * \param bodies Map of body objects that constitutes the environment
+ * \param linkEnds Link ends for which viability check object is to be made
+ * \param observationType Type of observable for which viability check object is to be made
+ * \param observationViabilitySettings Object that defines the settings for the creation of the viability check creation
+ * (settings must be compatible with maximum elevation angle check).  Ground station must ve specified by
+ * associatedLinkEnd_.second in observationViabilitySettings.
+ * \param stationName Name of the ground station for which calculator is to be computed (if no station is explicitly given in
+ * observationViabilitySettings).
+ * \return Object to check if a maximum elevation angle condition is met for an observation
+ */
+std::shared_ptr< MaximumElevationAngleCalculator > createMaximumElevationAngleCalculator(
         const simulation_setup::SystemOfBodies& bodies,
         const LinkEnds linkEnds,
         const ObservableType observationType,

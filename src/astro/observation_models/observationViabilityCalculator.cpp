@@ -73,6 +73,29 @@ bool MinimumElevationAngleCalculator::isObservationViable(
     return isObservationPossible;
 }
 
+//! Function for determining whether the elevation angle at station is sufficient to allow observation
+bool MaximumElevationAngleCalculator::isObservationViable(
+        const std::vector< Eigen::Vector6d >& linkEndStates,
+        const std::vector< double >& linkEndTimes )
+{
+    bool isObservationPossible = 1;
+
+    // Iterate over all sets of entries of input vector for which elvation angle is to be checked.
+    for( unsigned int i = 0; i < linkEndIndices_.size( ); i++ )
+    {
+        double elevationAngle = ground_stations::calculateGroundStationElevationAngle(
+                pointingAngleCalculator_, linkEndStates, linkEndTimes, linkEndIndices_.at( i ) );
+
+        // Check if elevation angle criteria is met for current link.
+        if( elevationAngle > maximumElevationAngle_ )
+        {
+            isObservationPossible = false;
+        }
+    }
+
+    return isObservationPossible;
+}
+
 double computeCosineBodyAvoidanceAngle( const Eigen::Vector3d& observingBody,
                                         const Eigen::Vector3d& transmittingBody,
                                         const Eigen::Vector3d& bodyToAvoid )

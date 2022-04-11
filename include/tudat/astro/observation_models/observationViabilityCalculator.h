@@ -39,6 +39,7 @@ namespace observation_models
 enum ObservationViabilityType
 {
     minimum_elevation_angle,    //properties: no string, double = elevation angle
+    maximum_elevation_angle,    //properties: no string, double = elevation angle
     body_avoidance_angle,       //properties: string = body to avoid, double = avoidance angle
     body_occultation            //properties: string = occulting body, no double
 };
@@ -161,6 +162,63 @@ private:
 
     //! Minimum elevation angle that is allowed.
     double minimumElevationAngle_;
+
+    //! Object to calculate pointing angles (elevation angle) at ground station
+    std::shared_ptr< ground_stations::PointingAnglesCalculator > pointingAngleCalculator_;
+};
+
+//! Function to check whether an observation is possible based on maximum elevation angle criterion at one link end.
+class MaximumElevationAngleCalculator: public ObservationViabilityCalculator
+{
+public:
+
+    //! Constructor.
+    /*!
+     * Constructor, takes a variable defining the geometry and the maximum elevation angle and current angle calculator.
+     * \param linkEndIndices Vector of indices denoting which combinations of entries from the linkEndIndices and linkEndTimes
+     * vectors to use for elevation angle calculator when isObservationViable is called. The second entry of the pair is the index
+     * of the target that is being observed from the ground station at which the elevation angle is check, the first entry is
+     * the index of the ground station at which the check  is performed. From each entry of this vector, a vector is created for
+     * which the elevation angle is checked.
+     * \param maximumElevationAngle Minimum elevation angle that is allowed.
+     * \param pointingAngleCalculator Object to calculate pointing angles (elevation angle) at ground station
+     */
+    MaximumElevationAngleCalculator(
+            const std::vector< std::pair< int, int > > linkEndIndices,
+            const double maximumElevationAngle,
+            const std::shared_ptr< ground_stations::PointingAnglesCalculator > pointingAngleCalculator ):
+            linkEndIndices_( linkEndIndices ), maximumElevationAngle_( maximumElevationAngle ),
+            pointingAngleCalculator_( pointingAngleCalculator ){ }
+
+    //! Destructor
+    ~MaximumElevationAngleCalculator( ){ }
+
+    //! Function for determining whether the elevation angle at station is sufficient to allow observation.
+    /*!
+     *  Function for determining whether the elevation angle at station is sufficient to allow observation. The input from which
+     *  the viability of an observation is calculated are a vector of times and states of link ends involved in the observation.
+     *  \param linkEndStates Vector of states of the link ends involved in the observation, in the order as provided by the  of
+     *  function computeObservationsAndLinkEndData of the associated ObservationModel.
+     *  \param linkEndTimes Vector of times of the link ends involved in the observation, in the order as provided by the  of
+     *  function computeObservationsAndLinkEndData of the associated ObservationModel.
+     *  \return True if observation is viable, false if not.
+     */
+    bool isObservationViable( const std::vector< Eigen::Vector6d >& linkEndStates,
+                              const std::vector< double >& linkEndTimes );
+private:
+
+    //! Vector of indices denoting which combinations of entries of vectors are to be used in isObservationViable  function
+    /*!
+     *  Vector of indices denoting which combinations of entries from the linkEndIndices and linkEndTimes vectors to use for
+     *  elevation angle calculator when isObservationViable is called. The second entry of the pair is the index of the target
+     *  that is being observed from the ground station at which the elevation angle is check, the first entry is the index of the
+     *  ground station at which the  check is performed. From each entry of this vector, a vector is created for which the
+     *  elevation angle is checked.
+     */
+    std::vector< std::pair< int, int > > linkEndIndices_;
+
+    //! Maximum elevation angle that is allowed.
+    double maximumElevationAngle_;
 
     //! Object to calculate pointing angles (elevation angle) at ground station
     std::shared_ptr< ground_stations::PointingAnglesCalculator > pointingAngleCalculator_;
