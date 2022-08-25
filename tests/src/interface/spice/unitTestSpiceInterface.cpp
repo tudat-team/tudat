@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE( testSpiceWrappers_4 )
     double sunGravitationalParameterSpice = getBodyGravitationalParameter( "Sun" );
 
     // Set Sun's gravitational parameter as read manually from kernel.
-    const double sunGravitationalParameter = 132712440041.9393 * 1.0e9;
+    const double sunGravitationalParameter = 132712440042.0322 * 1.0e9;
 
     // Check if results are the same.
     BOOST_CHECK_CLOSE_FRACTION( sunGravitationalParameterSpice, sunGravitationalParameter,

@@ -37,6 +37,27 @@ double convertDateStringToEphemerisTime(const std::string &dateString) {
     return ephemerisTime;
 }
 
+std::string getCorrectedTargetBodyName(
+        const std::string &targetBodyName )
+{
+    std::string correctedTargetBodyName;
+    if( targetBodyName == "Mercury" ||
+            targetBodyName == "Venus" ||
+            targetBodyName == "MERCURY" ||
+            targetBodyName == "VENUS" ||
+            targetBodyName == "mercury" ||
+            targetBodyName == "venus" )
+    {
+        correctedTargetBodyName = targetBodyName + "_Barycenter";
+    }
+    else
+    {
+        correctedTargetBodyName = targetBodyName;
+    }
+
+    return correctedTargetBodyName;
+}
+
 //! Get Cartesian state of a body, as observed from another body.
 Vector6d getBodyCartesianStateAtEpoch(
         const std::string &targetBodyName, const std::string &observerBodyName,
@@ -53,8 +74,9 @@ Vector6d getBodyCartesianStateAtEpoch(
     double lightTime;
 
     // Call Spice function to calculate state and light-time.
-    spkezr_c(targetBodyName.c_str(), ephemerisTime, referenceFrameName.c_str(),
-             aberrationCorrections.c_str(), observerBodyName.c_str(), stateAtEpoch,
+    spkezr_c( getCorrectedTargetBodyName( targetBodyName ).c_str(), ephemerisTime, referenceFrameName.c_str(),
+             aberrationCorrections.c_str(),
+              getCorrectedTargetBodyName( observerBodyName ).c_str(), stateAtEpoch,
              &lightTime);
 
     // Put result in Eigen Vector.
@@ -84,8 +106,9 @@ Eigen::Vector3d getBodyCartesianPositionAtEpoch(const std::string &targetBodyNam
     double lightTime;
 
     // Call Spice function to calculate position and light-time.
-    spkpos_c(targetBodyName.c_str(), ephemerisTime, referenceFrameName.c_str(),
-             aberrationCorrections.c_str(), observerBodyName.c_str(), positionAtEpoch,
+    spkpos_c( getCorrectedTargetBodyName( targetBodyName ).c_str(), ephemerisTime, referenceFrameName.c_str(),
+             aberrationCorrections.c_str(),
+              getCorrectedTargetBodyName( observerBodyName ).c_str(), positionAtEpoch,
              &lightTime);
 
     // Put result in Eigen Vector.
@@ -334,38 +357,57 @@ int getTotalCountOfKernelsLoaded() {
 void clearSpiceKernels() { kclear_c(); }
 
 //! Get all standard Spice kernels used in tudat.
-std::vector<std::string> getStandardSpiceKernels(const std::vector<std::string> alternativeEphemerisKernels) {
+std::vector<std::string> getStandardEphemerisKernels( )
+{
+    std::vector<std::string> standardSpiceKernels;
+
+    std::string kernelPath = paths::getSpiceKernelPath();
+    standardSpiceKernels.push_back(kernelPath + "/inpop19a_TDB_m100_p100_spice.bsp");
+    standardSpiceKernels.push_back(kernelPath + "/NOE-4-2020.bsp");
+    standardSpiceKernels.push_back(kernelPath + "/NOE-5-2021.bsp");
+    standardSpiceKernels.push_back(kernelPath + "/NOE-6-2018-MAIN-v2.bsp");
+
+    return standardSpiceKernels;
+}
+
+//! Get all standard Spice kernels used in tudat.
+std::vector<std::string> getStandardKernels( const std::vector<std::string> alternativeEphemerisKernels )
+{
     std::vector<std::string> standardSpiceKernels;
 
     std::string kernelPath = paths::getSpiceKernelPath();
     standardSpiceKernels.push_back(kernelPath + "/pck00010.tpc");
-    standardSpiceKernels.push_back(kernelPath + "/gm_de431.tpc");
+    standardSpiceKernels.push_back(kernelPath + "/inpop19a_TDB_m100_p100_spice.tpc");
+    standardSpiceKernels.push_back(kernelPath + "/NOE-4-2020.tpc");
+    standardSpiceKernels.push_back(kernelPath + "/NOE-5-2021.tpc");
+    standardSpiceKernels.push_back(kernelPath + "/NOE-6-2018-MAIN-v2.tpc");
 
-    if (alternativeEphemerisKernels.size() == 0) {
-        standardSpiceKernels.push_back(kernelPath + "/tudat_merged_spk_kernel.bsp");
-    } else {
-        for (unsigned int i = 0; i < alternativeEphemerisKernels.size(); i++) {
-            standardSpiceKernels.push_back(alternativeEphemerisKernels.at(i));
-        }
+    std::vector<std::string> ephemerisKernels = alternativeEphemerisKernels;
+    if( ephemerisKernels.size( ) == 0 )
+    {
+        ephemerisKernels = getStandardEphemerisKernels( );
     }
+    standardSpiceKernels.insert( standardSpiceKernels.end( ), ephemerisKernels.begin( ), ephemerisKernels.end( ) );
+
     standardSpiceKernels.push_back(kernelPath + "/naif0012.tls");
+
     return standardSpiceKernels;
 }
 
-void loadStandardSpiceKernels(const std::vector<std::string> alternativeEphemerisKernels) {
-
-    std::string kernelPath = paths::getSpiceKernelPath();
-    loadSpiceKernelInTudat(kernelPath + "/pck00010.tpc");
-    loadSpiceKernelInTudat(kernelPath + "/gm_de431.tpc");
-
-    if (alternativeEphemerisKernels.size() == 0) {
-        loadSpiceKernelInTudat(kernelPath + "/tudat_merged_spk_kernel.bsp");
-    } else {
-        for (unsigned int i = 0; i < alternativeEphemerisKernels.size(); i++) {
-            loadSpiceKernelInTudat(alternativeEphemerisKernels.at(i));
-        }
+void loadStandardSpiceKernels( const std::vector<std::string> alternativeEphemerisKernels )
+{
+    std::vector<std::string> kernelsToLoad = getStandardKernels( alternativeEphemerisKernels );
+    for( unsigned int i = 0; i < kernelsToLoad.size( ); i++ )
+    {
+        loadSpiceKernelInTudat( kernelsToLoad.at( i ) );
     }
-    loadSpiceKernelInTudat(kernelPath + "/naif0012.tls");
+}
+
+void loadDeprecatedStandardSpiceKernels( )
+{
+    std::vector<std::string> alternativeEphemerisKernels;
+    alternativeEphemerisKernels.push_back( "tudat_merged_spk_kernel.bsp" );
+    loadStandardSpiceKernels( alternativeEphemerisKernels );
 }
 
 }// namespace spice_interface

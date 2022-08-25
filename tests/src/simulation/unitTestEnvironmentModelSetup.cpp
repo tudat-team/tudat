@@ -457,7 +457,6 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldSetup )
     BOOST_CHECK_EQUAL(
                 ( defaultMoonField->getReferenceRadius( ) ), ( 0.17380E+07 ) );
     BOOST_CHECK_EQUAL(
-<<<<<<< HEAD
                 ( defaultMoonField->getCosineCoefficients( ).rows( ) ), 1200 );
     BOOST_CHECK_EQUAL(
                 ( defaultMoonField->getCosineCoefficients( ).cols( ) ), 1200 );
@@ -465,15 +464,6 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldSetup )
                 ( defaultMoonField->getSineCoefficients( ).rows( ) ), 1200 );
     BOOST_CHECK_EQUAL(
                 ( defaultMoonField->getSineCoefficients( ).cols( ) ), 1200 );
-=======
-                ( defaultMoonField->getCosineCoefficients( ).rows( ) ), 201 );
-    BOOST_CHECK_EQUAL(
-                ( defaultMoonField->getCosineCoefficients( ).cols( ) ), 201 );
-    BOOST_CHECK_EQUAL(
-                ( defaultMoonField->getSineCoefficients( ).rows( ) ), 201 );
-    BOOST_CHECK_EQUAL(
-                ( defaultMoonField->getSineCoefficients( ).cols( ) ), 201 );
->>>>>>> feature/rotation_refactor
     BOOST_CHECK_EQUAL(
                 ( defaultMoonField->getCosineCoefficients( )( 5, 3 ) ), 4.6582451480171000E-07 );
     BOOST_CHECK_EQUAL(
