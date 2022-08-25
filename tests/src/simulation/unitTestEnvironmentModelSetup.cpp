@@ -434,7 +434,6 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldSetup )
     BOOST_CHECK_EQUAL(
                 ( defaultEarthField->getReferenceRadius( ) ), ( 6378136.3 ) );
     BOOST_CHECK_EQUAL(
-<<<<<<< HEAD
                 ( defaultEarthField->getCosineCoefficients( ).rows( ) ), 720 );
     BOOST_CHECK_EQUAL(
                 ( defaultEarthField->getCosineCoefficients( ).cols( ) ), 720 );
@@ -442,15 +441,6 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldSetup )
                 ( defaultEarthField->getSineCoefficients( ).rows( ) ), 720 );
     BOOST_CHECK_EQUAL(
                 ( defaultEarthField->getSineCoefficients( ).cols( ) ), 720 );
-=======
-                ( defaultEarthField->getCosineCoefficients( ).rows( ) ), 361 );
-    BOOST_CHECK_EQUAL(
-                ( defaultEarthField->getCosineCoefficients( ).cols( ) ), 361 );
-    BOOST_CHECK_EQUAL(
-                ( defaultEarthField->getSineCoefficients( ).rows( ) ), 361 );
-    BOOST_CHECK_EQUAL(
-                ( defaultEarthField->getSineCoefficients( ).cols( ) ), 361 );
->>>>>>> feature/rotation_refactor
     BOOST_CHECK_EQUAL(
                 ( defaultEarthField->getCosineCoefficients( )( 2, 0 ) ), -4.841694588430318e-04 );
     BOOST_CHECK_EQUAL(
