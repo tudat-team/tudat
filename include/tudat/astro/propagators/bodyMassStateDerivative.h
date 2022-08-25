@@ -63,6 +63,8 @@ public:
         {
             if( massRateModels_.count( bodiesToIntegrate_.at( i ) ) == 0 )
             {
+                std::cerr<<"Warning, propagating mass of body " + bodiesToIntegrate_.at( i )  +
+                           " without any mass rate models."<<std::endl;
                 massRateModels_[ bodiesToIntegrate_.at( i ) ] =
                         std::vector< std::shared_ptr< basic_astrodynamics::MassRateModel > >( );
             }
@@ -152,7 +154,7 @@ public:
         {
             for( unsigned int i = 0; i < massRateModelIterator_->second.size( ); i++ )
             {
-                massRateModelIterator_->second.at ( i )->resetTime( TUDAT_NAN );
+                massRateModelIterator_->second.at ( i )->resetCurrentTime( );
             }
         }
     }
@@ -258,6 +260,11 @@ public:
             }
         }
         return totalMassRate;
+    }
+
+    std::map< std::string, std::vector< std::shared_ptr< basic_astrodynamics::MassRateModel > > > getMassRateModels( )
+    {
+        return massRateModels_;
     }
 
 private:

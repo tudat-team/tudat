@@ -200,7 +200,7 @@ int getDependentVariableSaveSize(
     }
     else
     {
-        return getDependentVariableSize(  singleDependentVariableSaveSettings );
+        return getDependentVariableSize( singleDependentVariableSaveSettings );
     }
 }
 
@@ -304,6 +304,9 @@ int getDependentVariableSize(
     case periapsis_altitude_dependent_variable:
         variableSize = 1;
         break;
+    case apoapsis_altitude_dependent_variable:
+        variableSize = 1;
+        break;
     case total_torque_dependent_variable:
         variableSize = 3;
         break;
@@ -404,16 +407,68 @@ int getDependentVariableSize(
         }
         else
         {
-            variableSize = 3 * std::dynamic_pointer_cast< CustomDependentVariableSaveSettings >(
+            variableSize = std::dynamic_pointer_cast< CustomDependentVariableSaveSettings >(
                         dependentVariableSettings )->dependentVariableSize_;
         }
         break;
+    case total_spherical_harmonic_cosine_coefficient_variation:
+    {
+        if( std::dynamic_pointer_cast< TotalGravityFieldVariationSettings >(
+                    dependentVariableSettings ) == nullptr )
+        {
+             std::string errorMessage = "Error, input for total_spherical_harmonic_cosine_coefficient_variation inconsistent when getting parameter size ";
+             throw std::runtime_error( errorMessage );
+        }
+        else
+        {
+            variableSize = std::dynamic_pointer_cast< TotalGravityFieldVariationSettings >(
+                        dependentVariableSettings )->componentIndices_.size( );
+        }
+        break;
+    }
+    case total_spherical_harmonic_sine_coefficient_variation:
+    {
+        if( std::dynamic_pointer_cast< TotalGravityFieldVariationSettings >(
+                    dependentVariableSettings ) == nullptr )
+        {
+             std::string errorMessage = "Error, input for total_spherical_harmonic_sine_coefficient_variation inconsistent when getting parameter size ";
+             throw std::runtime_error( errorMessage );
+        }
+        else
+        {
+            variableSize = std::dynamic_pointer_cast< TotalGravityFieldVariationSettings >(
+                        dependentVariableSettings )->componentIndices_.size( );
+        }
+        break;
+    }
     default:
         std::string errorMessage = "Error, did not recognize dependent variable size of type: " +
                 std::to_string( dependentVariableSettings->dependentVariableType_ );
         throw std::runtime_error( errorMessage );
     }
     return variableSize;
+}
+
+bool isScalarDependentVariable(
+        const std::shared_ptr< SingleDependentVariableSaveSettings > dependentVariableSettings )
+{
+    int dependentVariableSize = getDependentVariableSaveSize( dependentVariableSettings );
+    if( dependentVariableSize > 1 ||
+            dependentVariableSettings->dependentVariableType_ == spherical_harmonic_acceleration_norm_terms_dependent_variable ||
+            dependentVariableSettings->dependentVariableType_ == custom_dependent_variable )
+    {
+        return false;
+    }
+    else if( dependentVariableSize == 1 )
+    {
+        return true;
+    }
+    else
+    {
+        throw std::runtime_error( "Error, found dependent variable with size " + std::to_string( dependentVariableSize ) +
+                                  ", cannot be parsed" );
+    }
+
 }
 
 template std::pair< std::function< Eigen::VectorXd( ) >, std::map< int, std::string > > createDependentVariableListFunction< double, double >(

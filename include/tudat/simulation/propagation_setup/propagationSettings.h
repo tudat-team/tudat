@@ -1537,6 +1537,21 @@ public:
     }
 };
 
+template< typename StateScalarType = double, typename TimeType = double >
+inline std::shared_ptr< CustomStatePropagatorSettings< StateScalarType > >
+customStatePropagatorSettings(
+        const std::function< Eigen::Matrix< StateScalarType, Eigen::Dynamic, 1 >( const TimeType, const Eigen::Matrix< StateScalarType, Eigen::Dynamic, 1 >& ) > stateDerivativeFunction,
+        const Eigen::Matrix< StateScalarType, Eigen::Dynamic, 1 > initialState,
+        const std::shared_ptr< PropagationTerminationSettings > terminationSettings,
+        const std::vector< std::shared_ptr< SingleDependentVariableSaveSettings > > dependentVariablesToSave =
+                std::vector< std::shared_ptr< SingleDependentVariableSaveSettings > >( ),
+        const double printInterval = TUDAT_NAN  )
+{
+    return std::make_shared< CustomStatePropagatorSettings < StateScalarType > >(
+                stateDerivativeFunction, initialState, terminationSettings, std::make_shared< DependentVariableSaveSettings >( dependentVariablesToSave ), printInterval );
+}
+
+
 //! Function to create multi-arc propagator settings by merging an existing multi-arc with single-arc settings
 /*!
  *  Function to create multi-arc propagator settings by merging an existing multi-arc with single-arc settings. The single-arc
@@ -2213,6 +2228,30 @@ std::map< IntegratedStateType, std::vector< std::pair< std::string, std::string 
 
     return integratedStateList;
 }
+
+
+// addition for thesis work (Jonas Hener), considered generally useful
+template< typename StateScalarType >
+void addDepedentVariableSettings(
+        const std::vector< std::shared_ptr< SingleDependentVariableSaveSettings > > dependentVariablesToAdd,
+        const std::shared_ptr< propagators::SingleArcPropagatorSettings< StateScalarType > > propagatorSettings )
+{
+    std::shared_ptr< DependentVariableSaveSettings > dependentVariablesToSave = propagatorSettings->getDependentVariablesToSave( );
+    if( dependentVariablesToSave != nullptr )
+    {
+        dependentVariablesToSave->dependentVariables_.insert(
+                dependentVariablesToSave->dependentVariables_.end( ), dependentVariablesToAdd.begin( ), dependentVariablesToAdd.end( ) );
+    }
+    else
+    {
+        dependentVariablesToSave = std::make_shared< DependentVariableSaveSettings >(
+                dependentVariablesToAdd, false );
+        propagatorSettings->resetDependentVariablesToSave( dependentVariablesToSave );
+    }
+}
+
+
+
 
 template< typename StateScalarType >
 void resetSingleArcInitialStates(

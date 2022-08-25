@@ -434,6 +434,7 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldSetup )
     BOOST_CHECK_EQUAL(
                 ( defaultEarthField->getReferenceRadius( ) ), ( 6378136.3 ) );
     BOOST_CHECK_EQUAL(
+<<<<<<< HEAD
                 ( defaultEarthField->getCosineCoefficients( ).rows( ) ), 720 );
     BOOST_CHECK_EQUAL(
                 ( defaultEarthField->getCosineCoefficients( ).cols( ) ), 720 );
@@ -441,6 +442,15 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldSetup )
                 ( defaultEarthField->getSineCoefficients( ).rows( ) ), 720 );
     BOOST_CHECK_EQUAL(
                 ( defaultEarthField->getSineCoefficients( ).cols( ) ), 720 );
+=======
+                ( defaultEarthField->getCosineCoefficients( ).rows( ) ), 361 );
+    BOOST_CHECK_EQUAL(
+                ( defaultEarthField->getCosineCoefficients( ).cols( ) ), 361 );
+    BOOST_CHECK_EQUAL(
+                ( defaultEarthField->getSineCoefficients( ).rows( ) ), 361 );
+    BOOST_CHECK_EQUAL(
+                ( defaultEarthField->getSineCoefficients( ).cols( ) ), 361 );
+>>>>>>> feature/rotation_refactor
     BOOST_CHECK_EQUAL(
                 ( defaultEarthField->getCosineCoefficients( )( 2, 0 ) ), -4.841694588430318e-04 );
     BOOST_CHECK_EQUAL(
@@ -457,6 +467,7 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldSetup )
     BOOST_CHECK_EQUAL(
                 ( defaultMoonField->getReferenceRadius( ) ), ( 0.17380E+07 ) );
     BOOST_CHECK_EQUAL(
+<<<<<<< HEAD
                 ( defaultMoonField->getCosineCoefficients( ).rows( ) ), 1200 );
     BOOST_CHECK_EQUAL(
                 ( defaultMoonField->getCosineCoefficients( ).cols( ) ), 1200 );
@@ -464,6 +475,15 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldSetup )
                 ( defaultMoonField->getSineCoefficients( ).rows( ) ), 1200 );
     BOOST_CHECK_EQUAL(
                 ( defaultMoonField->getSineCoefficients( ).cols( ) ), 1200 );
+=======
+                ( defaultMoonField->getCosineCoefficients( ).rows( ) ), 201 );
+    BOOST_CHECK_EQUAL(
+                ( defaultMoonField->getCosineCoefficients( ).cols( ) ), 201 );
+    BOOST_CHECK_EQUAL(
+                ( defaultMoonField->getSineCoefficients( ).rows( ) ), 201 );
+    BOOST_CHECK_EQUAL(
+                ( defaultMoonField->getSineCoefficients( ).cols( ) ), 201 );
+>>>>>>> feature/rotation_refactor
     BOOST_CHECK_EQUAL(
                 ( defaultMoonField->getCosineCoefficients( )( 5, 3 ) ), 4.6582451480171000E-07 );
     BOOST_CHECK_EQUAL(
@@ -1339,6 +1359,7 @@ BOOST_AUTO_TEST_CASE( test_flightConditionsSetup )
     SystemOfBodies bodies = createSystemOfBodies( bodySettings );
     
 
+
     // Define expected aerodynamic angles (see testAerodynamicAngleCalculator)
     double testHeadingAngle = 1.229357188236127;
     double testFlightPathAngle = -0.024894033070522;
@@ -1352,10 +1373,19 @@ BOOST_AUTO_TEST_CASE( test_flightConditionsSetup )
     // Create flight conditions object.
     std::shared_ptr< aerodynamics::FlightConditions > vehicleFlightConditions =
             createAtmosphericFlightConditions( bodies.at( "Vehicle" ), bodies.at( "Earth" ),
-                                               "Vehicle", "Earth",
-                                               [ & ]( ){ return angleOfAttack; },
-    [ & ]( ){ return angleOfSideslip; },
-    [ & ]( ){ return bankAngle; } );
+                                               "Vehicle", "Earth" );
+    bodies.at( "Vehicle" )->setFlightConditions( vehicleFlightConditions );
+
+    std::shared_ptr< ephemerides::AerodynamicAngleRotationalEphemeris > vehicleRotationModel =
+            createAerodynamicAngleBasedRotationModel(
+                            "Vehicle", "Earth", bodies,
+                            "ECLIPJ2000", "VehicleFixed" );
+
+    vehicleRotationModel->setAerodynamicAngleFunction(
+                [=]( const double ){ return ( Eigen::Vector3d( ) << angleOfAttack, angleOfSideslip, bankAngle ).finished( ); } );
+    bodies.at( "Vehicle" )->setRotationalEphemeris( vehicleRotationModel );
+    vehicleRotationModel->setIsBodyInPropagation( true );
+
 
     // Set vehicle body-fixed state (see testAerodynamicAngleCalculator)
     Eigen::Vector6d vehicleBodyFixedState =

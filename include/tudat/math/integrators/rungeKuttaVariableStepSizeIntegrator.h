@@ -227,6 +227,12 @@ public:
                         this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
                         std::placeholders::_5, std::placeholders::_6, std::placeholders::_7, std::placeholders::_8 );
         }
+
+        // Raise error if a fixed step coefficient set is used with this variable step integrator.
+        if( coefficients_.isFixedStepSize )
+        {
+            throw std::runtime_error( "Error when creating variable step-size RK integrator, fixed step coefficients are used ("+ coefficients_.name +")." );
+        }
     }
 
     //! Get step size of the next step.
@@ -519,7 +525,7 @@ RungeKuttaVariableStepSizeIntegrator< IndependentVariableType, StateType, StateD
 {
     if( !( stepSize == stepSize ) )
     {
-        throw std::runtime_error( "Error in RKF integrator, step size is NaN" );
+        throw std::invalid_argument( "Error in RKF integrator, step size is NaN" );
     }
 
     // Define and allocated vector for the number of stages.
