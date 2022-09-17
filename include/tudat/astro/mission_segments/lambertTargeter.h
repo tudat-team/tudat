@@ -122,6 +122,41 @@ public:
         return gravitationalParameter;
     }
 
+    //! Get radial velocity at departure.
+    /*!
+     * Returns the radial velocity at departure.
+     * \return Radial velocity at departure.
+     */
+    virtual double getRadialVelocityAtDeparture( ) = 0;
+
+    //! Get radial velocity at arrival.
+    /*!
+     * Returns the radial velocity at arrival.
+     * \return Radial velocity at arrival.
+     */
+    virtual double getRadialVelocityAtArrival( ) = 0;
+
+    //! Get transverse velocity at departure.
+    /*!
+     * Returns the transverse velocity at departure.
+     * \return Transverse velocity at departure.
+     */
+    virtual double getTransverseVelocityAtDeparture( ) = 0;
+
+    //! Get transverse velocity at arrival.
+    /*!
+     * Returns the transverse velocity at arrival.
+     * \return Transverse velocity at arrival.
+     */
+    virtual double getTransverseVelocityAtArrival( ) = 0;
+
+    //! Get semi-major axis.
+    /*!
+     * Returns the semi-major axis of the computed conic.
+     * \return Semi-major axis.
+     */
+    virtual double getSemiMajorAxis( ) = 0;
+
 protected:
 
     //! Execute Lambert targeting algorithm.
