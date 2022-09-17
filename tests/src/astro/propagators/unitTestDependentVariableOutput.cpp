@@ -345,6 +345,7 @@ BOOST_AUTO_TEST_CASE( testDependentVariableOutput )
             bodies.at( "Apollo" )->setIsBodyInPropagation( true );
 
             std::cout<<"Number of points: "<<dependentVariableSolution.size( )<<std::endl;
+            int count = 0;
             for( std::map< double, Eigen::VectorXd >::iterator variableIterator = dependentVariableSolution.begin( );
                  variableIterator != dependentVariableSolution.end( ); variableIterator++ )
             {
@@ -352,6 +353,7 @@ BOOST_AUTO_TEST_CASE( testDependentVariableOutput )
                 {
                     std::cout<<"Analysis size "<<variableIterator->second.rows( )<<std::endl;
                 }
+                std::cout<<"A "<<count<<" "<<testCase<<" "<<propagatorType<<std::endl;
                 double machNumber = variableIterator->second( 0 );
                 double altitude = variableIterator->second( 1 );
                 double relativeDistance = variableIterator->second( 2 );
@@ -392,8 +394,11 @@ BOOST_AUTO_TEST_CASE( testDependentVariableOutput )
                 Eigen::Vector3d customVariable1 = variableIterator->second.segment( 69, 3 );
                 Eigen::Vector3d customVariable2 = variableIterator->second.segment( 72, 1 );
 
+                std::cout<<"B "<<count<<std::endl;
+
                 currentStateDerivative = dynamicsSimulator.getDynamicsStateDerivative( )->computeStateDerivative(
                             variableIterator->first, rawNumericalSolution.at( variableIterator->first ) );
+                std::cout<<"C "<<count<<std::endl;
 
                 // Manually compute central gravity.
                 manualCentralGravity =
@@ -439,6 +444,8 @@ BOOST_AUTO_TEST_CASE( testDependentVariableOutput )
                     }
                 }
 
+                std::cout<<"D "<<count<<std::endl;
+
                 // Check relative position and velocity norm.
                 BOOST_CHECK_SMALL(
                             std::fabs( ( numericalSolution.at( variableIterator->first ).segment( 0, 3 ) ).norm( ) -
@@ -470,6 +477,8 @@ BOOST_AUTO_TEST_CASE( testDependentVariableOutput )
                 BOOST_CHECK_SMALL(
                             std::fabs( computedSphericalBodyFixedPosition( 2 ) - longitude ),
                             8.0 * std::numeric_limits< double >::epsilon( ) );
+
+                std::cout<<"E "<<count<<std::endl;
 
                 // Check geodetic latitude.
                 if( !isOblateSpheroidUsed )
@@ -537,6 +546,8 @@ BOOST_AUTO_TEST_CASE( testDependentVariableOutput )
                                 6.0 * std::numeric_limits< double >::epsilon( ) );
                 }
 
+                std::cout<<"F "<<count<<std::endl;
+
                 // Check heat flux
                 double expectedHeatFlux = aerodynamics::computeEquilibriumFayRiddellHeatFlux(
                             freestreamDensity, apolloFlightConditions->getCurrentAirspeed( ),
@@ -556,6 +567,8 @@ BOOST_AUTO_TEST_CASE( testDependentVariableOutput )
                 // Check if third-body gravity saving is done correctly
                 TUDAT_CHECK_MATRIX_CLOSE_FRACTION( moonAcceleration1, moonAcceleration2,
                                                    ( 2.0 * std::numeric_limits< double >::epsilon( ) ) );
+
+                std::cout<<"G "<<count<<std::endl;
 
                 Eigen::Vector6d expectedKeplerElements =
                         tudat::orbital_element_conversions::convertCartesianToKeplerianElements(
@@ -596,9 +609,14 @@ BOOST_AUTO_TEST_CASE( testDependentVariableOutput )
                                                     ( 10.0 * std::numeric_limits< double >::epsilon( ) ) );
                 BOOST_CHECK_CLOSE_FRACTION(  customVariable2( 0 ), ( relativePosition.norm( ) / 2.0 ),
                                              ( 10.0 * std::numeric_limits< double >::epsilon( ) ) );
+                std::cout<<"H "<<count<<std::endl<<std::endl;
+
+                count++;
 
 
             }
+            std::cout<<std::endl<<std::endl<<std::endl<<std::endl;
+
         }
     }
 }
