@@ -36,6 +36,12 @@ namespace tudat
 namespace mission_segments
 {
 
+double calculateUnpoweredGravityAssistMaximumBendingAngle(
+        const double smallestPeriapsisDistance,
+        const double absoluteIncomingExcessVelocity,
+        const double absoluteOutgoingExcessVelocity,
+        const double centralBodyGravitationalParameter );
+
 double calculateUnpoweredGravityAssistPericenter(
         const double absoluteIncomingSemiMajorAxis,
         const double absoluteOutgoingSemiMajorAxis,

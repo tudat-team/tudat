@@ -25,6 +25,9 @@ namespace propagators
 
 using namespace tudat::simulation_setup;
 
+
+
+
 //! Function to create an integrator to propagate the dynamics (in normalized units) in CR3BP
 std::shared_ptr< numerical_integrators::NumericalIntegrator< double, Eigen::Vector6d > > createCR3BPIntegrator(
         const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings,
