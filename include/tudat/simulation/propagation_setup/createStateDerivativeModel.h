@@ -740,7 +740,9 @@ std::map< TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumn
         if( saveFullStateHistory ){ stateHistory.erase( currentTime ); }
         integrator->rollbackToPreviousState( );
 
+        integrator->setStepSizeControl( false );
         currentState = integrator->performIntegrationStep( finalTimeStep );
+        integrator->setStepSizeControl( true );
         currentTime = integrator->getCurrentIndependentVariable( );
         if( saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
     }

@@ -18,6 +18,7 @@ using namespace std::placeholders;
 #include <boost/make_shared.hpp>
 #include <memory>
 
+#include "tudat/io/basicInputOutput.h"
 #include "tudat/simulation/propagation_setup/createCR3BPPeriodicOrbits.h"
 #include "tudat/math/integrators/createNumericalIntegrator.h"
 #include "tudat/astro/gravitation/librationPoint.h"
@@ -45,11 +46,10 @@ int main( )
     const double absoluteErrorTolerance = 1.0E-14;
 
     std::shared_ptr< IntegratorSettings< double > > integratorSettings =
-            //            std::make_shared< RungeKuttaVariableStepSizeSettings< > >
-            //            ( 0.0, 1.0E-5,
-            //              rungeKutta87DormandPrince, minimumStepSize, maximumStepSize,
-            //              relativeErrorTolerance, absoluteErrorTolerance );
-            std::make_shared< IntegratorSettings< > >( rungeKutta4, 0.0, 1.0E-5 );
+                        std::make_shared< RungeKuttaVariableStepSizeSettings< > >
+                        ( 0.0, 1.0E-5,
+                          rungeKutta87DormandPrince, minimumStepSize, maximumStepSize,
+                          relativeErrorTolerance, absoluteErrorTolerance );
 
 
     double massParameter = computeMassParameter( 3.986004418E14, 1.32712440018e20 / ( 328900.56 * ( 1.0 + 81.30059 ) ) );
@@ -57,13 +57,15 @@ int main( )
     int maximumDifferentialCorrections = 25;
     double maximumPositionDeviation = 1.0E-12;
     double maximumVelocityDeviation = 1.0E-12;
+
+    int maximumNumberOfOrbits = 10000;
     double maximumEigenvalueDeviation = 1.0E-3;
 
     int librationPointNumber = 1;
-    CR3BPPeriodicOrbitTypes orbitType = horizontal_lyapunov_orbit;
+    CR3BPPeriodicOrbitTypes orbitType = halo_orbit;
     CR3BPPeriodicOrbitGenerationSettings orbitSettings(
                 massParameter, orbitType, librationPointNumber,maximumDifferentialCorrections,
-                maximumPositionDeviation, maximumVelocityDeviation, maximumEigenvalueDeviation );
+                maximumPositionDeviation, maximumVelocityDeviation, maximumNumberOfOrbits, maximumEigenvalueDeviation );
 
     double amplitudeFirstGuess;
     std::pair< Eigen::Vector6d, double > periodicOrbitInitialGuess;
@@ -76,10 +78,23 @@ int main( )
         periodicOrbitInitialGuess = richardsonApproximationLibrationPointPeriodicOrbit(
                     massParameter, orbitType, librationPointNumber, amplitudeFirstGuess );
         periodicOrbits.push_back( createCR3BPPeriodicOrbit(
-                                      periodicOrbitInitialGuess.first, periodicOrbitInitialGuess.second, massParameter,
+                                      periodicOrbitInitialGuess.first, periodicOrbitInitialGuess.second,
                                       orbitSettings, integratorSettings ) );
-        std::cout<<periodicOrbits.at( i ).halfPeriodStateVector_.transpose( )<<std::endl;
-        std::cout<<periodicOrbits.at( i ).orbitPeriod_<<std::endl<<std::endl;
+    }
+
+    createCR3BPPeriodicOrbitsThroughNumericalContinuation(
+            periodicOrbits, integratorSettings, orbitSettings );
+    std::cout<<periodicOrbits.size( )<<std::endl;
+
+    std::string outputFolder = "/home/dominic/Software/periodicOrbitResults/";
+    for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
+    {
+
+        std::map< double, Eigen::Vector6d > currentOrbit = propagatePeriodicOrbit(
+                periodicOrbits.at( i ), integratorSettings );
+        input_output::writeDataMapToTextFile(
+                   currentOrbit, "periodic_orbit_" + std::to_string( i ) + ".dat", outputFolder );
+
     }
 
 }

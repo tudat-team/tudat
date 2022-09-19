@@ -40,11 +40,13 @@ struct CR3BPPeriodicOrbitGenerationSettings
             const int maximumDifferentialCorrections,
             const double maximumPositionDeviation,
             const double maximumVelocityDeviation ,
+            const int maximumNumericalContinuations,
             const double maximumEigenvalueDeviation ):
         massParameter_( massParameter ), orbitType_( orbitType ), librationPointNumber_( librationPointNumber ),
         maximumDifferentialCorrections_( maximumDifferentialCorrections ),
         maximumPositionDeviation_( maximumPositionDeviation ),
         maximumVelocityDeviation_( maximumVelocityDeviation ),
+        maximumNumericalContinuations_( maximumNumericalContinuations ),
         maximumEigenvalueDeviation_( maximumEigenvalueDeviation ){ }
 
     double massParameter_;
@@ -54,6 +56,8 @@ struct CR3BPPeriodicOrbitGenerationSettings
     int maximumDifferentialCorrections_;
     double maximumPositionDeviation_;
     double maximumVelocityDeviation_;
+
+    int maximumNumericalContinuations_;
     double maximumEigenvalueDeviation_;
 
 };
@@ -64,18 +68,31 @@ struct CR3BPPeriodicOrbitConditions
     CR3BPPeriodicOrbitConditions(
             const Eigen::Vector6d initialState,
             const Eigen::Vector6d halfPeriodStateVector,
+            const Eigen::Matrix6d monodromyMatrix,
             const double orbitPeriod,
-            const int numberOfDifferentialCorrections ):
+            const int numberOfDifferentialCorrections,
+            const CR3BPPeriodicOrbitGenerationSettings& generationSettings ):
         initialState_( initialState ),
         halfPeriodStateVector_( halfPeriodStateVector ),
+        monodromyMatrix_( monodromyMatrix ),
         orbitPeriod_( orbitPeriod ),
-        numberOfDifferentialCorrections_( numberOfDifferentialCorrections ){ }
+        numberOfDifferentialCorrections_( numberOfDifferentialCorrections ),
+        generationSettings_( generationSettings ){ }
 
+    double massParameter( ) const { return generationSettings_.massParameter_; }
     Eigen::Vector6d initialState_;
     Eigen::Vector6d halfPeriodStateVector_;
+    const Eigen::Matrix6d monodromyMatrix_;
     double orbitPeriod_;
     int numberOfDifferentialCorrections_;
+    CR3BPPeriodicOrbitGenerationSettings generationSettings_;
 };
+
+std::map< double, Eigen::Vector6d > propagatePeriodicOrbit(
+        const CR3BPPeriodicOrbitConditions& orbitDefinition,
+        const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
+        const double numberOfPeriods = 1.0 );
+
 
 std::pair< Eigen::Vector6d, double >  richardsonApproximationLibrationPointPeriodicOrbit(
         const double massParameter,
@@ -101,23 +118,26 @@ Eigen::Vector7d computeCR3BPPeriodicOrbitsDifferentialCorrection(
 CR3BPPeriodicOrbitConditions createCR3BPPeriodicOrbit(
         const Eigen::Vector6d& initialStateVector,
         double orbitalPeriod,
-        double massParameter,
         const CR3BPPeriodicOrbitGenerationSettings& periodicOrbitSettings,
         const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings );
 
-//bool checkForMonodromyUnitEigenvalues( const Eigen::Matrix6d &monodromyMatrix );
+bool checkForMonodromyUnitEigenvalues( const Eigen::Matrix6d &monodromyMatrix );
 
-//bool terminateCR3BPNumericalContinuation(
-//        const Eigen::Matrix6d& monodromyMatrix,
-//        const Eigen::Vector6d& cartesianState,
-//        const int numberOfOrbitsGenerated  );
+bool continueCR3BPNumericalContinuation(
+        const Eigen::Matrix6d& monodromyMatrix,
+        const Eigen::Vector6d& cartesianState,
+        const int numberOfOrbitsGenerated  );
 
-//std::vector< CR3BPPeriodicOrbitConditions > createCR3BPPeriodicOrbitsThroughNumericalContinuation(
-//        const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
-//        const CR3BPPeriodicOrbitConditions& firstPeriodicOrbit,
-//        const CR3BPPeriodicOrbitConditions& secondPeriodicOrbit,
-//        const CR3BPPeriodicOrbitGenerationSettings periodicOrbitSettings,
-//        const std::function< double( const Eigen::Vector6d& ) > pseudoArcLengthFunction );
+double getDefaultPseudoArcLength(
+        const double distanceIncrement,
+        const Eigen::Vector6d& currentState );
+
+void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
+        std::vector< CR3BPPeriodicOrbitConditions >& periodicOrbits,
+        const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
+        const CR3BPPeriodicOrbitGenerationSettings periodicOrbitSettings,
+        const std::function< double( const Eigen::Vector6d& ) > pseudoArcLengthFunction =
+        std::bind( &getDefaultPseudoArcLength, 1.0E-4, std::placeholders::_1 ));
 
 } // namespace propagators
 

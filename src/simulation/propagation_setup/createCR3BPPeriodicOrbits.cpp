@@ -17,7 +17,15 @@ namespace tudat
 namespace propagators
 {
 
-
+std::map< double, Eigen::Vector6d > propagatePeriodicOrbit(
+        const CR3BPPeriodicOrbitConditions& orbitDefinition,
+        const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
+        const double numberOfPeriods )
+{
+    return performCR3BPIntegration(
+                integratorSettings, orbitDefinition.massParameter( ), orbitDefinition.initialState_,
+                orbitDefinition.orbitPeriod_ * numberOfPeriods, true, true );
+}
 
 
 std::pair< Eigen::Vector6d, double >  richardsonApproximationLibrationPointPeriodicOrbit(
@@ -45,8 +53,8 @@ std::pair< Eigen::Vector6d, double >  richardsonApproximationLibrationPointPerio
         // The termination condition.
         tudat::root_finders::NewtonRaphson< >::TerminationFunction terminationConditionFunction =
                 std::bind( &tudat::root_finders::RootAbsoluteToleranceTerminationCondition< double >::checkTerminationCondition,
-                             std::make_shared< tudat::root_finders::RootAbsoluteToleranceTerminationCondition< double > >(
-                                     LibrationPointLocationFunction->getTrueRootAccuracy( ) ),
+                           std::make_shared< tudat::root_finders::RootAbsoluteToleranceTerminationCondition< double > >(
+                               LibrationPointLocationFunction->getTrueRootAccuracy( ) ),
                            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5 );
 
         // Test Newton-Raphson object.
@@ -68,8 +76,8 @@ std::pair< Eigen::Vector6d, double >  richardsonApproximationLibrationPointPerio
         // The termination condition.
         tudat::root_finders::NewtonRaphson< >::TerminationFunction terminationConditionFunction =
                 std::bind( &tudat::root_finders::RootAbsoluteToleranceTerminationCondition< double >::checkTerminationCondition,
-                             std::make_shared< tudat::root_finders::RootAbsoluteToleranceTerminationCondition< double > >(
-                                     LibrationPointLocationFunction->getTrueRootAccuracy( ) ),
+                           std::make_shared< tudat::root_finders::RootAbsoluteToleranceTerminationCondition< double > >(
+                               LibrationPointLocationFunction->getTrueRootAccuracy( ) ),
                            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5 );
         // Test Newton-Raphson object.
         tudat::root_finders::NewtonRaphson< > newtonRaphson( terminationConditionFunction );
@@ -100,14 +108,14 @@ std::pair< Eigen::Vector6d, double >  richardsonApproximationLibrationPointPerio
     double d21 = -c3 / (2.0 * pow(lambda,2.0));
 
     double a31 = -9.0 * lambda / (4.0 * d2) * (4.0 * c3 * (k * a23 - b21) + k * c4 * (4.0 + pow(k, 2.0)))
-          + (9.0 * pow(lambda, 2.0) + 1.0 - c2) / (2.0 * d2) * (3.0 * c3 * (2.0 * a23 - k * b21) + c4 * (2.0 + 3.0 * pow(k,2.0)));
+            + (9.0 * pow(lambda, 2.0) + 1.0 - c2) / (2.0 * d2) * (3.0 * c3 * (2.0 * a23 - k * b21) + c4 * (2.0 + 3.0 * pow(k,2.0)));
     double a32 = -1.0 / d2 * (9.0 * lambda / 4.0 * (4.0 * c3 * (k * a24 - b22) + k * c4)
-                      + 3.0 / 2.0 * (9.0 * pow(lambda, 2.0) + 1.0 - c2) * (c3 * (k * b22 + d21 - 2.0 * a24) - c4));
+                              + 3.0 / 2.0 * (9.0 * pow(lambda, 2.0) + 1.0 - c2) * (c3 * (k * b22 + d21 - 2.0 * a24) - c4));
 
     double b31 = 3.0 / (8.0 * d2) * (8.0 * lambda * (3.0 * c3 * (k * b21 - 2.0 * a23) - c4 * (2.0 + 3.0 * pow(k, 2.0)))
-                          + (9.0 * pow(lambda, 2.0) + 1.0 + 2.0 * c2) * (4.0 * c3 * (k * a23 - b21) + k * c4 * (4.0 + pow(k, 2.0))));
+                                     + (9.0 * pow(lambda, 2.0) + 1.0 + 2.0 * c2) * (4.0 * c3 * (k * a23 - b21) + k * c4 * (4.0 + pow(k, 2.0))));
     double b32 = 1.0 / d2 * (9.0 * lambda * (c3 * (k * b22 + d21 - 2 * a24) - c4)
-                    + 3.0/8.0 * (9.0 * pow(lambda, 2.0) + 1.0 + 2.0 * c2) * (4.0 * c3 * (k * a24 - b22) + k * c4));
+                             + 3.0/8.0 * (9.0 * pow(lambda, 2.0) + 1.0 + 2.0 * c2) * (4.0 * c3 * (k * a24 - b22) + k * c4));
 
     double d31 = 3.0 / (64.0 * pow(lambda, 2.0)) * (4.0 * c3 * a24 + c4);
     double d32 = 3.0 / (64.0 * pow(lambda, 2.0)) * (4.0 * c3 * (a23 - d21) + c4 * (4.0 + pow(k,2.0)));
@@ -116,10 +124,10 @@ std::pair< Eigen::Vector6d, double >  richardsonApproximationLibrationPointPerio
     double a2  = 3.0/2.0 * c3 * (a24 - 2.0 * a22) + 9.0/8.0 * c4;
 
     double s1  = 1.0 / (2.0 * lambda * (lambda * (1.0 + pow(k, 2.0)) - 2.0 * k)) * (
-            3.0 / 2.0 * c3 * (2.0 * a21 * (pow(k, 2.0) - 2.0) - a23 * (pow(k, 2.0) + 2.0) - 2.0 * k * b21) - 3.0/8.0 * c4 * (
+                3.0 / 2.0 * c3 * (2.0 * a21 * (pow(k, 2.0) - 2.0) - a23 * (pow(k, 2.0) + 2.0) - 2.0 * k * b21) - 3.0/8.0 * c4 * (
                     3.0 * pow(k, 4.0) - 8.0 * pow(k, 2.0) + 8.0));
     double s2  = 1.0 / (2.0 * lambda * (lambda * (1.0 + pow(k, 2.0)) - 2.0 * k)) * (
-            3.0/2.0 * c3 * (2.0 * a22 * (pow(k, 2.0) - 2.0) + a24 * (pow(k, 2.0) + 2.0) + 2.0 * k * b22 + 5.0 * d21) + 3.0/8.0 * c4 * (
+                3.0/2.0 * c3 * (2.0 * a22 * (pow(k, 2.0) - 2.0) + a24 * (pow(k, 2.0) + 2.0) + 2.0 * k * b22 + 5.0 * d21) + 3.0/8.0 * c4 * (
                     12.0 - pow(k, 2.0)));
 
     double l1  = a1 + 2.0 * pow(lambda, 2.0) * s1;
@@ -309,7 +317,7 @@ bool continueCR3BPDifferentialCorrection(
         velocityDeviationFromPeriodicOrbit = sqrt(pow(stateVector(3), 2) + pow(stateVector(5), 2));
     }
     return( ( positionDeviationFromPeriodicOrbit > maximumPositionDeviationToUse ) ||
-                           ( velocityDeviationFromPeriodicOrbit > maximumVelocityDeviationToUse ) );
+            ( velocityDeviationFromPeriodicOrbit > maximumVelocityDeviationToUse ) );
 }
 
 
@@ -445,14 +453,13 @@ Eigen::Vector7d computeCR3BPPeriodicOrbitsDifferentialCorrection(
 CR3BPPeriodicOrbitConditions createCR3BPPeriodicOrbit(
         const Eigen::Vector6d& initialStateVector,
         double orbitalPeriod,
-        double massParameter,
         const CR3BPPeriodicOrbitGenerationSettings& periodicOrbitSettings,
         const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings )
 {
     // Propagate CR3BP with state transition matrix
     std::map< double, Eigen::MatrixXd > fullStateHistoryUpToHalfPeriod =
             performCR3BPWithStmIntegration(
-                integratorSettings, massParameter, initialStateVector, orbitalPeriod / 2.0, true, false );
+                integratorSettings, periodicOrbitSettings.massParameter_, initialStateVector, orbitalPeriod / 2.0, true, false );
 
     // Retrieve numerical results
     double currentTime = fullStateHistoryUpToHalfPeriod.begin( )->first;
@@ -467,13 +474,14 @@ CR3BPPeriodicOrbitConditions createCR3BPPeriodicOrbit(
     {
         // Perform differential correction
         differentialCorrection = computeCR3BPPeriodicOrbitsDifferentialCorrection(
-                   finalStateStateTransitionMatix, finalStateVector, currentTime, numberOfIterations, periodicOrbitSettings );
+                    finalStateStateTransitionMatix, finalStateVector, currentTime, numberOfIterations, periodicOrbitSettings );
         correctedInitialState += differentialCorrection.segment( 0, 6 );
         orbitalPeriod  = orbitalPeriod + 2.0 * differentialCorrection( 6 );
 
         // Repropagate with corrected initial state
         fullStateHistoryUpToHalfPeriod = performCR3BPWithStmIntegration(
-                    integratorSettings, massParameter, correctedInitialState, orbitalPeriod / 2.0, true, false );
+                    integratorSettings, periodicOrbitSettings.massParameter_,
+                    correctedInitialState, orbitalPeriod / 2.0, true, false );
 
         // Retrieve numerical results
         currentTime = fullStateHistoryUpToHalfPeriod.begin( )->first;
@@ -484,141 +492,174 @@ CR3BPPeriodicOrbitConditions createCR3BPPeriodicOrbit(
     }
     while ( continueCR3BPDifferentialCorrection( finalStateVector, numberOfIterations, periodicOrbitSettings ) );
 
+    std::map< double, Eigen::MatrixXd > fullOrbitNumericalResults = performCR3BPWithStmIntegration(
+                integratorSettings, periodicOrbitSettings.massParameter_,
+                correctedInitialState, orbitalPeriod, true, false );
+    Eigen::Matrix6d monodromyMatrix = fullOrbitNumericalResults.rbegin( )->second.block( 0, 1, 6, 6 );
+
     return CR3BPPeriodicOrbitConditions(
-                correctedInitialState, finalStateVector, orbitalPeriod, numberOfIterations );
+                correctedInitialState, finalStateVector, monodromyMatrix, orbitalPeriod, numberOfIterations,
+                periodicOrbitSettings );
 }
 
-//bool checkForMonodromyUnitEigenvalues( const Eigen::Matrix6d &monodromyMatrix )
-//{
-//    bool moduleOneInsteadOfRealOne;
+bool checkForMonodromyUnitEigenvalues(
+        const Eigen::Matrix6d &monodromyMatrix,
+        const CR3BPPeriodicOrbitGenerationSettings periodicOrbitSettings )
+{
+    bool moduleOneInsteadOfRealOne;
 
-//    // Exception for the horizontal Lyapunov family in Earth-Moon L2: eigenvalue may be of module
-//    // one instead of a real one to compute a more extensive family
-//    if ( ( librationPointNumber_ == 2 ) && ( orbitType_ == horizontal_lyapunov_orbit ) )
-//    {
-//        moduleOneInsteadOfRealOne = true;
-//    }
-//    else
-//    {
-//        moduleOneInsteadOfRealOne = false;
-//    }
+    // Exception for the horizontal Lyapunov family in Earth-Moon L2: eigenvalue may be of module
+    // one instead of a real one to compute a more extensive family
+    if ( ( periodicOrbitSettings.librationPointNumber_ == 2 ) && ( periodicOrbitSettings.orbitType_ == horizontal_lyapunov_orbit ) )
+    {
+        moduleOneInsteadOfRealOne = true;
+    }
+    else
+    {
+        moduleOneInsteadOfRealOne = false;
+    }
 
-//    // Initialize variables
-//    bool eigenvalueRealOne = false;
+    // Initialize variables
+    bool eigenvalueRealOne = false;
 
-//    // Reshape the STM for one period to matrix form and compute the eigenvalues
-//    Eigen::EigenSolver<Eigen::Matrix6d> eig( monodromyMatrix );
+    // Reshape the STM for one period to matrix form and compute the eigenvalues
+    Eigen::EigenSolver<Eigen::Matrix6d> eig( monodromyMatrix );
 
-//    // Determine whether the monodromy matrix contains at least one eigenvalue of real
-//    // one within the maximumAllowedEigenvalueDeviation_
-//    for (int i = 0; i <= 5; i++)
-//    {
-//        if (std::abs(eig.eigenvalues().imag()(i)) < maximumAllowedEigenvalueDeviation_)
-//        {
-//            if (std::abs(eig.eigenvalues().real()(i) - 1.0) < maximumAllowedEigenvalueDeviation_)
-//            {
-//                eigenvalueRealOne = true;
-//            }
-//        }
-//    }
+    // Determine whether the monodromy matrix contains at least one eigenvalue of real
+    // one within the maximumAllowedEigenvalueDeviation_
+    for (int i = 0; i <= 5; i++)
+    {
+        if (std::abs(eig.eigenvalues().imag()(i)) < periodicOrbitSettings.maximumEigenvalueDeviation_ )
+        {
+            if (std::abs(eig.eigenvalues().real()(i) - 1.0) < periodicOrbitSettings.maximumEigenvalueDeviation_ )
+            {
+                eigenvalueRealOne = true;
+            }
+        }
+    }
 
-//    // Optional argument to generalize the test from real one to module one
-//    if (moduleOneInsteadOfRealOne == true)
-//    {
-//        for (int i = 0; i <= 5; i++)
-//        {
-//            if (std::abs(std::abs(eig.eigenvalues()(i)) - 1.0 ) < maximumAllowedEigenvalueDeviation_)
-//            {
-//                eigenvalueRealOne = true;
-//            }
-//        }
-//    }
+    // Optional argument to generalize the test from real one to module one
+    if (moduleOneInsteadOfRealOne == true)
+    {
+        for (int i = 0; i <= 5; i++)
+        {
+            if (std::abs(std::abs(eig.eigenvalues()(i)) - 1.0 ) < periodicOrbitSettings.maximumEigenvalueDeviation_ )
+            {
+                eigenvalueRealOne = true;
+            }
+        }
+    }
 
-//    return eigenvalueRealOne;
-//}
+    return eigenvalueRealOne;
+}
 
 
-//bool terminateCR3BPNumericalContinuation(
-//        const Eigen::Matrix6d& monodromyMatrix,
-//        const Eigen::Vector6d& cartesianState,
-//        const int numberOfOrbitsGenerated  )
-//{
-//    // Check termination conditions
-//    bool continueNumericalContinuation = true;
-//    if( monodromyMatrix != monodromyMatrix )
-//    {
-//        continueNumericalContinuation = false;
-//        std::cout << "\n\nNUMERICAL CONTINUATION STOPPED DUE TO NaN STATE TRANSITION MATROX \n\n" << std::endl;
-//    }
-//    else if ( numberOfOrbitsGenerated >= maximumNumberOfNumericalContinuations_ )
-//    {
-//        continueNumericalContinuation = false;
-//        std::cout << "\n\nNUMERICAL CONTINUATION STOPPED DUE TO EXCEEDING MAXIMUM NUMBER OF ITERATIONS\n\n" << std::endl;
-//    }
-//    else
-//    {        // Check eigenvalue condition (at least one pair equalling a real one)
-//        continueNumericalContinuation = checkForMonodromyUnitEigenvalues( monodromyMatrix );
-//        if( !continueNumericalContinuation )
-//        {
-//            std::cout << "\n\nNUMERICAL CONTINUATION STOPPED DUE TO EIGENVALUES OF MONODROMY MATRIX\n\n" << std::endl;
-//        }
-//    }
-//    return continueNumericalContinuation;
-//}
+bool continueCR3BPNumericalContinuation(
+        const Eigen::Matrix6d& monodromyMatrix,
+        const int numberOfOrbitsGenerated,
+        const CR3BPPeriodicOrbitGenerationSettings periodicOrbitSettings )
+{
+    // Check termination conditions
+    bool continueNumericalContinuation = true;
+    if( monodromyMatrix != monodromyMatrix )
+    {
+        continueNumericalContinuation = false;
+        std::cout << "\n\nNUMERICAL CONTINUATION STOPPED DUE TO NaN STATE TRANSITION MATROX \n\n" << std::endl;
+    }
+    else if ( numberOfOrbitsGenerated >= periodicOrbitSettings.maximumNumericalContinuations_ )
+    {
+        std::cout<<numberOfOrbitsGenerated<<" "<<periodicOrbitSettings.maximumNumericalContinuations_<<std::endl;
+        continueNumericalContinuation = false;
+        std::cout << "\n\nNUMERICAL CONTINUATION STOPPED DUE TO EXCEEDING MAXIMUM NUMBER OF ITERATIONS\n\n" << std::endl;
+    }
+    else
+    {        // Check eigenvalue condition (at least one pair equalling a real one)
+        continueNumericalContinuation = checkForMonodromyUnitEigenvalues( monodromyMatrix, periodicOrbitSettings );
+        if( !continueNumericalContinuation )
+        {
+            std::cout << "\n\nNUMERICAL CONTINUATION STOPPED DUE TO EIGENVALUES OF MONODROMY MATRIX\n\n" << std::endl;
+        }
+    }
+    return continueNumericalContinuation;
+}
 
-//std::vector< CR3BPPeriodicOrbitConditions > createCR3BPPeriodicOrbitsThroughNumericalContinuation(
-//        const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
-//        const CR3BPPeriodicOrbitConditions& firstPeriodicOrbit,
-//        const CR3BPPeriodicOrbitConditions& secondPeriodicOrbit,
-//        const CR3BPPeriodicOrbitGenerationSettings periodicOrbitSettings,
-//        const std::function< double( const Eigen::Vector6d& ) > pseudoArcLengthFunction )
 
-//{
-//    // Set exit parameters of continuation procedure
-//    int numberOfInitialConditions = 2;
-//    int maximumNumberOfInitialConditions = 10000;
+double getDefaultPseudoArcLength(
+        const double distanceIncrement,
+        const Eigen::Vector6d& currentState )
+{
+    return std::max( distanceIncrement / currentState.segment( 0, 3 ).norm( ), 0.01 );
+}
 
-//    // Initialize state vectors and orbital periods
-//    Eigen::Vector6d initialStateVector = Eigen::Vector6d::Zero( );
-//    Eigen::MatrixXd finalFullPropagatedState = Eigen::MatrixXd::Zero( 6, 7 );
+void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
+        std::vector< CR3BPPeriodicOrbitConditions >& periodicOrbits,
+        const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
+        const CR3BPPeriodicOrbitGenerationSettings periodicOrbitSettings,
+        const std::function< double( const Eigen::Vector6d& ) > pseudoArcLengthFunction )
 
-//    // Generate periodic orbits until termination
-//    double orbitalPeriod  = 0.0, periodIncrement = 0.0, pseudoArcLengthCorrection = 0.0;
-//    bool continueNumericalContinuation = true;
-//    Eigen::Vector6d stateIncrement;
+{
+    if( periodicOrbits.size( ) < 2 )
+    {
+        throw std::runtime_error( "Error when creating periodic orbits through numerical continuation, requires at least two orbits as input, but only " +
+                                  std::to_string( periodicOrbits.size( ) ) + " provided." );
+    }
+    // Set exit parameters of continuation procedure
+    int numberOfInitialConditions = periodicOrbits.size( );
+    int maximumNumberOfInitialConditions = 10000;
 
-//    std::vector< CR3BPPeriodicOrbitConditions > periodicOrbits;
-//    periodicOrbits.push_back( firstPeriodicOrbit );
-//    periodicOrbits.push_back( secondPeriodicOrbit );
+    // Initialize state vectors and orbital periods
+    Eigen::Vector6d initialStateVector = Eigen::Vector6d::Zero( );
 
-//    while( ( numberOfInitialConditions < maximumNumberOfInitialConditions ) && continueNumericalContinuation)
-//    {
-//        // Determine increments to state and time
-//        stateIncrement = periodicOrbits[ periodicOrbits.size( ) - 1 ].initialState -
-//                periodicOrbits[ periodicOrbits.size( ) - 2 ].initialState;
-//        periodIncrement = periodicOrbits[ periodicOrbits.size( ) - 1 ].orbitPeriod -
-//                periodicOrbits[ periodicOrbits.size( ) - 2 ].orbitPeriod;
-//        pseudoArcLengthCorrection =
-//                0.5 * pseudoArcLengthFunction( stateIncrement );
+    // Generate periodic orbits until termination
+    double orbitalPeriod  = 0.0, periodIncrement = 0.0, pseudoArcLengthCorrection = 0.0;
+    bool continueContinuation = true;
+    Eigen::Vector6d stateIncrement;
 
-//        // Apply numerical continuation
-//        initialStateVector = periodicOrbits[ periodicOrbits.size( ) - 1 ].initialState +
-//                stateIncrement * pseudoArcLengthCorrection;
-//        orbitalPeriod = periodicOrbits[ periodicOrbits.size( ) - 1 ].orbitPeriod +
-//                periodIncrement * pseudoArcLengthCorrection;
-//        finalFullPropagatedState = createCR3BPPeriodicOrbit(
-//                    initialStateVector, orbitalPeriod, numberOfInitialConditions, periodicOrbitModel,
-//                    integratorSettings, periodicOrbits, differentialCorrections );
+    while( ( numberOfInitialConditions < maximumNumberOfInitialConditions ) && continueContinuation )
+    {
+        // Determine increments to state and time
+        stateIncrement = periodicOrbits[ numberOfInitialConditions - 1 ].initialState_ -
+                periodicOrbits[ numberOfInitialConditions - 2 ].initialState_;
+        periodIncrement = periodicOrbits[ numberOfInitialConditions - 1 ].orbitPeriod_ -
+                periodicOrbits[ numberOfInitialConditions - 2 ].orbitPeriod_;
+        pseudoArcLengthCorrection =
+                pseudoArcLengthFunction( stateIncrement );
 
-//        continueNumericalContinuation =
-//                periodicOrbitModel->terminateNumericalContinuation(
-//                    finalFullPropagatedState.block( 0, 1, 6, 6 ), finalFullPropagatedState.block( 0, 0, 6, 1 ), orbitalPeriod, numberOfInitialConditions );
+        // Apply numerical continuation
+        initialStateVector = periodicOrbits[ numberOfInitialConditions - 1 ].initialState_ +
+                stateIncrement * pseudoArcLengthCorrection;
+        orbitalPeriod = periodicOrbits[ numberOfInitialConditions - 1 ].orbitPeriod_ +
+                periodIncrement * pseudoArcLengthCorrection;
 
-//        numberOfInitialConditions += 1;
-//    }
+        std::cout<<numberOfInitialConditions<<" "<<periodicOrbits[ numberOfInitialConditions - 1 ].orbitPeriod_<<std::endl;
+        try
+        {
+            std::cout<<"Trying"<<std::endl;
+            periodicOrbits.push_back( createCR3BPPeriodicOrbit(
+                                          initialStateVector, orbitalPeriod, periodicOrbitSettings,
+                                          integratorSettings ) );
+            numberOfInitialConditions += 1;
 
-////    writeFinalResultsToFiles( periodicOrbitModel->getLibrationPointNumber( ), periodicOrbitModel->getOrbitType( ), initialConditions, differentialCorrections );
-//}
+            continueContinuation =
+                    continueCR3BPNumericalContinuation(
+                        periodicOrbits[ numberOfInitialConditions - 1 ].monodromyMatrix_,
+                    numberOfInitialConditions,
+                    periodicOrbitSettings );
+            std::cout<<"Tried"<<std::endl;
+
+        }
+        catch( ... )
+        {
+            std::cout << "\n\nNUMERICAL CONTINUATION STOPPED DUE TO EXCEPTION IN INTEGRATION\n\n" << std::endl;
+//            std::cout<<caughtException.what( )<<std::endl;
+            continueContinuation = false;
+
+        }
+
+    }
+
+    //    writeFinalResultsToFiles( periodicOrbitModel->getLibrationPointNumber( ), periodicOrbitModel->getOrbitType( ), initialConditions, differentialCorrections );
+}
 
 //#endif
 
