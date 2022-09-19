@@ -13,6 +13,7 @@ set(propagation_HEADERS
         createAccelerationModels.h
         dynamicsSimulator.h
         propagationCR3BPFullProblem.h
+        createCR3BPManifolds.h
         createTorqueModel.h
         createStateDerivativeModel.h
         createCR3BPPeriodicOrbits.h
@@ -37,6 +38,7 @@ set(propagation_HEADERS
 set(propagation_SOURCES
         createStateDerivativeModel.cpp
         createCR3BPPeriodicOrbits.cpp
+        createCR3BPManifolds.cpp
 #        propagationLambertTargeterFullProblem.cpp
         propagationSettings.cpp
         setNumericallyIntegratedStates.cpp

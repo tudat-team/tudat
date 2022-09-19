@@ -224,7 +224,7 @@ double initializeEarthMoonPeriodicOrbitAmplitude(
             }
             else if (librationPointNumber == 2)
             {
-                amplitude = 1.0;
+                amplitude = 1.5e-1;
             }
         }
     }
@@ -261,7 +261,7 @@ double initializeEarthMoonPeriodicOrbitAmplitude(
             }
             else if (librationPointNumber == 2)
             {
-                amplitude = 1.1;
+                amplitude = 1.6e-1;
             }
         }
     }
@@ -631,10 +631,9 @@ void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
         orbitalPeriod = periodicOrbits[ numberOfInitialConditions - 1 ].orbitPeriod_ +
                 periodIncrement * pseudoArcLengthCorrection;
 
-        std::cout<<numberOfInitialConditions<<" "<<periodicOrbits[ numberOfInitialConditions - 1 ].orbitPeriod_<<std::endl;
+//        std::cout<<numberOfInitialConditions<<" "<<periodicOrbits[ numberOfInitialConditions - 1 ].orbitPeriod_<<std::endl;
         try
         {
-            std::cout<<"Trying"<<std::endl;
             periodicOrbits.push_back( createCR3BPPeriodicOrbit(
                                           initialStateVector, orbitalPeriod, periodicOrbitSettings,
                                           integratorSettings ) );
@@ -645,13 +644,10 @@ void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
                         periodicOrbits[ numberOfInitialConditions - 1 ].monodromyMatrix_,
                     numberOfInitialConditions,
                     periodicOrbitSettings );
-            std::cout<<"Tried"<<std::endl;
-
         }
         catch( ... )
         {
             std::cout << "\n\nNUMERICAL CONTINUATION STOPPED DUE TO EXCEPTION IN INTEGRATION\n\n" << std::endl;
-//            std::cout<<caughtException.what( )<<std::endl;
             continueContinuation = false;
 
         }

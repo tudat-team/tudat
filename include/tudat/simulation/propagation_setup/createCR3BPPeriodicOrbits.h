@@ -25,10 +25,10 @@ namespace propagators
 
 enum CR3BPPeriodicOrbitTypes
 {
-    horizontal_lyapunov_orbit,
-    vertical_lyapunov_orbit,
-    halo_orbit,
-    axial_orbit
+    horizontal_lyapunov_orbit = 0,
+    vertical_lyapunov_orbit = 1,
+    halo_orbit = 2,
+    axial_orbit = 3
 };
 
 struct CR3BPPeriodicOrbitGenerationSettings
@@ -80,6 +80,9 @@ struct CR3BPPeriodicOrbitConditions
         generationSettings_( generationSettings ){ }
 
     double massParameter( ) const { return generationSettings_.massParameter_; }
+    double librationPointNumber( ) const { return generationSettings_.librationPointNumber_; }
+    double orbitType( ) const { return generationSettings_.orbitType_; }
+
     Eigen::Vector6d initialState_;
     Eigen::Vector6d halfPeriodStateVector_;
     const Eigen::Matrix6d monodromyMatrix_;

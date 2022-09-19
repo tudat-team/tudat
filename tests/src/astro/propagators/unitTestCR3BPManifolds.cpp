@@ -20,6 +20,7 @@ using namespace std::placeholders;
 
 #include "tudat/io/basicInputOutput.h"
 #include "tudat/simulation/propagation_setup/createCR3BPPeriodicOrbits.h"
+#include "tudat/simulation/propagation_setup/createCR3BPManifolds.h"
 #include "tudat/math/integrators/createNumericalIntegrator.h"
 #include "tudat/astro/gravitation/librationPoint.h"
 
@@ -61,50 +62,35 @@ int main( )
     int maximumNumberOfOrbits = 10000;
     double maximumEigenvalueDeviation = 1.0E-3;
 
-    for( int j = 0; j < 2; j++ )
+    int librationPointNumber = 1;
+    CR3BPPeriodicOrbitTypes orbitType = halo_orbit;
+    CR3BPPeriodicOrbitGenerationSettings orbitSettings(
+                massParameter, orbitType, librationPointNumber, maximumDifferentialCorrections,
+                maximumPositionDeviation, maximumVelocityDeviation, maximumNumberOfOrbits, maximumEigenvalueDeviation );
+
+    double orbitalPeriod = 3.080898298110091;
+    Eigen::Vector6d periodicOrbitInitialStateGuess =
+            ( Eigen::Vector6d( ) << 0.867974937956597, 0.0, 0.125442565745075, 0.0, -0.0236391340365716, 0.0 ).finished( );
+    CR3BPPeriodicOrbitConditions periodicOrbit = createCR3BPPeriodicOrbit(
+                                  periodicOrbitInitialStateGuess, orbitalPeriod,
+                                  orbitSettings, integratorSettings );
+
+    std::vector< std::vector< std::map< double, Eigen::Vector6d > > > fullManifoldStateHistories;
+    computeManifolds( fullManifoldStateHistories, periodicOrbit, 1.0E-6, 10, 1.0E-3,integratorSettings );
+
+    std::string outputFolder = "/home/dominic/Software/periodicOrbitResults/";
+    for( unsigned int i = 0; i < fullManifoldStateHistories.size( ); i++ )
     {
-        for( int k = 0; k < 3; k++ )
+        for( unsigned int j = 0; j < fullManifoldStateHistories.at( i ).size( ); j++ )
         {
-            int librationPointNumber = j + 1;
-            CR3BPPeriodicOrbitTypes orbitType = static_cast< CR3BPPeriodicOrbitTypes >( k );
-            CR3BPPeriodicOrbitGenerationSettings orbitSettings(
-                        massParameter, orbitType, librationPointNumber,maximumDifferentialCorrections,
-                        maximumPositionDeviation, maximumVelocityDeviation, maximumNumberOfOrbits, maximumEigenvalueDeviation );
-
-            double amplitudeFirstGuess;
-            std::pair< Eigen::Vector6d, double > periodicOrbitInitialGuess;
-            std::vector< CR3BPPeriodicOrbitConditions > periodicOrbits;
-
-            for( int i = 0; i < 2; i ++ )
-            {
-                amplitudeFirstGuess = initializeEarthMoonPeriodicOrbitAmplitude(
-                            librationPointNumber, orbitType, i );
-                periodicOrbitInitialGuess = richardsonApproximationLibrationPointPeriodicOrbit(
-                            massParameter, orbitType, librationPointNumber, amplitudeFirstGuess );
-                periodicOrbits.push_back( createCR3BPPeriodicOrbit(
-                                              periodicOrbitInitialGuess.first, periodicOrbitInitialGuess.second,
-                                              orbitSettings, integratorSettings ) );
-            }
-
-            createCR3BPPeriodicOrbitsThroughNumericalContinuation(
-                        periodicOrbits, integratorSettings, orbitSettings );
-            std::cout<<periodicOrbits.size( )<<std::endl;
-
-            std::string outputFolder = "/home/dominic/Software/periodicOrbitResults/";
-            for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
-            {
-
-                std::map< double, Eigen::Vector6d > currentOrbit = propagatePeriodicOrbit(
-                            periodicOrbits.at( i ), integratorSettings );
-                input_output::writeDataMapToTextFile(
-                            currentOrbit, "periodic_orbit_" +
-                            std::to_string( i ) + "_" +
-                            std::to_string( j ) + "_" +
-                            std::to_string( k ) + ".dat", outputFolder );
-
-            }
+            std::cout<<i<<" "<<j<<std::endl;
+            input_output::writeDataMapToTextFile(
+                        fullManifoldStateHistories.at( i ).at( j ), "manifold_orbit_" +
+                        std::to_string( i ) + "_" +
+                        std::to_string( j ) + ".dat", outputFolder );
         }
     }
+
 
 }
 

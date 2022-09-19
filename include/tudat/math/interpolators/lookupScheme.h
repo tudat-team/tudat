@@ -83,6 +83,11 @@ public:
         }
         return independentVariableValues_.at( index );
     }
+
+    IndependentVariableType getNearestIndependentVariableValue( const IndependentVariableType valueToLookup )
+    {
+        return independentVariableValues_.at( findNearestLowerNeighbour( valueToLookup ) );
+    }
 protected:
 
     //! Vector of independent variable values in which lookup is to be performed.
