@@ -50,12 +50,9 @@ BOOST_AUTO_TEST_CASE( testStateDerivativeCircularRestrictedThreeBodyProblem )
         Eigen::VectorXd stateAtL1 = Eigen::VectorXd::Zero( 6 );
         stateAtL1( xCartesianPositionIndex ) = 0.836914;
 
-        // Declare state derivative object.
-        StateDerivativeCircularRestrictedThreeBodyProblem stateDerivative( massParameter );
-
         // Compute state derivative at L1.
-        Eigen::VectorXd stateDerivativeAtL1 = stateDerivative.computeStateDerivative(
-                    0.0, stateAtL1 );
+        Eigen::VectorXd stateDerivativeAtL1 = computeCr3bpStateDerivative(
+                    0.0, stateAtL1, massParameter );
 
         // Check if expected state derivative (all zeros) matches computed.
         TUDAT_CHECK_MATRIX_BASE( Eigen::VectorXd::Zero( 6 ), stateDerivativeAtL1 )
@@ -74,14 +71,11 @@ BOOST_AUTO_TEST_CASE( testStateDerivativeCircularRestrictedThreeBodyProblem )
         initialStateOnHaloOrbit( zCartesianPositionIndex ) = 0.04;
         initialStateOnHaloOrbit( yCartesianVelocityIndex ) = 0.198019;
 
-        // Declare state derivative object.
-        StateDerivativeCircularRestrictedThreeBodyProblem stateDerivative( massParameter );
-
         // Declare Runge-Kutta 4 integrator.
         numerical_integrators::RungeKutta4IntegratorXd rungeKutta4Integrator(
                     std::bind(
-                        &StateDerivativeCircularRestrictedThreeBodyProblem::computeStateDerivative,
-                        &stateDerivative, std::placeholders::_1, std::placeholders::_2 ),
+                        &computeCr3bpStateDerivative,
+                        std::placeholders::_1, std::placeholders::_2, massParameter ),
                     0.0, initialStateOnHaloOrbit );
 
         // Integrate Halo orbit over one period.

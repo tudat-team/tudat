@@ -24,9 +24,9 @@ simulation_setup::BodyListSettings setupBodySettingsCR3BP(
         const double distancePrimarySecondary,
         const std::string& namePrimaryBody,
         const std::string& nameSecondaryBody,
-        const std::string& frameOrientation = "ECLIPJ2000",
         const double primaryGravitationalParameter = TUDAT_NAN,
-        const double secondaryGravitationalParameter = TUDAT_NAN );
+        const double secondaryGravitationalParameter = TUDAT_NAN,
+        const std::string& frameOrientation = "ECLIPJ2000" );
 
 //! Setup CR3BP system of bodies.
 /*!

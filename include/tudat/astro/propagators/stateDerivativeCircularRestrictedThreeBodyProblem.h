@@ -25,47 +25,12 @@ namespace tudat
 {
 namespace propagators
 {
-//! State derivative model class for CRTBP.
-/*!
- * Class that contains the state derivative model for the CRTBP.
- */
-class StateDerivativeCircularRestrictedThreeBodyProblem
-{
-public:
 
-    //! Default constructor.
-    /*!
-     * Default constructor that defines the state derivative for a given CRTBP system.
-     * \param aMassParameter A value for mass parameter of CRTBP.
-     */
-    StateDerivativeCircularRestrictedThreeBodyProblem( const double aMassParameter )
-        : massParameter ( aMassParameter )
-    { }
+Eigen::Vector6d computeCr3bpStateDerivative(
+        const double time, const Eigen::Vector6d& cartesianState, const double massParameter );
 
-    //! Compute state derivative.
-    /*!
-     * Computes the state derivative of CRTBP.
-     * \param time Time.
-     * \param cartesianState Cartesian state.
-     * \return State derivative.
-     */
-    Eigen::Vector6d computeStateDerivative(
-            const double time, const Eigen::Vector6d& cartesianState );
-
-protected:
-
-private:
-
-    //! Mass parameter.
-    /*!
-     * Value of mass parameter for the CRTBP.
-     */
-    double massParameter;
-};
-
-//! Typedef for shared-pointer to StateDerivativeCircularRestrictedThreeBodyProblem object.
-typedef std::shared_ptr< StateDerivativeCircularRestrictedThreeBodyProblem >
-StateDerivativeCircularRestrictedThreeBodyProblemPointer;
+Eigen::MatrixXd computeStateDerivativeWithStateTransitionMatrix(
+        const double time, const Eigen::MatrixXd& cartesianState, const double massParameter );
 
 } // namespace propagators
 

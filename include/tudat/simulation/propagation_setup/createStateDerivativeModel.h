@@ -50,8 +50,8 @@ class FromBodyAerodynamicAngleInterface: public BodyFixedAerodynamicAngleInterfa
 public:
     FromBodyAerodynamicAngleInterface(
             const std::shared_ptr< simulation_setup::Body > body ):
-    BodyFixedAerodynamicAngleInterface( body_fixed_angles_from_body ),
-    body_( body ){ }
+        BodyFixedAerodynamicAngleInterface( body_fixed_angles_from_body ),
+        body_( body ){ }
 
     virtual ~FromBodyAerodynamicAngleInterface( ){ }
 
@@ -699,6 +699,61 @@ createStateDerivativeModelMap(
                                                      propagatorSettings, bodies, propagationStartTime ) );
 }
 
+template< typename TimeType = double, typename StateScalarType = double, int NumberOfRows, int NumberOfColumns = 1 >
+std::map< TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > > propagateCustomDynamics(
+        const std::shared_ptr< numerical_integrators::NumericalIntegrator<
+        TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > > > integrator,
+        const TimeType initialTimeStep,
+        const TimeType finalTime,
+        const bool propagateToExactFinalTime = false,
+        const bool saveFullStateHistory = true )
+{
+    // Initialize return data map
+    typedef Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > StateType;
+    typedef std::map< TimeType, StateType > ResultsMap;
+    ResultsMap stateHistory;
+
+    // Store initial state and time
+    TimeType currentTime = integrator->getCurrentIndependentVariable( );
+    StateType currentState = integrator->getCurrentState( );
+    TimeType secondToLastTime = TimeType( TUDAT_NAN );
+    if( saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
+
+    // Integrate to final time
+    TimeType timeStep = initialTimeStep;
+    while( currentTime <= finalTime )
+    {
+//        std::cout<<"Propagating: "<<currentTime<<" "<<timeStep<<" "<<std::endl<<
+//                   currentState<<std::endl<<std::endl;
+        secondToLastTime = currentTime;
+        currentState = integrator->performIntegrationStep( timeStep );
+        currentTime = integrator->getCurrentIndependentVariable( );
+        timeStep = integrator->getNextStepSize( );
+        if( saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
+    }
+
+    if( propagateToExactFinalTime )
+    {
+        // Determine final time step and propagate
+        double finalTimeStep = finalTime - secondToLastTime;
+
+        if( saveFullStateHistory ){ stateHistory.erase( currentTime ); }
+        integrator->rollbackToPreviousState( );
+
+        currentState = integrator->performIntegrationStep( finalTimeStep );
+        currentTime = integrator->getCurrentIndependentVariable( );
+        if( saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
+    }
+    if( !saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
+
+    return stateHistory;
+}
+
+std::shared_ptr< numerical_integrators::NumericalIntegrator< double, Eigen::MatrixXd > > createCR3BPWithStmIntegrator(
+        const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings,
+        const double massParameter,
+        const Eigen::Vector6d& initialState );
+
 //! Function to create an integrator to propagate the dynamics (in normalized units) in CR3BP
 /*!
  *  Function to create an integrator to propagate the dynamics (in normalized units) in Circularly Restricted Three-Body Problem.
@@ -708,6 +763,11 @@ createStateDerivativeModelMap(
  * \return Integrator object for propagation of CR3BP with requested settings
  */
 std::shared_ptr< numerical_integrators::NumericalIntegrator< double, Eigen::Vector6d > > createCR3BPIntegrator(
+        const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings,
+        const double massParameter,
+        const Eigen::Vector6d& initialState );
+
+std::shared_ptr< numerical_integrators::NumericalIntegrator< double, Eigen::MatrixXd > > createCR3BPWithStmIntegrator(
         const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings,
         const double massParameter,
         const Eigen::Vector6d& initialState );
@@ -728,7 +788,16 @@ std::map< double, Eigen::Vector6d > performCR3BPIntegration(
         const double massParameter,
         const Eigen::Vector6d& initialState,
         const double finalTime,
-        const bool propagateToExactFinalTime = false );
+        const bool propagateToExactFinalTime = false,
+        const bool saveFullStateHistory = true );
+
+std::map< double, Eigen::MatrixXd > performCR3BPWithStmIntegration(
+        const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings,
+        const double massParameter,
+        const Eigen::Vector6d& initialState,
+        const double finalTime,
+        const bool propagateToExactFinalTime = false,
+        const bool saveFullStateHistory = true );
 
 
 } // namespace propagators

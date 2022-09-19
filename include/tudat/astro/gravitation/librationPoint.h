@@ -56,7 +56,14 @@ class LibrationPoint
 public:
 
     //! Lagrange libration points.
-    enum LagrangeLibrationPoints { l1, l2, l3, l4, l5 };
+    enum LagrangeLibrationPoints
+    {
+        l1 = 1,
+        l2 = 2,
+        l3 = 3,
+        l4 = 4,
+        l5 = 5
+    };
 
     //! Default constructor.
     LibrationPoint( const double aPrimaryGravitationalParameter,
@@ -214,6 +221,11 @@ private:
                 -2.0 * massParameter / std::pow( 1.0 - massParameter - xLocationEstimate, 3.0 );
     }
 };
+
+Eigen::Vector3d computeLibrationPointPosition(
+        const double massParameter,
+        const int librationPointIndex,
+        const root_finders::RootFinderPointer aRootFinder = std::make_shared< root_finders::NewtonRaphson< > >( 1.0e-14, 1000 ) );
 
 // Typedef for shared-pointer to LibrationPoint object.
 typedef std::shared_ptr< LibrationPoint > LibrationPointPointer;

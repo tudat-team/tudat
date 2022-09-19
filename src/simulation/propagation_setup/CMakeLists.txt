@@ -12,9 +12,10 @@
 set(propagation_HEADERS
         createAccelerationModels.h
         dynamicsSimulator.h
-#        propagationCR3BPFullProblem.h
+        propagationCR3BPFullProblem.h
         createTorqueModel.h
         createStateDerivativeModel.h
+        createCR3BPPeriodicOrbits.h
         createEnvironmentUpdater.h
         propagationOutput.h
         propagationTerminationSettings.h
@@ -35,6 +36,7 @@ set(propagation_HEADERS
 # Add header files.
 set(propagation_SOURCES
         createStateDerivativeModel.cpp
+        createCR3BPPeriodicOrbits.cpp
 #        propagationLambertTargeterFullProblem.cpp
         propagationSettings.cpp
         setNumericallyIntegratedStates.cpp
@@ -44,7 +46,7 @@ set(propagation_SOURCES
         createMassRateModels.cpp
         createAccelerationModels.cpp
         createEnvironmentUpdater.cpp
-#        propagationCR3BPFullProblem.cpp
+        propagationCR3BPFullProblem.cpp
         propagationTermination.cpp
         propagationOutput.cpp
         environmentUpdater.cpp

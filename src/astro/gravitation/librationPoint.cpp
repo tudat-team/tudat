@@ -61,6 +61,10 @@ void LibrationPoint::computeLocationOfLibrationPoint(
 
         // Set position vector of L1 in Cartesian elements based on result of Newton-Raphson
         // root-finding algorithm.
+        if( rootFinder == nullptr )
+        {
+            throw std::runtime_error( "Error when computing L1 Lagrange points position; no root finder provided" );
+        }
         positionOfLibrationPoint_ << rootFinder->execute( rootFunction, 1.0 ), 0.0, 0.0;
     }
         break;
@@ -77,6 +81,10 @@ void LibrationPoint::computeLocationOfLibrationPoint(
 
         // Set position vector of L1 in Cartesian elements based on result of Newton-Raphson
         // root-finding algorithm.
+        if( rootFinder == nullptr )
+        {
+            throw std::runtime_error( "Error when computing L2 Lagrange points position; no root finder provided" );
+        }
         positionOfLibrationPoint_ << rootFinder->execute( rootFunction, 1.0 ), 0.0, 0.0;
     }
         break;
@@ -93,6 +101,10 @@ void LibrationPoint::computeLocationOfLibrationPoint(
 
         // Set position vector of L1 in Cartesian elements based on result of Newton-Raphson
         // root-finding algorithm.
+        if( rootFinder == nullptr )
+        {
+            throw std::runtime_error( "Error when computing L3 Lagrange points position; no root finder provided" );
+        }
         positionOfLibrationPoint_ << rootFinder->execute( rootFunction, -1.0 ), 0.0, 0.0;
     }
         break;
@@ -122,6 +134,37 @@ void LibrationPoint::computeLocationOfLibrationPoint(
     };
 }
 
+Eigen::Vector3d computeLibrationPointPosition(
+        const double massParameter,
+        const int librationPointIndex,
+        const root_finders::RootFinderPointer aRootFinder )
+{
+    LibrationPoint librationPoint( massParameter, aRootFinder );
+    LibrationPoint::LagrangeLibrationPoints librationPointId;
+    switch( librationPointIndex )
+    {
+    case 1:
+        librationPointId = LibrationPoint::l1;
+        break;
+    case 2:
+        librationPointId = LibrationPoint::l2;
+        break;
+    case 3:
+        librationPointId = LibrationPoint::l3;
+        break;
+    case 4:
+        librationPointId = LibrationPoint::l4;
+        break;
+    case 5:
+        librationPointId = LibrationPoint::l5;
+        break;
+    default:
+        throw std::runtime_error( "Error when computing libration point position, index was: " + std::to_string( librationPointIndex ) +
+                                  ", but must be in range 1-5 (for L1-L5)" );
+    }
+    librationPoint.computeLocationOfLibrationPoint( librationPointId );
+    return librationPoint.getLocationOfLagrangeLibrationPoint( );
+}
 } // namespace circular_restricted_three_body_problem
 
 } // namespace tudat
