@@ -16,12 +16,16 @@
 #include <Eigen/Core>
 
 #include "tudat/simulation/simulation.h"
+
 namespace tudat
 {
 namespace unit_tests
 {
 
+using namespace tudat;
+using namespace propagators;
 using namespace mathematical_constants;
+using namespace root_finders;
 
 BOOST_AUTO_TEST_SUITE( test_cr3bp_propagation )
 
@@ -139,6 +143,7 @@ BOOST_AUTO_TEST_CASE( testCR3BPPropagation )
         }
     }
 }
+
 
 BOOST_AUTO_TEST_SUITE_END( )
 

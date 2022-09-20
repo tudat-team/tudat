@@ -82,6 +82,26 @@ std::map< double, Eigen::Vector6d > performCR3BPIntegration(
 
 }
 
+//! Function to propagate the dynamics (in normalized units) in CR3BP
+std::map< double, Eigen::Vector6d > performCR3BPIntegration(
+        const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings,
+        const double massParameter,
+        const Eigen::Vector6d& initialState,
+        std::shared_ptr< CustomPropagationTerminationCondition< Eigen::Vector6d, double > > terminationCondition,
+        const bool propagateToExactFinalTime,
+        const bool saveFullStateHistory )
+{
+    // Create integrator object
+    std::shared_ptr< numerical_integrators::NumericalIntegrator< double, Eigen::Vector6d > > integrator =
+            createCR3BPIntegrator( integratorSettings, massParameter, initialState );
+
+    return propagateCustomDynamics(
+            integrator, integratorSettings->initialTimeStep_, terminationCondition, propagateToExactFinalTime, saveFullStateHistory );
+
+}
+
+
+
 std::map< double, Eigen::MatrixXd > performCR3BPWithStmIntegration(
         const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings,
         const double massParameter,

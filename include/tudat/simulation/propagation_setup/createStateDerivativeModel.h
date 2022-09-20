@@ -27,6 +27,7 @@ using namespace boost::placeholders;
 #include "tudat/astro/propagators/nBodyUnifiedStateModelQuaternionsStateDerivative.h"
 #include "tudat/astro/propagators/nBodyUnifiedStateModelModifiedRodriguesParametersStateDerivative.h"
 #include "tudat/astro/propagators/nBodyUnifiedStateModelExponentialMapStateDerivative.h"
+#include "tudat/astro/propagators/integrateEquations.h"
 #include "tudat/astro/propagators/rotationalMotionStateDerivative.h"
 #include "tudat/astro/propagators/rotationalMotionQuaternionsStateDerivative.h"
 #include "tudat/astro/propagators/rotationalMotionModifiedRodriguesParametersStateDerivative.h"
@@ -764,6 +765,8 @@ public:
         return terminationTime_;
     }
 
+
+
 private:
 
     TimeType terminationTime_;
@@ -781,14 +784,25 @@ public:
 
     BasicCustomTerminationInterface(
             const std::function< bool( const StateType&, const TimeType ) > terminationFunction, const bool propagateForwards ):
+        BasicTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns >( propagateForwards )
+    {
+        terminationCondition_ = std::make_shared< CustomPropagationTerminationCondition< Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns >, TimeType > >(
+                    terminationFunction );
+    }
+
+    BasicCustomTerminationInterface(
+            const std::shared_ptr< CustomPropagationTerminationCondition< Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns >, TimeType > > terminationCondition,
+            const bool propagateForwards  ):
         BasicTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns >( propagateForwards ),
-        terminationFunction_( terminationFunction )
-    { }
+        terminationCondition_( terminationCondition )
+    {
+
+    }
 
     bool terminatePropagation(
             const StateType& currentState, const TimeType currentTime )
     {
-        return terminationFunction_( currentState, currentTime );
+        return terminationCondition_->terminatePropagation( currentState, currentTime );
     }
 
     bool terminateOnFinalTime( )
@@ -796,12 +810,96 @@ public:
         return false;
     }
 
+    std::shared_ptr< CustomPropagationTerminationCondition< Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns >, TimeType > > getTerminationCondition( )
+    {
+        return terminationCondition_;
+    }
+
 private:
+    //template< typename StateType = Eigen::MatrixXd, typename TimeType = double >
+
+    std::shared_ptr< CustomPropagationTerminationCondition< Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns >, TimeType > > terminationCondition_;
+
+};
+
+
+
+template< typename StateType = Eigen::MatrixXd, typename TimeType = double >
+class CustomFunctionPropagationTerminationCondition: public CustomPropagationTerminationCondition< StateType, TimeType >
+{
+public:
+    CustomFunctionPropagationTerminationCondition(
+            const std::function< bool( const StateType&, const TimeType ) > terminationFunction,
+            const std::shared_ptr< root_finders::RootFinderSettings > terminationRootFinderSettings = nullptr ):
+        CustomPropagationTerminationCondition< StateType, TimeType >( terminationRootFinderSettings ),
+        terminationFunction_( terminationFunction ){ }
+
+    virtual ~CustomFunctionPropagationTerminationCondition( ){ }
+
+    virtual bool terminatePropagationDerived(
+            const StateType& currentState, const TimeType currentTime )
+    {
+        return terminationFunction_( currentState, currentTime );
+    }
+
+
+protected:
 
     std::function< bool( const StateType&, const TimeType ) > terminationFunction_;
 };
 
+template< typename StateType = Eigen::MatrixXd, typename TimeType = double >
+class MultipleCustomPropagationTerminationCondition: public CustomPropagationTerminationCondition< StateType, TimeType >
+{
+public:
+    MultipleCustomPropagationTerminationCondition(
+            const std::vector< std::shared_ptr< CustomPropagationTerminationCondition< StateType, TimeType > > > terminationConditionList,
+            const std::shared_ptr< root_finders::RootFinderSettings > terminationRootFinderSettings = nullptr ):
+        CustomPropagationTerminationCondition< StateType, TimeType >( terminationRootFinderSettings ),
+        terminationConditionList_( terminationConditionList ){ }
 
+    virtual ~MultipleCustomPropagationTerminationCondition( ){ }
+
+    virtual bool terminatePropagationDerived(
+            const StateType& currentState, const TimeType currentTime )
+    {
+        bool terminate = false;
+        for( unsigned int i = 0; i < terminationConditionList_.size( ); i++ )
+        {
+            if( terminationConditionList_.at( i )->terminatePropagation( currentState, currentTime ) )
+            {
+                terminate = true;
+            }
+        }
+        return terminate;
+    }
+
+    std::shared_ptr< CustomPropagationTerminationCondition< StateType, TimeType > > getActiveTerminationCondition( )
+    {
+        int index = -1;
+        for( unsigned int i = 0; i < terminationConditionList_.size( ); i++ )
+        {
+            if( terminationConditionList_.at( i )->terminatedOnLastCall( ) )
+            {
+                if( index >= 0 )
+                {
+                    std::cerr<<"Warning when retrieving active termination condition; multiple conditions found";
+                }
+                index = i;
+            }
+        }
+        if( index < 0 )
+        {
+            std::cerr<<"Warning when retrieving active termination condition; no conditions found";
+        }
+        return terminationConditionList_.at( index );
+    }
+
+
+protected:
+
+    std::vector< std::shared_ptr< CustomPropagationTerminationCondition< StateType, TimeType > > > terminationConditionList_;
+};
 
 template< typename TimeType = double, typename StateScalarType = double, int NumberOfRows = 1, int NumberOfColumns = 1 >
 std::map< TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > > propagateCustomDynamics(
@@ -845,25 +943,80 @@ std::map< TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumn
     {
         if( terminationInterface->terminateOnFinalTime( ) )
         {
+            if( saveFullStateHistory ){ stateHistory.erase( currentTime ); }
+            integrator->rollbackToPreviousState( );
+            integrator->setStepSizeControl( false );
+
             // Determine final time step and propagate
             double finalTimeStep = (
                         std::dynamic_pointer_cast< BasicTerminationTimeInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns > >(
-                                     terminationInterface )->terminationTime( ) - secondToLastTime ) *
+                            terminationInterface )->terminationTime( ) - secondToLastTime ) *
                     terminationInterface->propagationDirection( );
 
-            if( saveFullStateHistory ){ stateHistory.erase( currentTime ); }
-            integrator->rollbackToPreviousState( );
-
-            integrator->setStepSizeControl( false );
             currentState = integrator->performIntegrationStep( finalTimeStep );
             integrator->setStepSizeControl( true );
             currentTime = integrator->getCurrentIndependentVariable( );
             if( saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
         }
+        else
+        {
+            if( saveFullStateHistory ){ stateHistory.erase( currentTime ); }
+            std::shared_ptr< CustomPropagationTerminationCondition< StateType, TimeType > > terminationPointer;
+            auto singleCustomTermination =
+                    std::dynamic_pointer_cast< BasicCustomTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns > >( terminationInterface );
+            if( singleCustomTermination != nullptr )
+            {
+                terminationPointer = singleCustomTermination->getTerminationCondition( );
+            }
+            else
+            {
+                throw std::runtime_error( "Error when propagating custom dynamics to exact final condition; input is inconsistent" );
+            }
+
+            auto multipleTerminationPointer =
+                    std::dynamic_pointer_cast< MultipleCustomPropagationTerminationCondition< StateType, TimeType > >( terminationPointer );
+            if( multipleTerminationPointer != nullptr )
+            {
+                terminationPointer = multipleTerminationPointer->getActiveTerminationCondition( );
+            }
+
+            TimeType secondToLastTime = integrator->getPreviousIndependentVariable( );
+            TimeType lastTime = integrator->getCurrentIndependentVariable( );
+
+            StateType secondToLastState = integrator->getPreviousState( );
+            StateType lastState = integrator->getCurrentState( );
+
+            integrator->rollbackToPreviousState( );
+
+            getFinalStateForExactDependentVariableTerminationCondition(
+                        integrator, terminationPointer,
+                        secondToLastTime, lastTime,
+                        secondToLastState, lastState,
+                        currentTime, currentState, true );
+            if( saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
+
+        }
     }
     if( !saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
 
     return stateHistory;
+}
+
+template< typename TimeType = double, typename StateScalarType = double, int NumberOfRows = 1, int NumberOfColumns = 1 >
+std::map< TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > > propagateCustomDynamics(
+        const std::shared_ptr< numerical_integrators::NumericalIntegrator<
+        TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > > > integrator,
+        const TimeType initialTimeStep,
+        std::shared_ptr< CustomPropagationTerminationCondition< Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns >, TimeType > > terminationCondition,
+        const bool propagateToExactFinalTime = false,
+        const bool saveFullStateHistory = true )
+{
+    std::shared_ptr< BasicTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns > > terminationInterface =
+            std::make_shared< BasicCustomTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns > >(
+                terminationCondition, initialTimeStep > mathematical_constants::getFloatingInteger< TimeType >( 0 ) );
+    return propagateCustomDynamics< TimeType, StateScalarType, NumberOfRows, NumberOfColumns >(
+                integrator, initialTimeStep, terminationInterface,
+                propagateToExactFinalTime, saveFullStateHistory );
 }
 
 template< typename TimeType = double, typename StateScalarType = double, int NumberOfRows, int NumberOfColumns = 1 >
@@ -877,7 +1030,7 @@ std::map< TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumn
 {
     std::shared_ptr< BasicTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns > > terminationInterface =
             std::make_shared< BasicTerminationTimeInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns > >(
-                                finalTime, initialTimeStep > mathematical_constants::getFloatingInteger< TimeType >( 0 ) );
+                finalTime, initialTimeStep > mathematical_constants::getFloatingInteger< TimeType >( 0 ) );
     return propagateCustomDynamics(
                 integrator, initialTimeStep, terminationInterface,
                 propagateToExactFinalTime, saveFullStateHistory );
@@ -924,6 +1077,14 @@ std::map< double, Eigen::Vector6d > performCR3BPIntegration(
         const double finalTime,
         const bool propagateToExactFinalTime = false,
         const bool saveFullStateHistory = true );
+
+std::map< double, Eigen::Vector6d > performCR3BPIntegration(
+        const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings,
+        const double massParameter,
+        const Eigen::Vector6d& initialState,
+        std::shared_ptr< CustomPropagationTerminationCondition< Eigen::Vector6d, double > > terminationCondition,
+        const bool propagateToExactFinalTime,
+        const bool saveFullStateHistory );
 
 std::map< double, Eigen::MatrixXd > performCR3BPWithStmIntegration(
         const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings,

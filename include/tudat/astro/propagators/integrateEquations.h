@@ -40,6 +40,87 @@ namespace tudat
 namespace propagators
 {
 
+
+template< typename StateType = Eigen::MatrixXd, typename TimeType = double >
+class CustomPropagationTerminationCondition
+{
+public:
+    CustomPropagationTerminationCondition(
+            const std::shared_ptr< root_finders::RootFinderSettings > terminationRootFinderSettings = nullptr ):
+        terminationRootFinderSettings_( terminationRootFinderSettings ),
+        terminatedOnLastCall_( false ),
+        stopConditionError_( TUDAT_NAN ){ }
+
+    virtual ~CustomPropagationTerminationCondition( ){ }
+
+    bool terminatePropagation(
+            const StateType& currentState, const TimeType currentTime )
+    {
+        terminatedOnLastCall_ = this->terminatePropagationDerived( currentState, currentTime );
+        return terminatedOnLastCall_;
+    }
+
+    virtual bool terminatePropagationDerived(
+            const StateType& currentState, const TimeType currentTime ) = 0;
+
+    virtual double computeStopConditionError(
+            const StateType& currentState, const TimeType currentTime )
+    {
+        throw std::runtime_error( "Error, stop condition error not yet implemented in CustomPropagationTerminationCondition derived class" );
+    }
+
+    void setStopConditionError(
+            const StateType& currentState, const TimeType currentTime )
+    {
+        stopConditionError_ = computeStopConditionError( currentState, currentTime );
+    }
+
+    double getStopConditionError( )
+    {
+        return stopConditionError_;
+    }
+
+    std::shared_ptr< root_finders::RootFinderSettings > getTerminationRootFinderSettings( )
+    {
+        if( terminationRootFinderSettings_ == nullptr )
+        {
+            throw std::runtime_error( "Error when getting root finder settings from CustomPropagationTerminationCondition, no settings found" );
+        }
+        return terminationRootFinderSettings_;
+    }
+
+    bool terminatedOnLastCall( )
+    {
+        return terminatedOnLastCall_;
+    }
+
+
+protected:
+
+    std::shared_ptr< root_finders::RootFinderSettings > terminationRootFinderSettings_;
+
+    bool terminatedOnLastCall_;
+
+    double stopConditionError_;
+};
+
+template< typename TerminationClass, typename StateType = Eigen::MatrixXd, typename TimeType = double, typename TimeStepType = TimeType >
+void updateTerminationDependentVariableErrorForGivenTimeStep(
+        const std::shared_ptr< TerminationClass > terminationPointer,
+        const StateType& currentState, const TimeType currentTime )
+{
+    if( std::dynamic_pointer_cast< CustomPropagationTerminationCondition< StateType, TimeType > >( terminationPointer ) )
+    {
+        std::dynamic_pointer_cast< CustomPropagationTerminationCondition< StateType, TimeType > >( terminationPointer )->setStopConditionError(
+                    currentState, currentTime );
+    }
+    else if( std::dynamic_pointer_cast< SingleVariableLimitPropagationTerminationCondition >( terminationPointer ) ){ }
+    else
+    {
+        throw std::runtime_error( "Error when updating termination condition object for root finding; termination class type not recognized" );
+    }
+}
+
 //! Function to determine, for a given time step of the numerical integrator, the error in termination dependent variable
 /*!
  *  Function to determine, for a given time step of the numerical integrator, the error in termination dependent variable. This
@@ -50,12 +131,12 @@ namespace propagators
  *  is to terminate
  *  \return The difference between the reached and required value of the termination dependent variable
  */
-template< typename StateType = Eigen::MatrixXd, typename TimeType = double, typename TimeStepType = TimeType  >
+template< typename TerminationClass, typename StateType = Eigen::MatrixXd, typename TimeType = double, typename TimeStepType = TimeType  >
 TimeStepType getTerminationDependentVariableErrorForGivenTimeStep(
         TimeStepType timeStep,
         const std::shared_ptr< numerical_integrators::NumericalIntegrator< TimeType, StateType, StateType, TimeStepType > >
         integrator,
-        const std::shared_ptr< SingleVariableLimitPropagationTerminationCondition > dependentVariableTerminationCondition )
+        const std::shared_ptr< TerminationClass > terminationPointer )
 {
     // Perform integration step
     integrator->performIntegrationStep( timeStep );
@@ -63,9 +144,13 @@ TimeStepType getTerminationDependentVariableErrorForGivenTimeStep(
     // Retrieve value of dependent variable after time step
     integrator->getStateDerivativeFunction( )(
                 integrator->getCurrentIndependentVariable( ), integrator->getCurrentState( ) );
-    TimeStepType dependentVariableError =
-            static_cast< TimeStepType >( dependentVariableTerminationCondition->getStopConditionError( ) );
 
+    updateTerminationDependentVariableErrorForGivenTimeStep(
+                terminationPointer, integrator->getCurrentState( ),
+                integrator->getCurrentIndependentVariable( ) );
+
+    TimeStepType dependentVariableError =
+            static_cast< TimeStepType >( terminationPointer->getStopConditionError( ) );
     // Undo step
     integrator->rollbackToPreviousState( );
 
@@ -87,11 +172,11 @@ TimeStepType getTerminationDependentVariableErrorForGivenTimeStep(
  * \param endTime Time at which exact termination condition is met (returned by reference).
  * \param endState State at time where exact termination condition is met (returned by reference).
  */
-template< typename StateType = Eigen::MatrixXd, typename TimeType = double, typename TimeStepType = TimeType  >
+template< typename TerminationClass, typename StateType = Eigen::MatrixXd, typename TimeType = double, typename TimeStepType = TimeType  >
 void getFinalStateForExactDependentVariableTerminationCondition(
         const std::shared_ptr< numerical_integrators::NumericalIntegrator< TimeType, StateType, StateType, TimeStepType > >
         integrator,
-        const std::shared_ptr< SingleVariableLimitPropagationTerminationCondition > dependentVariableTerminationCondition,
+        const std::shared_ptr< TerminationClass > terminationPointer,
         const TimeType secondToLastTime,
         const TimeType lastTime,
         const StateType& secondToLastState,
@@ -104,8 +189,9 @@ void getFinalStateForExactDependentVariableTerminationCondition(
 
     // Function for which the root (zero value) occurs at the required end time/state
     std::function< TimeStepType( TimeStepType ) > dependentVariableErrorFunction =
-            std::bind( &getTerminationDependentVariableErrorForGivenTimeStep< StateType, TimeType, TimeStepType >, std::placeholders::_1,
-                       integrator, dependentVariableTerminationCondition );
+            std::bind( &getTerminationDependentVariableErrorForGivenTimeStep<
+                       TerminationClass, StateType, TimeType, TimeStepType >, std::placeholders::_1,
+                       integrator, terminationPointer );
 
     // Create root finder.
     bool increasingTime = static_cast< double >( lastTime - secondToLastTime ) > 0.0;
@@ -113,7 +199,7 @@ void getFinalStateForExactDependentVariableTerminationCondition(
     if( increasingTime )
     {
         finalConditionRootFinder = root_finders::createRootFinder< TimeStepType >(
-                    dependentVariableTerminationCondition->getTerminationRootFinderSettings( ),
+                    terminationPointer->getTerminationRootFinderSettings( ),
                     static_cast< TimeStepType >( std::numeric_limits< double >::min( ) ),
                     static_cast< TimeStepType >( lastTime - secondToLastTime ),
                     static_cast< TimeStepType >( std::numeric_limits< double >::min( ) ) );
@@ -121,7 +207,7 @@ void getFinalStateForExactDependentVariableTerminationCondition(
     else
     {
         finalConditionRootFinder = root_finders::createRootFinder< TimeStepType >(
-                    dependentVariableTerminationCondition->getTerminationRootFinderSettings( ),
+                    terminationPointer->getTerminationRootFinderSettings( ),
                     static_cast< TimeStepType >( lastTime - secondToLastTime ),
                     static_cast< TimeStepType >( -std::numeric_limits< double >::min( ) ),
                     static_cast< TimeStepType >( lastTime - secondToLastTime ) );
