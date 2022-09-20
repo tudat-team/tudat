@@ -89,112 +89,109 @@ std::vector< double > createManifoldDeparturePoints(
         const std::map< double, Eigen::MatrixXd >& stateTransitionMatrixHistory );
 
 void computeManifolds(std::vector< std::vector< std::map< double, Eigen::Vector6d > > >& fullManifoldStateHistories,
-                       const CR3BPPeriodicOrbitConditions periodicOrbitConditions,
-                       const double eigenvectorDisplacementFromOrbit,
-                       const int numberOfDeparturePoints,
-                       const double maxEigenvalueDeviation,
-                       const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings ,
-                       const std::shared_ptr<tudat::numerical_integrators::IntegratorSettings<double> > manifoldIntegratorSettings );
+                      const CR3BPPeriodicOrbitConditions periodicOrbitConditions,
+                      const double eigenvectorDisplacementFromOrbit,
+                      const int numberOfDeparturePoints,
+                      const double maxEigenvalueDeviation,
+                      const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings ,
+                      const std::shared_ptr<tudat::numerical_integrators::IntegratorSettings<double> > manifoldIntegratorSettings );
 
 
 
-//class ManifoldTerminationConditionU1U4
-//{
-//public:
-//    ManifoldTerminationConditionU1U4( )
-//    {
-//        ySignSet_ = false;
-//        ySign = TUDAT_NAN;
-//    }
+class ManifoldTerminationConditionU1U4
+{
+public:
+    ManifoldTerminationConditionU1U4( )
+    {
+        ySignSet_ = false;
+        ySign = TUDAT_NAN;
+    }
 
-//    bool isPropagationTerminated(
-//            const Eigen::MatrixXd& currentState, const double currentTime )
-//    {
-//        // Determine sign of y when crossing x = 0  (U1, U4)
-//        if ( (currentState( 0, 0 ) < 0 ) && !ySignSet_ )
-//        {
-//            if ( currentState( 1, 0 ) < 0 )
-//            {
-//                ySign = -1.0;
-//            }
-//            else if ( currentState( 1, 0 ) > 0 )
-//            {
-//                ySign = 1.0;
-//            }
-//            else
-//            {
-//                throw std::runtime_error( "Error when determining sign of y when crossing x=0 for U1 and U4 manifolds" );
-//            }
-//            ySignSet_ = true;
-//        }
+    bool isPropagationTerminated(
+            const Eigen::MatrixXd& currentState, const double currentTime )
+    {
+        // Determine sign of y when crossing x = 0  (U1, U4)
+        if ( (currentState( 0, 0 ) < 0 ) && !ySignSet_ )
+        {
+            if( currentState( 0, 0 ) == 0.0 )
+            {  throw std::runtime_error( "Error when determining sign of y when crossing x=0 for U1 and U4 manifolds" ); }
 
-//        if ( (currentState( 1, 0 ) * ySign < 0 ) && ySignSet_ )
-//        {
-//            return true;
-//        }
-//        else
-//        {
-//            return false;
-//        }
-//    }
+            currentState( 1, 0 ) < 0 ? ySign = -1.0 : ySign = 1.0;
+            ySignSet_ = true;
+        }
 
-//private:
+        // Check if termination is reached
+        if ( (currentState( 1, 0 ) * ySign < 0 ) && ySignSet_ )
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
-//    bool ySignSet_;
+private:
 
-//    double ySign;
-//};
+    bool ySignSet_;
 
-//class ManifoldTerminationConditionU2U3
-//{
-//public:
-//    ManifoldTerminationConditionU2U3(
-//            const double massParameter ):
-//        massParameter_( massParameter )
-//    {
-//        xDiffSignSet_ = false;
-//        xDiffSign_ = TUDAT_NAN;
-//    }
+    double ySign;
+};
 
-//    bool isPropagationTerminated(
-//            const Eigen::MatrixXd& currentState, const double currentTime )
-//    {
-//        // Determine whether the trajectory approaches U2, U3 from the right or left (U2, U3)
-//        if ( !xDiffSignSet_ )
-//        {
-//            if ( ( currentState(0, 0) - (1.0 - massParameter_ ) ) < 0 )
-//            {
-//                xDiffSign_ = -1.0;
-//            }
-//            else if ( ( currentState(0, 0) - (1.0 - massParameter_ ) ) > 0 )
-//            {
-//                xDiffSign_ = 1.0;
-//            }
-//            else
-//            {
-//                throw std::runtime_error( "Error when determining whether the trajectory approaches U2, U3 from the right or left" );
-//            }
-//        }
+class ManifoldTerminationConditionU2U3
+{
+public:
+    ManifoldTerminationConditionU2U3(
+            const double massParameter,
+            int librationPoint,
+            int manifoldNumber ):
+        massParameter_( massParameter ),
+        librationPoint_( librationPoint ),
+        manifoldNumber_( manifoldNumber )
+    {
+        xDiffSignSet_ = false;
+        xDiffSign_ = TUDAT_NAN;
+    }
+
+    bool isPropagationTerminated(
+            const Eigen::MatrixXd& currentState, const double currentTime )
+    {
+        // Determine whether the trajectory approaches U2, U3 from the right or left (U2, U3)
+        if ( !xDiffSignSet_ )
+        {
+            ( ( currentState(0, 0) - (1.0 - massParameter_ ) ) < 0 ) ? xDiffSign_ = -1.0 : xDiffSign_ = 1.0;
+
+            if ( ( currentState(0, 0) - (1.0 - massParameter_ ) ) == 0 )
+            {  throw std::runtime_error( "Error when determining whether the trajectory approaches U2, U3 from the right or left" ); }
+        }
 
 
-//        if ( (currentState( 1, 0 ) * ySign < 0 ) && ySignSet_ )
-//        {
-//            return true;
-//        }
-//        else
-//        {
-//            return false;
-//        }
-//    }
+        if ( ( ( currentState(0, 0) - ( 1.0 - massParameter_ ) ) * xDiffSign_ < 0 ) &&
+             ( ( librationPoint_ == 1 && ( manifoldNumber_ == 0 || manifoldNumber_ == 2) ) ||
+               ( librationPoint_ == 2 && ( manifoldNumber_ == 1 || manifoldNumber_ == 3) ) ) )
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
-//private:
+private:
 
-//    double massParameter_;
+    double massParameter_;
 
-//    bool xDiffSignSet_;
+    int librationPoint_;
 
-//    double xDiffSign_;
-//};
+    int manifoldNumber_;
+
+    bool xDiffSignSet_;
+
+    double xDiffSign_;
+};
+
+
 
 
 } // namespace propagators

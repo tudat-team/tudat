@@ -699,15 +699,126 @@ createStateDerivativeModelMap(
                                                      propagatorSettings, bodies, propagationStartTime ) );
 }
 
-template< typename TimeType = double, typename StateScalarType = double, int NumberOfRows, int NumberOfColumns = 1 >
+
+template< typename TimeType = double, typename StateScalarType = double, int NumberOfRows = 1, int NumberOfColumns = 1 >
+struct BasicTerminationInterface
+{
+public:
+    typedef Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > StateType;
+
+    BasicTerminationInterface( const bool propagateForwards ):
+        propagationDirection_( propagateForwards ? 1.0 : -1.0 )
+    { }
+
+    virtual ~BasicTerminationInterface( ){ }
+
+    virtual bool terminatePropagation(
+            const StateType& currentState, const TimeType currentTime ) = 0;
+
+    virtual bool terminateOnFinalTime( ) = 0;
+
+    double propagationDirection( )
+    {
+        return propagationDirection_;
+    }
+
+protected:
+
+    double propagationDirection_;
+
+};
+
+
+
+template< typename TimeType = double, typename StateScalarType = double, int NumberOfRows = 1, int NumberOfColumns = 1 >
+struct BasicTerminationTimeInterface: public BasicTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns >
+{
+public:
+    typedef Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > StateType;
+
+    BasicTerminationTimeInterface( const TimeType terminationTime, const bool propagateForwards ):
+        BasicTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns >( propagateForwards ),
+        terminationTime_( terminationTime )
+    { }
+
+    bool terminatePropagation(
+            const StateType& currentState, const TimeType currentTime )
+    {
+        if( ( currentTime - terminationTime_ ) * this->propagationDirection_ < zeroValue )
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    bool terminateOnFinalTime( )
+    {
+        return true;
+    }
+
+    TimeType terminationTime( )
+    {
+        return terminationTime_;
+    }
+
+private:
+
+    TimeType terminationTime_;
+
+    TimeType zeroValue = mathematical_constants::getFloatingInteger< TimeType >( 0 );
+
+};
+
+
+template< typename TimeType = double, typename StateScalarType = double, int NumberOfRows = 1, int NumberOfColumns = 1 >
+struct BasicCustomTerminationInterface: public BasicTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns >
+{
+public:
+    typedef Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > StateType;
+
+    BasicCustomTerminationInterface(
+            const std::function< bool( const StateType&, const TimeType ) > terminationFunction, const bool propagateForwards ):
+        BasicTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns >( propagateForwards ),
+        terminationFunction_( terminationFunction )
+    { }
+
+    bool terminatePropagation(
+            const StateType& currentState, const TimeType currentTime )
+    {
+        return terminationFunction_( currentState, currentTime );
+    }
+
+    bool terminateOnFinalTime( )
+    {
+        return false;
+    }
+
+private:
+
+    std::function< bool( const StateType&, const TimeType ) > terminationFunction_;
+};
+
+
+
+template< typename TimeType = double, typename StateScalarType = double, int NumberOfRows = 1, int NumberOfColumns = 1 >
 std::map< TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > > propagateCustomDynamics(
         const std::shared_ptr< numerical_integrators::NumericalIntegrator<
         TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > > > integrator,
         const TimeType initialTimeStep,
-        const TimeType finalTime,
+        const std::shared_ptr< BasicTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns > > terminationInterface,
         const bool propagateToExactFinalTime = false,
         const bool saveFullStateHistory = true )
 {
+    TimeType zeroValue = mathematical_constants::getFloatingInteger< TimeType >( 0 );
+    //    double propagationDirection = ( initialTimeStep > zeroValue ) ? 1.0 : -1.0;
+    if( initialTimeStep == zeroValue )
+    {
+        throw std::runtime_error( "Error when setting up custom propagation; initial time step is exactly 0" );
+    }
+
     // Initialize return data map
     typedef Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > StateType;
     typedef std::map< TimeType, StateType > ResultsMap;
@@ -721,10 +832,8 @@ std::map< TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumn
 
     // Integrate to final time
     TimeType timeStep = initialTimeStep;
-    while( currentTime <= finalTime )
+    while( !terminationInterface->terminatePropagation( currentState, currentTime ) )
     {
-//        std::cout<<"Propagating: "<<currentTime<<" "<<timeStep<<" "<<std::endl<<
-//                   currentState<<std::endl<<std::endl;
         secondToLastTime = currentTime;
         currentState = integrator->performIntegrationStep( timeStep );
         currentTime = integrator->getCurrentIndependentVariable( );
@@ -734,21 +843,44 @@ std::map< TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumn
 
     if( propagateToExactFinalTime )
     {
-        // Determine final time step and propagate
-        double finalTimeStep = finalTime - secondToLastTime;
+        if( terminationInterface->terminateOnFinalTime( ) )
+        {
+            // Determine final time step and propagate
+            double finalTimeStep = (
+                        std::dynamic_pointer_cast< BasicTerminationTimeInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns > >(
+                                     terminationInterface )->terminationTime( ) - secondToLastTime ) *
+                    terminationInterface->propagationDirection( );
 
-        if( saveFullStateHistory ){ stateHistory.erase( currentTime ); }
-        integrator->rollbackToPreviousState( );
+            if( saveFullStateHistory ){ stateHistory.erase( currentTime ); }
+            integrator->rollbackToPreviousState( );
 
-        integrator->setStepSizeControl( false );
-        currentState = integrator->performIntegrationStep( finalTimeStep );
-        integrator->setStepSizeControl( true );
-        currentTime = integrator->getCurrentIndependentVariable( );
-        if( saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
+            integrator->setStepSizeControl( false );
+            currentState = integrator->performIntegrationStep( finalTimeStep );
+            integrator->setStepSizeControl( true );
+            currentTime = integrator->getCurrentIndependentVariable( );
+            if( saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
+        }
     }
     if( !saveFullStateHistory ){ stateHistory[ currentTime ] = currentState; }
 
     return stateHistory;
+}
+
+template< typename TimeType = double, typename StateScalarType = double, int NumberOfRows, int NumberOfColumns = 1 >
+std::map< TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > > propagateCustomDynamics(
+        const std::shared_ptr< numerical_integrators::NumericalIntegrator<
+        TimeType, Eigen::Matrix< StateScalarType, NumberOfRows, NumberOfColumns > > > integrator,
+        const TimeType initialTimeStep,
+        const TimeType finalTime,
+        const bool propagateToExactFinalTime = false,
+        const bool saveFullStateHistory = true )
+{
+    std::shared_ptr< BasicTerminationInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns > > terminationInterface =
+            std::make_shared< BasicTerminationTimeInterface< TimeType, StateScalarType, NumberOfRows, NumberOfColumns > >(
+                                finalTime, initialTimeStep > mathematical_constants::getFloatingInteger< TimeType >( 0 ) );
+    return propagateCustomDynamics(
+                integrator, initialTimeStep, terminationInterface,
+                propagateToExactFinalTime, saveFullStateHistory );
 }
 
 std::shared_ptr< numerical_integrators::NumericalIntegrator< double, Eigen::MatrixXd > > createCR3BPWithStmIntegrator(
