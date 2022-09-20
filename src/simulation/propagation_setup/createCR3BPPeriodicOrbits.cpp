@@ -17,6 +17,29 @@ namespace tudat
 namespace propagators
 {
 
+std::string getPeriodicOrbitName( enum CR3BPPeriodicOrbitTypes orbitType )
+{
+    std::string orbitName;
+    switch( orbitType )
+    {
+    case horizontal_lyapunov_orbit:
+        orbitName = "HL";
+        break;
+    case vertical_lyapunov_orbit:
+        orbitName = "VL";
+        break;
+    case halo_orbit:
+        orbitName = "Halo";
+        break;
+    case axial_orbit:
+        orbitName = "Axials";
+        break;
+    default:
+        throw std::runtime_error( "Error when getting periodic orbit type name, id not recognized" );
+    }
+    return orbitName;
+}
+
 std::map< double, Eigen::Vector6d > propagatePeriodicOrbit(
         const CR3BPPeriodicOrbitConditions& orbitDefinition,
         const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,

@@ -31,6 +31,9 @@ enum CR3BPPeriodicOrbitTypes
     axial_orbit = 3
 };
 
+
+std::string getPeriodicOrbitName( enum CR3BPPeriodicOrbitTypes orbitType );
+
 struct CR3BPPeriodicOrbitGenerationSettings
 {
     CR3BPPeriodicOrbitGenerationSettings(

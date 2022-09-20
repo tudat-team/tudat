@@ -43,7 +43,7 @@ int main( )
     double minimumStepSize   = std::numeric_limits<double>::epsilon( ); // 2.22044604925031e-16
     double maximumStepSize   = 100.0;//std::numeric_limits<double>::infinity( ); // 2.22044604925031e-16
 
-    double relativeErrorTolerance = 1.0E-10;
+    double relativeErrorTolerance = 1.0E-12;
     double absoluteErrorTolerance = 1.0E-14;
 
     std::shared_ptr< IntegratorSettings< double > > integratorSettings =
@@ -54,7 +54,7 @@ int main( )
 
 
     double massParameter = computeMassParameter( 3.986004418E14, 1.32712440018e20 / ( 328900.56 * ( 1.0 + 81.30059 ) ) );
-
+    std::cout<<massParameter<<std::endl;
     int maximumDifferentialCorrections = 25;
     double maximumPositionDeviation = 1.0E-12;
     double maximumVelocityDeviation = 1.0E-12;
@@ -62,15 +62,17 @@ int main( )
     int maximumNumberOfOrbits = 10000;
     double maximumEigenvalueDeviation = 1.0E-3;
 
-    int librationPointNumber = 1;
+    int librationPointNumber = 2;
     CR3BPPeriodicOrbitTypes orbitType = halo_orbit;
     CR3BPPeriodicOrbitGenerationSettings orbitSettings(
                 massParameter, orbitType, librationPointNumber, maximumDifferentialCorrections,
                 maximumPositionDeviation, maximumVelocityDeviation, maximumNumberOfOrbits, maximumEigenvalueDeviation );
 
-    double orbitalPeriod = 3.080898298110091;
+
+    double orbitalPeriod = 3.134883721394383;
+
     Eigen::Vector6d periodicOrbitInitialStateGuess =
-            ( Eigen::Vector6d( ) << 0.867974937956597, 0.0, 0.125442565745075, 0.0, -0.0236391340365716, 0.0 ).finished( );
+            ( Eigen::Vector6d( ) <<   1.044341552960607, 0.0, 0.0755849505456458, 0.0, 0.390542374583015, 0.0 ).finished( );
     CR3BPPeriodicOrbitConditions periodicOrbit = createCR3BPPeriodicOrbit(
                                   periodicOrbitInitialStateGuess, orbitalPeriod,
                                   orbitSettings, integratorSettings );
@@ -87,7 +89,17 @@ int main( )
     std::vector< std::vector< std::map< double, Eigen::Vector6d > > > fullManifoldStateHistories;
     computeManifolds( fullManifoldStateHistories, periodicOrbit, 1.0E-6, 1000, 1.0E-3, integratorSettings, manifoldIntegratorSettings );
 
+    std::map< double, Eigen::Vector6d > periodicOrbitStates = performCR3BPIntegration(
+                integratorSettings,
+                periodicOrbit.massParameter( ),
+                periodicOrbit.initialState_,
+                periodicOrbit.orbitPeriod_,
+                true, true );
+
     std::string outputFolder = "/home/dominic/Software/manifoldOrbitResults/";
+    input_output::writeDataMapToTextFile(
+                periodicOrbitStates, "periodicOrbit.dat", outputFolder );
+
     for( unsigned int i = 0; i < fullManifoldStateHistories.size( ); i++ )
     {
         for( unsigned int j = 0; j < fullManifoldStateHistories.at( i ).size( ); j++ )

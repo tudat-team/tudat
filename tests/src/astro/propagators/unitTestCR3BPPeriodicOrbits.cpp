@@ -57,8 +57,12 @@ BOOST_AUTO_TEST_CASE( testCr3bpPeriodicOrbits )
     double maximumPositionDeviation = 1.0E-12;
     double maximumVelocityDeviation = 1.0E-12;
 
-    int maximumNumberOfOrbits = 4;
+    int maximumNumberOfOrbits = 10000;
     double maximumEigenvalueDeviation = 1.0E-3;
+
+    std::string baseOutputFolder = "/home/dominic/Software/periodicOrbitResults/";
+
+    input_output::writeMatrixToFile( ( Eigen::MatrixXd( 1, 1 ) << massParameter ).finished( ), "massParameter.dat", 16, baseOutputFolder );
 
     for( int j = 0; j < 2; j++ )
     {
@@ -88,24 +92,33 @@ BOOST_AUTO_TEST_CASE( testCr3bpPeriodicOrbits )
             createCR3BPPeriodicOrbitsThroughNumericalContinuation(
                         periodicOrbits, integratorSettings, orbitSettings );
 
+            //            for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
+            //            {
+            //                Eigen::Vector6d testInitialState = periodicOrbits.at( i ).initialState_;
+            //                double propagationTime = periodicOrbits.at( i ).orbitPeriod_;
+
+            //                std::map< double, Eigen::Vector6d > testStateHistory =
+            //                        performCR3BPIntegration(
+            //                        integratorSettings, massParameter, testInitialState, propagationTime, true, false );
+            //                BOOST_CHECK_CLOSE_FRACTION( testStateHistory.begin( )->first, propagationTime, 1.0E-14 );
+
+            //                Eigen::Vector6d stateDifference = testInitialState - testStateHistory.begin( )->second;
+            //                for( unsigned int l = 0; l < 6; l++ )
+            //                {
+            //                    BOOST_CHECK_SMALL( std::fabs( stateDifference( l ) ), 1.0E-10 );
+            //                }
+
+            std::map< double, Eigen::VectorXd > initialStates;
             for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
             {
                 Eigen::Vector6d testInitialState = periodicOrbits.at( i ).initialState_;
                 double propagationTime = periodicOrbits.at( i ).orbitPeriod_;
-
-                std::map< double, Eigen::Vector6d > testStateHistory =
-                        performCR3BPIntegration(
-                        integratorSettings, massParameter, testInitialState, propagationTime, true, false );
-                BOOST_CHECK_CLOSE_FRACTION( testStateHistory.begin( )->first, propagationTime, 1.0E-14 );
-
-                Eigen::Vector6d stateDifference = testInitialState - testStateHistory.begin( )->second;
-                for( unsigned int l = 0; l < 6; l++ )
-                {
-                    BOOST_CHECK_SMALL( std::fabs( stateDifference( l ) ), 1.0E-10 );
-                }
+                initialStates[ propagationTime ] = testInitialState;
             }
 
-//            std::string outputFolder = "/home/dominic/Software/periodicOrbitResults/";
+            std::string outputFolder = baseOutputFolder + "/L" + std::to_string( j + 1 ) + "/" + getPeriodicOrbitName( orbitType ) + "/";
+            input_output::writeDataMapToTextFile(
+                        initialStates, "initial_states.dat", outputFolder );
 //            for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
 //            {
 
@@ -113,15 +126,14 @@ BOOST_AUTO_TEST_CASE( testCr3bpPeriodicOrbits )
 //                            periodicOrbits.at( i ), integratorSettings );
 //                input_output::writeDataMapToTextFile(
 //                            currentOrbit, "periodic_orbit_" +
-//                            std::to_string( i ) + "_" +
-//                            std::to_string( j ) + "_" +
-//                            std::to_string( k ) + ".dat", outputFolder );
+//                            std::to_string( i ) + ".dat", outputFolder );
 
 //            }
         }
     }
-
 }
+
+
 
 BOOST_AUTO_TEST_SUITE_END( )
 
