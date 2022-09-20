@@ -85,9 +85,9 @@ int main( )
             ( 0.0, 1.0E-5, rungeKutta87DormandPrince, minimumStepSize, maximumStepSize, relativeErrorTolerance, absoluteErrorTolerance );
 
     std::vector< std::vector< std::map< double, Eigen::Vector6d > > > fullManifoldStateHistories;
-    computeManifolds( fullManifoldStateHistories, periodicOrbit, 1.0E-6, 2, 1.0E-3, integratorSettings, manifoldIntegratorSettings );
+    computeManifolds( fullManifoldStateHistories, periodicOrbit, 1.0E-6, 1000, 1.0E-3, integratorSettings, manifoldIntegratorSettings );
 
-    std::string outputFolder = "/home/dominic/Software/periodicOrbitResults/";
+    std::string outputFolder = "/home/dominic/Software/manifoldOrbitResults/";
     for( unsigned int i = 0; i < fullManifoldStateHistories.size( ); i++ )
     {
         for( unsigned int j = 0; j < fullManifoldStateHistories.at( i ).size( ); j++ )

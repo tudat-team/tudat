@@ -85,8 +85,6 @@ void computeManifoldSetFromSinglePoint(
         const CR3BPManifoldSettings manifoldSettings,
         const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings )
 {
-    double initialTime = integratorSettings->initialTime_;
-    double propagationTime = 5.0;//2.0 * periodicOrbitConditions.orbitPeriod_;
     double currentInitialTimeStep = integratorSettings->initialTimeStep_;
 
     Eigen::Matrix6d localStateTransitionMatrix = stateIncludingStm.block( 0, 1, 6, 6 );
@@ -101,18 +99,15 @@ void computeManifoldSetFromSinglePoint(
                 localNormalizedEigenvector;
 
         double direction = manifoldSettings.getIntegrationDirection( i );
-        std::cout<<"Direction: "<<i<<" "<<direction<<std::endl;
         integratorSettings->initialTime_ = 0.0;
         integratorSettings->initialTimeStep_ = currentInitialTimeStep * direction;
-        double finalTime = direction * propagationTime;
-        std::cout<<"Direction: "<<i<<" "<<direction<<std::endl;
-        std::cout<<"Final time: "<<i<<" "<<finalTime<<std::endl;
-        std::cout<<"Initital step: "<<i<<" "<<integratorSettings->initialTimeStep_<<std::endl;
+        auto terminationConditions =  getPoincareSectionsTerminationConditions(
+                periodicOrbitConditions, i );
 
         std::map< double, Eigen::Vector6d > currentManifoldStateHistory =
                 performCR3BPIntegration(
                     integratorSettings, periodicOrbitConditions.massParameter( ),
-                    manifoldInitialState, finalTime, false, true );
+                    manifoldInitialState, terminationConditions, true, true );
         manifoldStateHistories.push_back( currentManifoldStateHistory );
     }
 }

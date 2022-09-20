@@ -218,20 +218,26 @@ void getFinalStateForExactDependentVariableTerminationCondition(
     TimeStepType finalTimeStep;
     try
     {
+        std::cout<<"Second to last state:"<<secondToLastState.transpose( )<<std::endl;
+        std::cout<<"Last state:          "<<lastState.transpose( )<<std::endl;
+
+        std::cout<<"First last step: "<<lastTime - secondToLastTime<<std::endl;
+
+        integrator->setStepSizeControl( false );
         finalTimeStep = finalConditionRootFinder->execute(
                     std::make_shared< basic_mathematics::FunctionProxy< TimeStepType, TimeStepType > >(
                         dependentVariableErrorFunction ), ( lastTime - secondToLastTime ) / 2.0 );
-
+        std::cout<<"Real  last Step: "<<finalTimeStep<<std::endl;
         endState = integrator->performIntegrationStep( finalTimeStep );
         endTime = integrator->getCurrentIndependentVariable( );
+        integrator->setStepSizeControl( true );
     }
     // If dependent variable has no root in given interval, set end time and state at NaN
     catch( std::runtime_error& caughtException )
     {
         if( isOnlyTerminationCondition )
         {
-            std::cerr << "Warning in propagation to exact dependent variable value. Root finder could not find a "
-                         "root to the function. Returning time and state as NaNs. Caught exception: "
+            std::cerr << "Warning in propagation to exact dependent variable value. Root finder could not find a root to the function. Returning time and state as NaNs. Caught exception: "
                       << caughtException.what( ) << std::endl;
         }
         endTime = TUDAT_NAN;
