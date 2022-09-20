@@ -81,7 +81,7 @@ void determineStableUnstableEigenvectors(
 void computeManifoldSetFromSinglePoint(
         std::vector< std::map< double, Eigen::Vector6d > >& manifoldStateHistories,
         const Eigen::MatrixXd& stateIncludingStm,
-        const CR3BPPeriodicOrbitConditions periodicOrbitConditions,
+        const std::shared_ptr< PropagatedCR3BPPeriodicOrbitConditions > periodicOrbitConditions,
         const CR3BPManifoldSettings manifoldSettings,
         const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings )
 {
@@ -106,7 +106,7 @@ void computeManifoldSetFromSinglePoint(
 
         std::map< double, Eigen::Vector6d > currentManifoldStateHistory =
                 performCR3BPIntegration(
-                    integratorSettings, periodicOrbitConditions.massParameter( ),
+                    integratorSettings, periodicOrbitConditions->massParameter_,
                     manifoldInitialState, terminationConditions, true, true );
         manifoldStateHistories.push_back( currentManifoldStateHistory );
     }
@@ -148,7 +148,7 @@ std::vector< double > createManifoldDeparturePoints(
 }
 
 void computeManifolds( std::vector< std::vector< std::map< double, Eigen::Vector6d > > >& fullManifoldStateHistories,
-                       const CR3BPPeriodicOrbitConditions periodicOrbitConditions,
+                       const std::shared_ptr< PropagatedCR3BPPeriodicOrbitConditions > periodicOrbitConditions,
                        const double eigenvectorDisplacementFromOrbit,
                        const int numberOfDeparturePoints,
                        const double maxEigenvalueDeviation,
@@ -159,7 +159,7 @@ void computeManifolds( std::vector< std::vector< std::map< double, Eigen::Vector
 //                periodicOrbitConditions.massParameter( ), periodicOrbitConditions.initialState_ );
 
     // Determine the eigenvector directions of the (un)stable subspace of the monodromy matrix
-    Eigen::MatrixXd monodromyMatrix = periodicOrbitConditions.monodromyMatrix_;
+    Eigen::MatrixXd monodromyMatrix = periodicOrbitConditions->monodromyMatrix_;
     Eigen::Vector6d stableEigenvector;
     Eigen::Vector6d unstableEigenvector;
     determineStableUnstableEigenvectors( stableEigenvector, unstableEigenvector, monodromyMatrix, maxEigenvalueDeviation );
@@ -167,13 +167,13 @@ void computeManifolds( std::vector< std::vector< std::map< double, Eigen::Vector
     // Propagate the periodicOrbitConditions.initialState_ for a full period and write output to file.
     std::map< double, Eigen::MatrixXd > stateTransitionMatrixHistory = performCR3BPWithStmIntegration(
                 integratorSettings,
-                periodicOrbitConditions.massParameter( ),
-                periodicOrbitConditions.initialState_,
-                periodicOrbitConditions.orbitPeriod_,
+                periodicOrbitConditions->massParameter_,
+                periodicOrbitConditions->initialState_,
+                periodicOrbitConditions->orbitPeriod_,
                 true, true );
 
     std::vector< double > departurePoints = createManifoldDeparturePoints(
-                periodicOrbitConditions.orbitPeriod_,
+                periodicOrbitConditions->orbitPeriod_,
                 numberOfDeparturePoints,
                 stateTransitionMatrixHistory );
 

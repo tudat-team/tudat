@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE( testCr3bpPeriodicOrbits )
 
             double amplitudeFirstGuess;
             std::pair< Eigen::Vector6d, double > periodicOrbitInitialGuess;
-            std::vector< CR3BPPeriodicOrbitConditions > periodicOrbits;
+            std::vector< std::shared_ptr< PropagatedCR3BPPeriodicOrbitConditions > > periodicOrbits;
 
             for( int i = 0; i < 2; i ++ )
             {
@@ -111,8 +111,8 @@ BOOST_AUTO_TEST_CASE( testCr3bpPeriodicOrbits )
             std::map< double, Eigen::VectorXd > initialStates;
             for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
             {
-                Eigen::Vector6d testInitialState = periodicOrbits.at( i ).initialState_;
-                double propagationTime = periodicOrbits.at( i ).orbitPeriod_;
+                Eigen::Vector6d testInitialState = periodicOrbits.at( i )->initialState_;
+                double propagationTime = periodicOrbits.at( i )->orbitPeriod_;
                 initialStates[ propagationTime ] = testInitialState;
             }
 

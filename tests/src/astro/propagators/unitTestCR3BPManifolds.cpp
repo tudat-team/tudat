@@ -73,7 +73,7 @@ int main( )
 
     Eigen::Vector6d periodicOrbitInitialStateGuess =
             ( Eigen::Vector6d( ) <<   1.044341552960607, 0.0, 0.0755849505456458, 0.0, 0.390542374583015, 0.0 ).finished( );
-    CR3BPPeriodicOrbitConditions periodicOrbit = createCR3BPPeriodicOrbit(
+    std::shared_ptr< GeneratedCR3BPPeriodicOrbitConditions > periodicOrbit = createCR3BPPeriodicOrbit(
                                   periodicOrbitInitialStateGuess, orbitalPeriod,
                                   orbitSettings, integratorSettings );
 
@@ -91,9 +91,9 @@ int main( )
 
     std::map< double, Eigen::Vector6d > periodicOrbitStates = performCR3BPIntegration(
                 integratorSettings,
-                periodicOrbit.massParameter( ),
-                periodicOrbit.initialState_,
-                periodicOrbit.orbitPeriod_,
+                periodicOrbit->massParameter_,
+                periodicOrbit->initialState_,
+                periodicOrbit->orbitPeriod_,
                 true, true );
 
     std::string outputFolder = "/home/dominic/Software/manifoldOrbitResults/";

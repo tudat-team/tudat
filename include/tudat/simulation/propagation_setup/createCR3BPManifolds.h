@@ -195,7 +195,7 @@ struct CR3BPManifoldSettings
 
 template< typename StateType = Eigen::Vector6d >
 std::shared_ptr< MultipleCustomPropagationTerminationCondition< StateType, double > > getPoincareSectionsTerminationConditions(
-        const CR3BPPeriodicOrbitConditions& periodicOrbitConditions,
+        const std::shared_ptr< PropagatedCR3BPPeriodicOrbitConditions > periodicOrbitConditions,
         const int manifoldNumber )
 {
     std::shared_ptr< root_finders::RootFinderSettings > terminationRootFinderSettings =
@@ -204,8 +204,8 @@ std::shared_ptr< MultipleCustomPropagationTerminationCondition< StateType, doubl
             std::make_shared< ManifoldTerminationConditionU1U4< StateType > >( terminationRootFinderSettings );
     std::shared_ptr< ManifoldTerminationConditionU2U3< StateType > > u2u3Termination =
             std::make_shared< ManifoldTerminationConditionU2U3< StateType > >(
-                periodicOrbitConditions.massParameter( ),
-                periodicOrbitConditions.librationPointNumber( ),
+                periodicOrbitConditions->massParameter_,
+                periodicOrbitConditions->librationPoint_,
                 manifoldNumber, terminationRootFinderSettings );
     return std::make_shared<  MultipleCustomPropagationTerminationCondition< StateType, double > >(
                 std::vector< std::shared_ptr< CustomPropagationTerminationCondition< StateType, double > > >( { u1u4Termination, u2u3Termination } ) );
@@ -214,7 +214,7 @@ std::shared_ptr< MultipleCustomPropagationTerminationCondition< StateType, doubl
 void computeManifoldSetFromSinglePoint(
         std::vector< std::map< double, Eigen::Vector6d > >& manifoldStateHistories,
         const Eigen::MatrixXd& stateIncludingStm,
-        const CR3BPPeriodicOrbitConditions periodicOrbitConditions,
+        const std::shared_ptr< PropagatedCR3BPPeriodicOrbitConditions > periodicOrbitConditions,
         const CR3BPManifoldSettings manifoldSettings,
         const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings );
 
@@ -224,7 +224,7 @@ std::vector< double > createManifoldDeparturePoints(
         const std::map< double, Eigen::MatrixXd >& stateTransitionMatrixHistory );
 
 void computeManifolds(std::vector< std::vector< std::map< double, Eigen::Vector6d > > >& fullManifoldStateHistories,
-                      const CR3BPPeriodicOrbitConditions periodicOrbitConditions,
+                      const std::shared_ptr< PropagatedCR3BPPeriodicOrbitConditions > periodicOrbitConditions,
                       const double eigenvectorDisplacementFromOrbit,
                       const int numberOfDeparturePoints,
                       const double maxEigenvalueDeviation,

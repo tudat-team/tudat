@@ -41,13 +41,13 @@ std::string getPeriodicOrbitName( enum CR3BPPeriodicOrbitTypes orbitType )
 }
 
 std::map< double, Eigen::Vector6d > propagatePeriodicOrbit(
-        const CR3BPPeriodicOrbitConditions& orbitDefinition,
+        const  std::shared_ptr< CR3BPPeriodicOrbitConditions > orbitDefinition,
         const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
         const double numberOfPeriods )
 {
     return performCR3BPIntegration(
-                integratorSettings, orbitDefinition.massParameter( ), orbitDefinition.initialState_,
-                orbitDefinition.orbitPeriod_ * numberOfPeriods, true, true );
+                integratorSettings, orbitDefinition->massParameter_, orbitDefinition->initialState_,
+                orbitDefinition->orbitPeriod_ * numberOfPeriods, true, true );
 }
 
 
@@ -473,7 +473,7 @@ Eigen::Vector7d computeCR3BPPeriodicOrbitsDifferentialCorrection(
 
 
 
-CR3BPPeriodicOrbitConditions createCR3BPPeriodicOrbit(
+std::shared_ptr< GeneratedCR3BPPeriodicOrbitConditions > createCR3BPPeriodicOrbit(
         const Eigen::Vector6d& initialStateVector,
         double orbitalPeriod,
         const CR3BPPeriodicOrbitGenerationSettings& periodicOrbitSettings,
@@ -520,7 +520,7 @@ CR3BPPeriodicOrbitConditions createCR3BPPeriodicOrbit(
                 correctedInitialState, orbitalPeriod, true, false );
     Eigen::Matrix6d monodromyMatrix = fullOrbitNumericalResults.rbegin( )->second.block( 0, 1, 6, 6 );
 
-    return CR3BPPeriodicOrbitConditions(
+    return std::make_shared< GeneratedCR3BPPeriodicOrbitConditions >(
                 correctedInitialState, finalStateVector, monodromyMatrix, orbitalPeriod, numberOfIterations,
                 periodicOrbitSettings );
 }
@@ -615,7 +615,7 @@ double getDefaultPseudoArcLength(
 }
 
 void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
-        std::vector< CR3BPPeriodicOrbitConditions >& periodicOrbits,
+        std::vector< std::shared_ptr< PropagatedCR3BPPeriodicOrbitConditions > >& periodicOrbits,
         const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
         const CR3BPPeriodicOrbitGenerationSettings periodicOrbitSettings,
         const std::function< double( const Eigen::Vector6d& ) > pseudoArcLengthFunction )
@@ -641,32 +641,33 @@ void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
     while( ( numberOfInitialConditions < maximumNumberOfInitialConditions ) && continueContinuation )
     {
         // Determine increments to state and time
-        stateIncrement = periodicOrbits[ numberOfInitialConditions - 1 ].initialState_ -
-                periodicOrbits[ numberOfInitialConditions - 2 ].initialState_;
-        periodIncrement = periodicOrbits[ numberOfInitialConditions - 1 ].orbitPeriod_ -
-                periodicOrbits[ numberOfInitialConditions - 2 ].orbitPeriod_;
+        stateIncrement = periodicOrbits[ numberOfInitialConditions - 1 ]->initialState_ -
+                periodicOrbits[ numberOfInitialConditions - 2 ]->initialState_;
+        periodIncrement = periodicOrbits[ numberOfInitialConditions - 1 ]->orbitPeriod_ -
+                periodicOrbits[ numberOfInitialConditions - 2 ]->orbitPeriod_;
         pseudoArcLengthCorrection =
                 pseudoArcLengthFunction( stateIncrement );
 
         // Apply numerical continuation
-        initialStateVector = periodicOrbits[ numberOfInitialConditions - 1 ].initialState_ +
+        initialStateVector = periodicOrbits[ numberOfInitialConditions - 1 ]->initialState_ +
                 stateIncrement * pseudoArcLengthCorrection;
-        orbitalPeriod = periodicOrbits[ numberOfInitialConditions - 1 ].orbitPeriod_ +
+        orbitalPeriod = periodicOrbits[ numberOfInitialConditions - 1 ]->orbitPeriod_ +
                 periodIncrement * pseudoArcLengthCorrection;
 
-//        std::cout<<numberOfInitialConditions<<" "<<periodicOrbits[ numberOfInitialConditions - 1 ].orbitPeriod_<<std::endl;
         try
         {
-            periodicOrbits.push_back( createCR3BPPeriodicOrbit(
-                                          initialStateVector, orbitalPeriod, periodicOrbitSettings,
-                                          integratorSettings ) );
+            std::shared_ptr< GeneratedCR3BPPeriodicOrbitConditions > newPeriodicOrbit =
+                    createCR3BPPeriodicOrbit( initialStateVector, orbitalPeriod, periodicOrbitSettings,
+                                                              integratorSettings );
             numberOfInitialConditions += 1;
 
             continueContinuation =
                     continueCR3BPNumericalContinuation(
-                        periodicOrbits[ numberOfInitialConditions - 1 ].monodromyMatrix_,
+                        newPeriodicOrbit->monodromyMatrix_,
                     numberOfInitialConditions,
                     periodicOrbitSettings );
+            periodicOrbits.push_back( newPeriodicOrbit );
+
         }
         catch( ... )
         {
