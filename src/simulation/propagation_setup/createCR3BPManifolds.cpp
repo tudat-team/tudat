@@ -86,7 +86,7 @@ void computeManifoldSetFromSinglePoint(
         const std::shared_ptr< numerical_integrators::IntegratorSettings< double > > integratorSettings )
 {
     double initialTime = integratorSettings->initialTime_;
-    double propagationTime = 2.0 * periodicOrbitConditions.orbitPeriod_;
+    double propagationTime = 5.0;//2.0 * periodicOrbitConditions.orbitPeriod_;
     double currentInitialTimeStep = integratorSettings->initialTimeStep_;
 
     Eigen::Matrix6d localStateTransitionMatrix = stateIncludingStm.block( 0, 1, 6, 6 );
@@ -94,22 +94,26 @@ void computeManifoldSetFromSinglePoint(
 
     for( int i = 0; i < 4; i++ )
     {
-        std::cout<<"Manifold index "<<std::endl;
         // Apply displacement epsilon from the periodic orbit at <numberOfTrajectoriesPerManifold> locations on the final orbit.
         Eigen::Vector6d monodromyMatrixEigenvector = manifoldSettings.getEigenVectorForInitialDisplacement( i );
         Eigen::Vector6d localNormalizedEigenvector = ( localStateTransitionMatrix * monodromyMatrixEigenvector ).normalized( );
         Eigen::Vector6d manifoldInitialState = localState + manifoldSettings.getEigenVectorDisplacementScaling( i ) *
                 localNormalizedEigenvector;
-        std::cout<<"Initial state deviation: "<<( manifoldSettings.getEigenVectorDisplacementScaling( i ) *
-                   localNormalizedEigenvector ).transpose( )<<std::endl;
-        std::cout<<"Norm. eigenvector: "<<localNormalizedEigenvector.transpose( )<<std::endl;
+
         double direction = manifoldSettings.getIntegrationDirection( i );
-        integratorSettings->initialTime_ = initialTime;
-        integratorSettings->initialTimeStep_ = direction * currentInitialTimeStep;
-        manifoldStateHistories.push_back(
-                    performCR3BPIntegration(
-                        integratorSettings, periodicOrbitConditions.massParameter( ),
-                        manifoldInitialState, initialTime + direction * propagationTime, false, true ) );
+        std::cout<<"Direction: "<<i<<" "<<direction<<std::endl;
+        integratorSettings->initialTime_ = 0.0;
+        integratorSettings->initialTimeStep_ = currentInitialTimeStep * direction;
+        double finalTime = direction * propagationTime;
+        std::cout<<"Direction: "<<i<<" "<<direction<<std::endl;
+        std::cout<<"Final time: "<<i<<" "<<finalTime<<std::endl;
+        std::cout<<"Initital step: "<<i<<" "<<integratorSettings->initialTimeStep_<<std::endl;
+
+        std::map< double, Eigen::Vector6d > currentManifoldStateHistory =
+                performCR3BPIntegration(
+                    integratorSettings, periodicOrbitConditions.massParameter( ),
+                    manifoldInitialState, finalTime, false, true );
+        manifoldStateHistories.push_back( currentManifoldStateHistory );
     }
 }
 
@@ -147,18 +151,17 @@ std::vector< double > createManifoldDeparturePoints(
     }
     return departurePoints;
 }
+
 void computeManifolds( std::vector< std::vector< std::map< double, Eigen::Vector6d > > >& fullManifoldStateHistories,
                        const CR3BPPeriodicOrbitConditions periodicOrbitConditions,
                        const double eigenvectorDisplacementFromOrbit,
                        const int numberOfDeparturePoints,
                        const double maxEigenvalueDeviation,
-                       const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings )
+                       const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
+                       const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > manifoldIntegratorSettings  )
 {
-    double jacobiEnergyOnOrbit = tudat::gravitation::computeJacobiEnergy(
-                periodicOrbitConditions.massParameter( ), periodicOrbitConditions.initialState_ );
-    std::cout << "\nInitial state vector:" << std::endl << periodicOrbitConditions.initialState_.transpose( ) <<std::endl
-              << "\nwith C: " << jacobiEnergyOnOrbit    << ", T: " << periodicOrbitConditions.massParameter( ) << std::endl;;
-
+//    double jacobiEnergyOnOrbit = tudat::gravitation::computeJacobiEnergy(
+//                periodicOrbitConditions.massParameter( ), periodicOrbitConditions.initialState_ );
 
     // Determine the eigenvector directions of the (un)stable subspace of the monodromy matrix
     Eigen::MatrixXd monodromyMatrix = periodicOrbitConditions.monodromyMatrix_;
@@ -179,14 +182,13 @@ void computeManifolds( std::vector< std::vector< std::map< double, Eigen::Vector
                 numberOfDeparturePoints,
                 stateTransitionMatrixHistory );
 
-    CR3BPManifoldSettings manifoldSettings( stableEigenvector, stableEigenvector, eigenvectorDisplacementFromOrbit );
+    CR3BPManifoldSettings manifoldSettings( stableEigenvector, unstableEigenvector, eigenvectorDisplacementFromOrbit );
     for( unsigned int i = 0; i < departurePoints.size( ); i++ )
     {
-        std::cout<<"Departure point "<<i<<" "<<departurePoints.at( i )<<std::endl;
         std::vector< std::map< double, Eigen::Vector6d > > currentManifoldStateHistories;
         computeManifoldSetFromSinglePoint( currentManifoldStateHistories,
                                            stateTransitionMatrixHistory.at( departurePoints.at( i ) ),
-                                           periodicOrbitConditions, manifoldSettings, integratorSettings );
+                                           periodicOrbitConditions, manifoldSettings, manifoldIntegratorSettings );
         fullManifoldStateHistories.push_back( currentManifoldStateHistories );
     }
 

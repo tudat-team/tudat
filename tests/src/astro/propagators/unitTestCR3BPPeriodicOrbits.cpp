@@ -8,8 +8,8 @@
  *    http://tudat.tudelft.nl/LICENSE.
  */
 
-//#define BOOST_TEST_DYN_LINK
-//#define BOOST_TEST_MAIN
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MAIN
 
 #include <boost/test/unit_test.hpp>
 #include <boost/bind/bind.hpp>
@@ -23,21 +23,20 @@ using namespace std::placeholders;
 #include "tudat/math/integrators/createNumericalIntegrator.h"
 #include "tudat/astro/gravitation/librationPoint.h"
 
-//namespace tudat
-//{
+namespace tudat
+{
 
-//namespace unit_tests
-//{
+namespace unit_tests
+{
 
 using namespace tudat;
 using namespace propagators;
 using namespace numerical_integrators;
 using namespace circular_restricted_three_body_problem;
 
-//BOOST_AUTO_TEST_SUITE( test_cr3bp_periodic_orbits )
+BOOST_AUTO_TEST_SUITE( test_cr3bp_periodic_orbits )
 
-//BOOST_AUTO_TEST_CASE( testCr3bpPeriodicOrbits )
-int main( )
+BOOST_AUTO_TEST_CASE( testCr3bpPeriodicOrbits )
 {
     double minimumStepSize   = std::numeric_limits<double>::epsilon( ); // 2.22044604925031e-16
     double maximumStepSize   = 100.0;//std::numeric_limits<double>::infinity( ); // 2.22044604925031e-16
@@ -58,7 +57,7 @@ int main( )
     double maximumPositionDeviation = 1.0E-12;
     double maximumVelocityDeviation = 1.0E-12;
 
-    int maximumNumberOfOrbits = 10000;
+    int maximumNumberOfOrbits = 4;
     double maximumEigenvalueDeviation = 1.0E-3;
 
     for( int j = 0; j < 2; j++ )
@@ -88,28 +87,44 @@ int main( )
 
             createCR3BPPeriodicOrbitsThroughNumericalContinuation(
                         periodicOrbits, integratorSettings, orbitSettings );
-            std::cout<<periodicOrbits.size( )<<std::endl;
 
-            std::string outputFolder = "/home/dominic/Software/periodicOrbitResults/";
             for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
             {
+                Eigen::Vector6d testInitialState = periodicOrbits.at( i ).initialState_;
+                double propagationTime = periodicOrbits.at( i ).orbitPeriod_;
 
-                std::map< double, Eigen::Vector6d > currentOrbit = propagatePeriodicOrbit(
-                            periodicOrbits.at( i ), integratorSettings );
-                input_output::writeDataMapToTextFile(
-                            currentOrbit, "periodic_orbit_" +
-                            std::to_string( i ) + "_" +
-                            std::to_string( j ) + "_" +
-                            std::to_string( k ) + ".dat", outputFolder );
+                std::map< double, Eigen::Vector6d > testStateHistory =
+                        performCR3BPIntegration(
+                        integratorSettings, massParameter, testInitialState, propagationTime, true, false );
+                BOOST_CHECK_CLOSE_FRACTION( testStateHistory.begin( )->first, propagationTime, 1.0E-14 );
 
+                Eigen::Vector6d stateDifference = testInitialState - testStateHistory.begin( )->second;
+                for( unsigned int l = 0; l < 6; l++ )
+                {
+                    BOOST_CHECK_SMALL( std::fabs( stateDifference( l ) ), 1.0E-10 );
+                }
             }
+
+//            std::string outputFolder = "/home/dominic/Software/periodicOrbitResults/";
+//            for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
+//            {
+
+//                std::map< double, Eigen::Vector6d > currentOrbit = propagatePeriodicOrbit(
+//                            periodicOrbits.at( i ), integratorSettings );
+//                input_output::writeDataMapToTextFile(
+//                            currentOrbit, "periodic_orbit_" +
+//                            std::to_string( i ) + "_" +
+//                            std::to_string( j ) + "_" +
+//                            std::to_string( k ) + ".dat", outputFolder );
+
+//            }
         }
     }
 
 }
 
-//BOOST_AUTO_TEST_SUITE_END( )
+BOOST_AUTO_TEST_SUITE_END( )
 
-//}
+}
 
-//}
+}

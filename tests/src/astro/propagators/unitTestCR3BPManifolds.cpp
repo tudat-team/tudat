@@ -43,8 +43,8 @@ int main( )
     double minimumStepSize   = std::numeric_limits<double>::epsilon( ); // 2.22044604925031e-16
     double maximumStepSize   = 100.0;//std::numeric_limits<double>::infinity( ); // 2.22044604925031e-16
 
-    const double relativeErrorTolerance = 1.0E-10;
-    const double absoluteErrorTolerance = 1.0E-14;
+    double relativeErrorTolerance = 1.0E-10;
+    double absoluteErrorTolerance = 1.0E-14;
 
     std::shared_ptr< IntegratorSettings< double > > integratorSettings =
             std::make_shared< RungeKuttaVariableStepSizeSettings< > >
@@ -75,8 +75,17 @@ int main( )
                                   periodicOrbitInitialStateGuess, orbitalPeriod,
                                   orbitSettings, integratorSettings );
 
+
+    minimumStepSize   = std::numeric_limits<double>::epsilon( ); // 2.22044604925031e-16
+    maximumStepSize   = 1.0E-2;
+    relativeErrorTolerance = 1.0E-12;
+    absoluteErrorTolerance = 1.0e-12;
+    std::shared_ptr< IntegratorSettings< double > > manifoldIntegratorSettings =
+            std::make_shared< RungeKuttaVariableStepSizeSettings< > >
+            ( 0.0, 1.0E-5, rungeKutta87DormandPrince, minimumStepSize, maximumStepSize, relativeErrorTolerance, absoluteErrorTolerance );
+
     std::vector< std::vector< std::map< double, Eigen::Vector6d > > > fullManifoldStateHistories;
-    computeManifolds( fullManifoldStateHistories, periodicOrbit, 1.0E-6, 10, 1.0E-3,integratorSettings );
+    computeManifolds( fullManifoldStateHistories, periodicOrbit, 1.0E-6, 2, 1.0E-3, integratorSettings, manifoldIntegratorSettings );
 
     std::string outputFolder = "/home/dominic/Software/periodicOrbitResults/";
     for( unsigned int i = 0; i < fullManifoldStateHistories.size( ); i++ )

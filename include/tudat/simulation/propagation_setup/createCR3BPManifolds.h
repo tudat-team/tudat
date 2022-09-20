@@ -88,12 +88,13 @@ std::vector< double > createManifoldDeparturePoints(
         const int numberOfDeparturePoints,
         const std::map< double, Eigen::MatrixXd >& stateTransitionMatrixHistory );
 
-void computeManifolds( std::vector< std::vector< std::map< double, Eigen::Vector6d > > >& fullManifoldStateHistories,
+void computeManifolds(std::vector< std::vector< std::map< double, Eigen::Vector6d > > >& fullManifoldStateHistories,
                        const CR3BPPeriodicOrbitConditions periodicOrbitConditions,
                        const double eigenvectorDisplacementFromOrbit,
                        const int numberOfDeparturePoints,
                        const double maxEigenvalueDeviation,
-                       const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings );
+                       const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings ,
+                       const std::shared_ptr<tudat::numerical_integrators::IntegratorSettings<double> > manifoldIntegratorSettings );
 
 
 
