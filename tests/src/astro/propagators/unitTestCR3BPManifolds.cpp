@@ -91,9 +91,9 @@ int main( )
 
     std::map< double, Eigen::Vector6d > periodicOrbitStates = performCR3BPIntegration(
                 integratorSettings,
-                periodicOrbit->massParameter_,
-                periodicOrbit->initialState_,
-                periodicOrbit->orbitPeriod_,
+                periodicOrbit->getMassParameter( ),
+                periodicOrbit->getInitialState( ),
+                periodicOrbit->getOrbitPeriod( ),
                 true, true );
 
     std::string outputFolder = "/home/dominic/Software/manifoldOrbitResults/";

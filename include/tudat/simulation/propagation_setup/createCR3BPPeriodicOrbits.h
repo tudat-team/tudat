@@ -66,8 +66,9 @@ struct CR3BPPeriodicOrbitGenerationSettings
 };
 
 
-struct CR3BPPeriodicOrbitConditions
+class CR3BPPeriodicOrbitConditions
 {
+public:
     CR3BPPeriodicOrbitConditions(
             const Eigen::Vector6d& initialState,
             const double orbitPeriod,
@@ -76,13 +77,31 @@ struct CR3BPPeriodicOrbitConditions
         orbitPeriod_( orbitPeriod ),
         massParameter_( massParameter ){ }
 
+    Eigen::Vector6d getInitialState( )
+    {
+        return initialState_;
+    }
+
+    double getOrbitPeriod( )
+    {
+        return orbitPeriod_;
+    }
+
+    double getMassParameter( )
+    {
+        return massParameter_;
+    }
+
+protected:
+
     const Eigen::Vector6d initialState_;
     const double orbitPeriod_;
     const double massParameter_;
 };
 
-struct PropagatedCR3BPPeriodicOrbitConditions: public CR3BPPeriodicOrbitConditions
+class PropagatedCR3BPPeriodicOrbitConditions: public CR3BPPeriodicOrbitConditions
 {
+public:
     PropagatedCR3BPPeriodicOrbitConditions(
             const Eigen::Vector6d& initialState,
             const double orbitPeriod,
@@ -95,14 +114,32 @@ struct PropagatedCR3BPPeriodicOrbitConditions: public CR3BPPeriodicOrbitConditio
         orbitType_( orbitType ),
         librationPoint_( librationPoint ){ }
 
+    Eigen::Matrix6d getMonodromyMatrix( )
+    {
+        return monodromyMatrix_;
+    }
+
+    CR3BPPeriodicOrbitTypes getOrbitType( )
+    {
+        return orbitType_;
+    }
+
+    int getLibrationPointNumber( )
+    {
+        return librationPoint_;
+    }
+
+protected:
+
     Eigen::Matrix6d monodromyMatrix_;
     CR3BPPeriodicOrbitTypes orbitType_;
     int librationPoint_;
 
 };
 
-struct GeneratedCR3BPPeriodicOrbitConditions: public PropagatedCR3BPPeriodicOrbitConditions
+class GeneratedCR3BPPeriodicOrbitConditions: public PropagatedCR3BPPeriodicOrbitConditions
 {
+public:
     GeneratedCR3BPPeriodicOrbitConditions(
             const Eigen::Vector6d initialState,
             const Eigen::Vector6d halfPeriodStateVector,
@@ -117,14 +154,37 @@ struct GeneratedCR3BPPeriodicOrbitConditions: public PropagatedCR3BPPeriodicOrbi
         numberOfDifferentialCorrections_( numberOfDifferentialCorrections ),
         generationSettings_( generationSettings ){ }
 
-    double massParameter( ) const { return generationSettings_.massParameter_; }
-    int librationPointNumber( ) const { return generationSettings_.librationPointNumber_; }
-    CR3BPPeriodicOrbitTypes orbitType( ) const { return generationSettings_.orbitType_; }
+    Eigen::Vector6d getHalfPeriodStateVector( )
+    {
+        return halfPeriodStateVector_;
+    }
+
+    int getNumberOfDifferentialCorrections( )
+    {
+        return numberOfDifferentialCorrections_;
+    }
+
+    CR3BPPeriodicOrbitGenerationSettings getGenerationSettings( )
+    {
+        return generationSettings_;
+    }
+
+private:
 
     Eigen::Vector6d halfPeriodStateVector_;
+
     int numberOfDifferentialCorrections_;
+
     CR3BPPeriodicOrbitGenerationSettings generationSettings_;
 };
+
+std::map< double, std::shared_ptr< CR3BPPeriodicOrbitConditions > > sortPeriodicOrbitsByInitialJacobiEnergy(
+        const std::vector< std::shared_ptr< CR3BPPeriodicOrbitConditions > >& periodicOrbits,
+        const double massParameter );
+
+std::map< double, double > getOrbitJacobiEnergyHistory(
+        const std::map< double, Eigen::Vector6d >& orbitStateHistory,
+        const double massParameter );
 
 std::map< double, Eigen::Vector6d > propagatePeriodicOrbit(
         const std::shared_ptr< CR3BPPeriodicOrbitConditions > orbitDefinition,
@@ -136,6 +196,11 @@ std::pair< Eigen::Vector6d, double >  richardsonApproximationLibrationPointPerio
         const double massParameter,
         const CR3BPPeriodicOrbitTypes orbitType,
         int librationPointNr, double amplitude, double n = 1.0 );
+
+std::pair< Eigen::Vector6d, double >  richardsonApproximationEarthMoonLibrationPointPeriodicOrbit(
+        const double massParameter,
+        const CR3BPPeriodicOrbitTypes orbitType,
+        int librationPointNr, const int guessIteration, double n = 1.0 );
 
 double initializeEarthMoonPeriodicOrbitAmplitude(
         const int librationPointNumber, const CR3BPPeriodicOrbitTypes orbitType, const int guessIteration );
@@ -170,12 +235,12 @@ double getDefaultPseudoArcLength(
         const double distanceIncrement,
         const Eigen::Vector6d& currentState );
 
-void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
-        std::vector< std::shared_ptr< CR3BPPeriodicOrbitConditions > >& periodicOrbits,
-        const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
-        const CR3BPPeriodicOrbitGenerationSettings periodicOrbitSettings,
-        const std::function< double( const Eigen::Vector6d& ) > pseudoArcLengthFunction =
-        std::bind( &getDefaultPseudoArcLength, 1.0E-4, std::placeholders::_1 ));
+//void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
+//        std::vector< std::shared_ptr< CR3BPPeriodicOrbitConditions > >& periodicOrbits,
+//        const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
+//        const CR3BPPeriodicOrbitGenerationSettings periodicOrbitSettings,
+//        const std::function< double( const Eigen::Vector6d& ) > pseudoArcLengthFunction =
+//        std::bind( &getDefaultPseudoArcLength, 1.0E-4, std::placeholders::_1 ) );
 
 void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
         std::vector< std::shared_ptr< PropagatedCR3BPPeriodicOrbitConditions > >& periodicOrbits,

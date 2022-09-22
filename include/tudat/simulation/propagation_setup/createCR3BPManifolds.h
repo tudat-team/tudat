@@ -204,8 +204,8 @@ std::shared_ptr< MultipleCustomPropagationTerminationCondition< StateType, doubl
             std::make_shared< ManifoldTerminationConditionU1U4< StateType > >( terminationRootFinderSettings );
     std::shared_ptr< ManifoldTerminationConditionU2U3< StateType > > u2u3Termination =
             std::make_shared< ManifoldTerminationConditionU2U3< StateType > >(
-                periodicOrbitConditions->massParameter_,
-                periodicOrbitConditions->librationPoint_,
+                periodicOrbitConditions->getMassParameter( ),
+                periodicOrbitConditions->getLibrationPointNumber( ),
                 manifoldNumber, terminationRootFinderSettings );
     return std::make_shared<  MultipleCustomPropagationTerminationCondition< StateType, double > >(
                 std::vector< std::shared_ptr< CustomPropagationTerminationCondition< StateType, double > > >( { u1u4Termination, u2u3Termination } ) );
@@ -223,13 +223,13 @@ std::vector< double > createManifoldDeparturePoints(
         const int numberOfDeparturePoints,
         const std::map< double, Eigen::MatrixXd >& stateTransitionMatrixHistory );
 
-void computeManifolds(std::vector< std::vector< std::map< double, Eigen::Vector6d > > >& fullManifoldStateHistories,
-                      const std::shared_ptr< PropagatedCR3BPPeriodicOrbitConditions > periodicOrbitConditions,
-                      const double eigenvectorDisplacementFromOrbit,
-                      const int numberOfDeparturePoints,
-                      const double maxEigenvalueDeviation,
-                      const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings ,
-                      const std::shared_ptr<tudat::numerical_integrators::IntegratorSettings<double> > manifoldIntegratorSettings );
+void computeManifolds( std::vector< std::vector< std::map< double, Eigen::Vector6d > > >& fullManifoldStateHistories,
+                       const std::shared_ptr< PropagatedCR3BPPeriodicOrbitConditions > periodicOrbitConditions,
+                       const double eigenvectorDisplacementFromOrbit,
+                       const int numberOfDeparturePoints,
+                       const double maxEigenvalueDeviation,
+                       const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings ,
+                       const std::shared_ptr<tudat::numerical_integrators::IntegratorSettings<double> > manifoldIntegratorSettings );
 
 
 

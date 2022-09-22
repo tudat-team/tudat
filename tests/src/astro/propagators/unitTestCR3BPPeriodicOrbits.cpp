@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( testCr3bpPeriodicOrbits )
         {
             int librationPointNumber = j + 1;
             CR3BPPeriodicOrbitTypes orbitType = static_cast< CR3BPPeriodicOrbitTypes >( k );
-            CR3BPPeriodicOrbitGenerationSettings orbitSettings(
+            CR3BPPeriodicOrbitGenerationSettings orbitGenerationSettings(
                         massParameter, orbitType, librationPointNumber,maximumDifferentialCorrections,
                         maximumPositionDeviation, maximumVelocityDeviation, maximumNumberOfOrbits, maximumEigenvalueDeviation );
 
@@ -86,16 +86,16 @@ BOOST_AUTO_TEST_CASE( testCr3bpPeriodicOrbits )
                             massParameter, orbitType, librationPointNumber, amplitudeFirstGuess );
                 periodicOrbits.push_back( createCR3BPPeriodicOrbit(
                                               periodicOrbitInitialGuess.first, periodicOrbitInitialGuess.second,
-                                              orbitSettings, integratorSettings ) );
+                                              orbitGenerationSettings, integratorSettings ) );
             }
 
             createCR3BPPeriodicOrbitsThroughNumericalContinuation(
-                        periodicOrbits, integratorSettings, orbitSettings );
+                        periodicOrbits, integratorSettings, orbitGenerationSettings );
 
             //            for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
             //            {
-            //                Eigen::Vector6d testInitialState = periodicOrbits.at( i ).initialState_;
-            //                double propagationTime = periodicOrbits.at( i ).orbitPeriod_;
+            //                Eigen::Vector6d testInitialState = periodicOrbits.at( i )->getInitialState( );
+            //                double propagationTime = periodicOrbits.at( i )->getOrbitPeriod( );
 
             //                std::map< double, Eigen::Vector6d > testStateHistory =
             //                        performCR3BPIntegration(
@@ -111,8 +111,8 @@ BOOST_AUTO_TEST_CASE( testCr3bpPeriodicOrbits )
             std::map< double, Eigen::VectorXd > initialStates;
             for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
             {
-                Eigen::Vector6d testInitialState = periodicOrbits.at( i )->initialState_;
-                double propagationTime = periodicOrbits.at( i )->orbitPeriod_;
+                Eigen::Vector6d testInitialState = periodicOrbits.at( i )->getInitialState( );
+                double propagationTime = periodicOrbits.at( i )->getOrbitPeriod( );
                 initialStates[ propagationTime ] = testInitialState;
             }
 

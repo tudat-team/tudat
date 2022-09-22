@@ -8,6 +8,7 @@
  *    http://tudat.tudelft.nl/LICENSE.
  */
 
+#include "tudat/astro/gravitation/jacobiEnergy.h"
 #include "tudat/astro/gravitation/librationPointFunctions.h"
 #include "tudat/simulation/propagation_setup/createCR3BPPeriodicOrbits.h"
 
@@ -40,14 +41,40 @@ std::string getPeriodicOrbitName( enum CR3BPPeriodicOrbitTypes orbitType )
     return orbitName;
 }
 
+std::map< double, std::shared_ptr< CR3BPPeriodicOrbitConditions > > sortPeriodicOrbitsByInitialJacobiEnergy(
+        const std::vector< std::shared_ptr< CR3BPPeriodicOrbitConditions > >& periodicOrbits,
+        const double massParameter )
+{
+    std::map< double, std::shared_ptr< CR3BPPeriodicOrbitConditions > > sortedOrbits;
+    for( unsigned int i = 0; i < periodicOrbits.size( ); i++ )
+    {
+       sortedOrbits[ gravitation::computeJacobiEnergy( massParameter, sortedOrbits.at( i )->getInitialState( ) ) ] =
+               periodicOrbits.at( i );
+    }
+    return sortedOrbits;
+}
+
+
+std::map< double, double > getOrbitJacobiEnergyHistory(
+        const std::map< double, Eigen::Vector6d >& orbitStateHistory,
+        const double massParameter )
+{
+    std::map< double, double > jacobiEnergy;
+    for( auto it : orbitStateHistory )
+    {
+        jacobiEnergy[ it.first ] = gravitation::computeJacobiEnergy( massParameter, it.second );
+    }
+    return jacobiEnergy;
+}
+
 std::map< double, Eigen::Vector6d > propagatePeriodicOrbit(
         const  std::shared_ptr< CR3BPPeriodicOrbitConditions > orbitDefinition,
         const std::shared_ptr< tudat::numerical_integrators::IntegratorSettings< double > > integratorSettings,
         const double numberOfPeriods )
 {
     return performCR3BPIntegration(
-                integratorSettings, orbitDefinition->massParameter_, orbitDefinition->initialState_,
-                orbitDefinition->orbitPeriod_ * numberOfPeriods, true, true );
+                integratorSettings, orbitDefinition->getMassParameter( ), orbitDefinition->getInitialState( ),
+                orbitDefinition->getOrbitPeriod( ) * numberOfPeriods, true, true );
 }
 
 
@@ -206,6 +233,7 @@ std::pair< Eigen::Vector6d, double >  richardsonApproximationLibrationPointPerio
     return std::make_pair( initialStateVector, orbitalPeriod );
 }
 
+
 double initializeEarthMoonPeriodicOrbitAmplitude(
         const int librationPointNumber, const CR3BPPeriodicOrbitTypes orbitType, const int guessIteration )
 {
@@ -297,6 +325,18 @@ double initializeEarthMoonPeriodicOrbitAmplitude(
     return amplitude;
 }
 
+
+std::pair< Eigen::Vector6d, double >  richardsonApproximationEarthMoonLibrationPointPeriodicOrbit(
+        const double massParameter,
+        const CR3BPPeriodicOrbitTypes orbitType,
+        int librationPointNr, const int guessIteration, const double n )
+{
+
+    double amplitude = initializeEarthMoonPeriodicOrbitAmplitude(
+                librationPointNr, orbitType, guessIteration );
+    return richardsonApproximationLibrationPointPeriodicOrbit(
+            massParameter, orbitType, librationPointNr, amplitude, n );
+}
 
 
 bool continueCR3BPDifferentialCorrection(
@@ -641,17 +681,17 @@ void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
     while( ( numberOfInitialConditions < maximumNumberOfInitialConditions ) && continueContinuation )
     {
         // Determine increments to state and time
-        stateIncrement = periodicOrbits[ numberOfInitialConditions - 1 ]->initialState_ -
-                periodicOrbits[ numberOfInitialConditions - 2 ]->initialState_;
-        periodIncrement = periodicOrbits[ numberOfInitialConditions - 1 ]->orbitPeriod_ -
-                periodicOrbits[ numberOfInitialConditions - 2 ]->orbitPeriod_;
+        stateIncrement = periodicOrbits[ numberOfInitialConditions - 1 ]->getInitialState( ) -
+                periodicOrbits[ numberOfInitialConditions - 2 ]->getInitialState( );
+        periodIncrement = periodicOrbits[ numberOfInitialConditions - 1 ]->getOrbitPeriod( ) -
+                periodicOrbits[ numberOfInitialConditions - 2 ]->getOrbitPeriod( );
         pseudoArcLengthCorrection =
                 pseudoArcLengthFunction( stateIncrement );
 
         // Apply numerical continuation
-        initialStateVector = periodicOrbits[ numberOfInitialConditions - 1 ]->initialState_ +
+        initialStateVector = periodicOrbits[ numberOfInitialConditions - 1 ]->getInitialState( ) +
                 stateIncrement * pseudoArcLengthCorrection;
-        orbitalPeriod = periodicOrbits[ numberOfInitialConditions - 1 ]->orbitPeriod_ +
+        orbitalPeriod = periodicOrbits[ numberOfInitialConditions - 1 ]->getOrbitPeriod( ) +
                 periodIncrement * pseudoArcLengthCorrection;
 
         try
@@ -663,7 +703,7 @@ void createCR3BPPeriodicOrbitsThroughNumericalContinuation(
 
             continueContinuation =
                     continueCR3BPNumericalContinuation(
-                        newPeriodicOrbit->monodromyMatrix_,
+                        newPeriodicOrbit->getMonodromyMatrix( ),
                     numberOfInitialConditions,
                     periodicOrbitSettings );
             periodicOrbits.push_back( newPeriodicOrbit );

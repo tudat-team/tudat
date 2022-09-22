@@ -106,7 +106,7 @@ void computeManifoldSetFromSinglePoint(
 
         std::map< double, Eigen::Vector6d > currentManifoldStateHistory =
                 performCR3BPIntegration(
-                    integratorSettings, periodicOrbitConditions->massParameter_,
+                    integratorSettings, periodicOrbitConditions->getMassParameter( ),
                     manifoldInitialState, terminationConditions, true, true );
         manifoldStateHistories.push_back( currentManifoldStateHistory );
     }
@@ -159,7 +159,7 @@ void computeManifolds( std::vector< std::vector< std::map< double, Eigen::Vector
 //                periodicOrbitConditions.massParameter( ), periodicOrbitConditions.initialState_ );
 
     // Determine the eigenvector directions of the (un)stable subspace of the monodromy matrix
-    Eigen::MatrixXd monodromyMatrix = periodicOrbitConditions->monodromyMatrix_;
+    Eigen::MatrixXd monodromyMatrix = periodicOrbitConditions->getMonodromyMatrix( );
     Eigen::Vector6d stableEigenvector;
     Eigen::Vector6d unstableEigenvector;
     determineStableUnstableEigenvectors( stableEigenvector, unstableEigenvector, monodromyMatrix, maxEigenvalueDeviation );
@@ -167,13 +167,13 @@ void computeManifolds( std::vector< std::vector< std::map< double, Eigen::Vector
     // Propagate the periodicOrbitConditions.initialState_ for a full period and write output to file.
     std::map< double, Eigen::MatrixXd > stateTransitionMatrixHistory = performCR3BPWithStmIntegration(
                 integratorSettings,
-                periodicOrbitConditions->massParameter_,
-                periodicOrbitConditions->initialState_,
-                periodicOrbitConditions->orbitPeriod_,
+                periodicOrbitConditions->getMassParameter( ),
+                periodicOrbitConditions->getInitialState( ),
+                periodicOrbitConditions->getOrbitPeriod( ),
                 true, true );
 
     std::vector< double > departurePoints = createManifoldDeparturePoints(
-                periodicOrbitConditions->orbitPeriod_,
+                periodicOrbitConditions->getOrbitPeriod( ),
                 numberOfDeparturePoints,
                 stateTransitionMatrixHistory );
 
