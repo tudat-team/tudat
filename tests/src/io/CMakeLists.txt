@@ -112,3 +112,9 @@ TUDAT_ADD_TEST_CASE(AerodynamicCoefficientReader
         tudat_basic_astrodynamics
         tudat_basics
         )
+
+TUDAT_ADD_TEST_CASE(MpcDataReader
+        PRIVATE_LINKS
+        tudat_input_output
+        tudat_basic_astrodynamics
+        )

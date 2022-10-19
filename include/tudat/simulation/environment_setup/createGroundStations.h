@@ -357,6 +357,7 @@ std::function< Eigen::Matrix< StateScalarType, 6, 1 >( const TimeType ) > getLin
     return getLinkEndCompleteEphemerisFunction< TimeType, StateScalarType >( bodies.at( linkEndId.bodyName_ ), linkEndId );
 }
 
+
 std::vector< double >  getTargetElevationAngles(
         const std::shared_ptr< Body > observingBody,
         const std::shared_ptr< Body > targetBody,

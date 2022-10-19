@@ -155,6 +155,22 @@ TimeScalarType convertSecondsSinceEpochToJulianDay(
 }
 
 
+template< typename TimeScalarType = double >
+TimeScalarType convertCalendarDateToJulianDaysSinceEpoch( const int calendarYear,
+                                                          const int calendarMonth,
+                                                          const int calendarDay,
+                                                          const TimeScalarType dayFraction,
+                                                          const TimeScalarType referenceJulianDay )
+{
+    // Calculate julian day of calendar date.
+    TimeScalarType julianDay =
+            static_cast< TimeScalarType >( boost::gregorian::date( calendarYear, calendarMonth, calendarDay ).
+                                           julian_day( ) ) - referenceJulianDay;
+
+    // Compute Julian day by adding day fraction and subtracting 0.5 to reference to midnight instead of noon..
+    return julianDay + dayFraction - mathematical_constants::getFloatingFraction< TimeScalarType >( 1, 2 );
+}
+
 //! Compute Julian day from given date and time
 /*!
   * Computes the Julian day from given year, month, day, hour, minutes, seconds as used in everyday
@@ -178,11 +194,6 @@ TimeScalarType convertCalendarDateToJulianDaysSinceEpoch( const int calendarYear
                                                           const TimeScalarType calendarSeconds,
                                                           const TimeScalarType referenceJulianDay )
 {
-    // Calculate julian day of calendar date.
-    TimeScalarType julianDay =
-            static_cast< TimeScalarType >( boost::gregorian::date( calendarYear, calendarMonth, calendarDay ).
-                                           julian_day( ) ) - referenceJulianDay;
-
     //Compute day fraction
     const TimeScalarType dayFraction =
             static_cast< TimeScalarType >( calendarHour ) /
@@ -191,9 +202,7 @@ TimeScalarType convertCalendarDateToJulianDaysSinceEpoch( const int calendarYear
             mathematical_constants::getFloatingInteger< TimeScalarType >( 24 * 60 ) +
             calendarSeconds / mathematical_constants::getFloatingInteger< TimeScalarType >( 24 * 3600 );
 
-
-    // Compute Julian day by adding day fraction and subtracting 0.5 to reference to midnight instead of noon..
-    return julianDay + dayFraction - mathematical_constants::getFloatingFraction< TimeScalarType >( 1, 2 );
+    return convertCalendarDateToJulianDaysSinceEpoch( calendarYear, calendarMonth, calendarDay, dayFraction, referenceJulianDay );
 }
 
 //! Compute Julian day from given date and time
