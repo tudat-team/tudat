@@ -66,7 +66,7 @@ option(TUDAT_BUILD_TUDAT_TUTORIALS "Build tutorials." ON)
 option(TUDAT_BUILD_STATIC_LIBRARY "Build tudat as a static library, instead of dynamic." ON)
 
 # Build static library instead of dynamic.
-option(TUDAT_BUILD_WITH_FILTERS "Build Tudat with preliminary Kalman Filter functionality." OFF)
+option(TUDAT_BUILD_WITH_FILTERS "Build Tudat with preliminary Kalman Filter functionality." ON)
 
 # Build sofa interface.
 option(TUDAT_BUILD_WITH_SOFA_INTERFACE "Build Tudat with sofa interface." ON)

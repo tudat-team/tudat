@@ -115,6 +115,7 @@ if (TUDAT_BUILD_WITH_ESTIMATION_TOOLS)
             Tudat::tudat_input_output
             Tudat::tudat_basics
             Tudat::tudat_data
+            Tudat::tudat_filters
             )
 
 else ()

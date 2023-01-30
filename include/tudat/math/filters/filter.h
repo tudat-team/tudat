@@ -540,7 +540,7 @@ private:
         case numerical_integrators::rungeKutta4:
         {
             integrator_ = numerical_integrators::createIntegrator< IndependentVariableType, DependentVector >(
-                        systemFunction_, aPosterioriStateEstimate_, integratorSettings );
+                        systemFunction_, aPosterioriStateEstimate_, currentTime_, integratorSettings );
             break;
         }
         case numerical_integrators::rungeKuttaVariableStepSize:
@@ -551,7 +551,7 @@ private:
 
             // Create integrator object
             integrator_ = numerical_integrators::createIntegrator< IndependentVariableType, DependentVector >(
-                        systemFunction_, aPosterioriStateEstimate_, integratorSettings );
+                        systemFunction_, aPosterioriStateEstimate_, currentTime_, integratorSettings );
 
             // Turn off step-size control
             integrator_->setStepSizeControl( false );
