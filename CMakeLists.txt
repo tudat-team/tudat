@@ -46,7 +46,7 @@ set(Tudat_DEFINITIONS "")
 #  Offer the user the choice of defining the build variation.
 # +============================================================================
 # Build option: enable the test suite.
-option(TUDAT_BUILD_TESTS "Build the test suite." ON)
+option(TUDAT_BUILD_TESTS "Build the test suite." OFF)
 
 option(TUDAT_DOWNLOAD_AND_BUILD_BOOST "Downloads and builds boost" OFF)
 
@@ -60,7 +60,7 @@ option(TUDAT_BUILD_WITH_PROPAGATION_TESTS "Build tudat with propagation tests. (
 option(TUDAT_BUILD_WITH_ESTIMATION_TOOLS "Build tudat with estimation tools." ON)
 
 # Build option: enable tutorials.
-option(TUDAT_BUILD_TUDAT_TUTORIALS "Build tutorials." ON)
+option(TUDAT_BUILD_TUDAT_TUTORIALS "Build tutorials." OFF)
 
 # Build static library instead of dynamic.
 option(TUDAT_BUILD_STATIC_LIBRARY "Build tudat as a static library, instead of dynamic." ON)
@@ -75,7 +75,7 @@ option(TUDAT_BUILD_WITH_SOFA_INTERFACE "Build Tudat with sofa interface." ON)
 option(TUDAT_BUILD_WITH_JSON_INTERFACE "Build Tudat with json interface." OFF)
 
 # Build with nrlmsise-00 atmosphere model.
-option(TUDAT_BUILD_WITH_NRLMSISE00 "Build with nrlmsise-00 atmosphere model." OFF)
+option(TUDAT_BUILD_WITH_NRLMSISE00 "Build with nrlmsise-00 atmosphere model." ON)
 
 # Build pagmo-dependent code
 option(TUDAT_BUILD_WITH_PAGMO "Build Tudat with pagmo." OFF)
