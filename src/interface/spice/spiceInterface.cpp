@@ -15,70 +15,74 @@
 #include "tudat/paths.hpp"
 
 #include <math.h>
+#include <mutex>
 
 namespace tudat {
 namespace spice_interface {
 using Eigen::Vector6d;
 
-std::string getCorrectedTargetBodyName(
-        const std::string &targetBodyName )
-{
+static std::mutex spiceMutex;
+
+std::string getCorrectedTargetBodyName(const std::string &targetBodyName) {
     std::string correctedTargetBodyName;
-    if( targetBodyName == "Mercury" ||
-            targetBodyName == "Venus" ||
-            targetBodyName == "MERCURY" ||
-            targetBodyName == "VENUS" ||
-            targetBodyName == "mercury" ||
-            targetBodyName == "venus" )
-    {
+    if (targetBodyName == "Mercury" || targetBodyName == "Venus" ||
+        targetBodyName == "MERCURY" || targetBodyName == "VENUS" ||
+        targetBodyName == "mercury" || targetBodyName == "venus") {
         correctedTargetBodyName = targetBodyName + "_Barycenter";
-    }
-    else
-    {
+    } else {
         correctedTargetBodyName = targetBodyName;
     }
 
     return correctedTargetBodyName;
 }
 
-
 //! Convert a Julian date to ephemeris time (equivalent to TDB in Spice).
 double convertJulianDateToEphemerisTime(const double julianDate) {
+    auto lock_guard = std::unique_lock(spiceMutex);
     return (julianDate - j2000_c()) * spd_c();
 }
 
 //! Convert ephemeris time (equivalent to TDB) to a Julian date.
 double convertEphemerisTimeToJulianDate(const double ephemerisTime) {
+    auto lock_guard = std::unique_lock(spiceMutex);
     return j2000_c() + (ephemerisTime) / spd_c();
 }
 
 //! Converts a date string to ephemeris time.
 double convertDateStringToEphemerisTime(const std::string &dateString) {
     double ephemerisTime = 0.0;
+    auto lock_guard = std::unique_lock(spiceMutex);
     str2et_c(dateString.c_str(), &ephemerisTime);
     return ephemerisTime;
 }
 
 //! Get Cartesian state of a body, as observed from another body.
-Vector6d getBodyCartesianStateAtEpoch(
-        const std::string &targetBodyName, const std::string &observerBodyName,
-        const std::string &referenceFrameName, const std::string &aberrationCorrections,
-        const double ephemerisTime) {
+Vector6d getBodyCartesianStateAtEpoch(const std::string &targetBodyName,
+                                      const std::string &observerBodyName,
+                                      const std::string &referenceFrameName,
+                                      const std::string &aberrationCorrections,
+                                      const double ephemerisTime) {
 
-
-    if( !( ephemerisTime == ephemerisTime )  )
-    {
-        throw std::invalid_argument( "Error when retrieving Cartesian state from Spice, input time is " + std::to_string(ephemerisTime) );
+    if (!(ephemerisTime == ephemerisTime)) {
+        throw std::invalid_argument(
+            "Error when retrieving Cartesian state from Spice, input time is " +
+            std::to_string(ephemerisTime));
     }
-    // Declare variables for cartesian state and light-time to be determined by Spice.
+    // Declare variables for cartesian state and light-time to be determined by
+    // Spice.
     double stateAtEpoch[6];
     double lightTime;
 
     // Call Spice function to calculate state and light-time.
-    spkezr_c(getCorrectedTargetBodyName( targetBodyName ).c_str(), ephemerisTime, referenceFrameName.c_str(),
+    spiceMutex.lock();
+    spkezr_c(getCorrectedTargetBodyName(targetBodyName).c_str(),
+             ephemerisTime,
+             referenceFrameName.c_str(),
              aberrationCorrections.c_str(),
-             getCorrectedTargetBodyName( observerBodyName ).c_str(), stateAtEpoch,
+             getCorrectedTargetBodyName(observerBodyName).c_str(),
+             stateAtEpoch,
              &lightTime);
+    spiceMutex.unlock();
 
     // Put result in Eigen Vector.
     Vector6d cartesianStateVector;
@@ -88,29 +92,37 @@ Vector6d getBodyCartesianStateAtEpoch(
 
     // Convert from km(/s) to m(/s).
     return unit_conversions::convertKilometersToMeters<Vector6d>(
-                cartesianStateVector);
+        cartesianStateVector);
 }
 
 //! Get Cartesian position of a body, as observed from another body.
-Eigen::Vector3d getBodyCartesianPositionAtEpoch(const std::string &targetBodyName,
-                                                const std::string &observerBodyName,
-                                                const std::string &referenceFrameName,
-                                                const std::string &aberrationCorrections,
-                                                const double ephemerisTime) {
+Eigen::Vector3d
+getBodyCartesianPositionAtEpoch(const std::string &targetBodyName,
+                                const std::string &observerBodyName,
+                                const std::string &referenceFrameName,
+                                const std::string &aberrationCorrections,
+                                const double ephemerisTime) {
 
-    if( !( ephemerisTime == ephemerisTime )  )
-    {
-        throw std::invalid_argument( "Error when retrieving Cartesian position from Spice, input time is " + std::to_string(ephemerisTime) );
+    if (!(ephemerisTime == ephemerisTime)) {
+        throw std::invalid_argument("Error when retrieving Cartesian position "
+                                    "from Spice, input time is " +
+                                    std::to_string(ephemerisTime));
     }
-    // Declare variables for cartesian position and light-time to be determined by Spice.
+    // Declare variables for cartesian position and light-time to be determined
+    // by Spice.
     double positionAtEpoch[3];
     double lightTime;
 
     // Call Spice function to calculate position and light-time.
-    spkpos_c(getCorrectedTargetBodyName( targetBodyName ).c_str(), ephemerisTime, referenceFrameName.c_str(),
+    spiceMutex.lock();
+    spkpos_c(getCorrectedTargetBodyName(targetBodyName).c_str(),
+             ephemerisTime,
+             referenceFrameName.c_str(),
              aberrationCorrections.c_str(),
-             getCorrectedTargetBodyName( observerBodyName ).c_str(), positionAtEpoch,
+             getCorrectedTargetBodyName(observerBodyName).c_str(),
+             positionAtEpoch,
              &lightTime);
+    spiceMutex.unlock();
 
     // Put result in Eigen Vector.
     Eigen::Vector3d cartesianPositionVector;
@@ -120,26 +132,38 @@ Eigen::Vector3d getBodyCartesianPositionAtEpoch(const std::string &targetBodyNam
 
     // Convert from km to m.
     return unit_conversions::convertKilometersToMeters<Eigen::Vector3d>(
-                cartesianPositionVector);
+        cartesianPositionVector);
 }
 
-//! Get Cartesian state of a satellite from its two-line element set at a specified epoch.
-Vector6d getCartesianStateFromTleAtEpoch(double epoch, std::shared_ptr<ephemerides::Tle> tle) {
-    if( !( epoch == epoch ) || (epoch < 0) )
-    {
-        throw std::invalid_argument( "Error when retrieving TLE from Spice, input time is " + std::to_string(epoch) );
+//! Get Cartesian state of a satellite from its two-line element set at a
+//! specified epoch.
+Vector6d
+getCartesianStateFromTleAtEpoch(double epoch,
+                                std::shared_ptr<ephemerides::Tle> tle) {
+    if (!(epoch == epoch) || (epoch < 0)) {
+        throw std::invalid_argument(
+            "Error when retrieving TLE from Spice, input time is " +
+            std::to_string(epoch));
     }
 
     // Physical constants used by CSpice's implementation of SGP4.
-    double physicalConstants[8] = {1.082616E-3, -2.53881E-6, -1.65597E-6, 7.43669161e-2, 120.0, 78.0, 6378.135, 1.0};
+    double physicalConstants[8] = {1.082616E-3,
+                                   -2.53881E-6,
+                                   -1.65597E-6,
+                                   7.43669161e-2,
+                                   120.0,
+                                   78.0,
+                                   6378.135,
+                                   1.0};
 
     // Declare variable that will hold the state as returned by Spice.
     double stateAtEpoch[6];
 
     // TODO: convert elements to units required by CSpice (?)
     double elements[10];
-    elements[0] = 0.0;// This element is mandatory as input to ev2lin_ but not used internally (used to be accessed in SGP).
-    elements[1] = 0.0;// Idem dito.
+    elements[0] = 0.0; // This element is mandatory as input to ev2lin_ but not
+                       // used internally (used to be accessed in SGP).
+    elements[1] = 0.0; // Idem dito.
     elements[2] = tle->getBStar();
     elements[3] = tle->getInclination();
     elements[4] = tle->getRightAscension();
@@ -147,10 +171,12 @@ Vector6d getCartesianStateFromTleAtEpoch(double epoch, std::shared_ptr<ephemerid
     elements[6] = tle->getArgOfPerigee();
     elements[7] = tle->getMeanAnomaly();
     elements[8] = tle->getMeanMotion();
-    elements[9] = tle->getEpoch();// TLE ephemeris epoch in seconds since J2000
+    elements[9] = tle->getEpoch(); // TLE ephemeris epoch in seconds since J2000
 
     // Call Spice function. Return value is always 0, so no need to save it.
+    spiceMutex.lock();
     ev2lin_(&epoch, physicalConstants, elements, stateAtEpoch);
+    spiceMutex.unlock();
 
     // Put result in Eigen Vector.
     Vector6d cartesianStateVector;
@@ -159,23 +185,29 @@ Vector6d getCartesianStateFromTleAtEpoch(double epoch, std::shared_ptr<ephemerid
     }
 
     // Convert from km to m.
-    return unit_conversions::convertKilometersToMeters<Vector6d>(cartesianStateVector);
+    return unit_conversions::convertKilometersToMeters<Vector6d>(
+        cartesianStateVector);
 }
 
 //! Compute quaternion of rotation between two frames.
-Eigen::Quaterniond computeRotationQuaternionBetweenFrames(const std::string &originalFrame,
-                                                          const std::string &newFrame,
-                                                          const double ephemerisTime) {
-    if( !( ephemerisTime == ephemerisTime )  )
-    {
-        throw std::invalid_argument( "Error when retrieving rotation quaternion from Spice, input time is " + std::to_string(ephemerisTime) );
+Eigen::Quaterniond
+computeRotationQuaternionBetweenFrames(const std::string &originalFrame,
+                                       const std::string &newFrame,
+                                       const double ephemerisTime) {
+    if (!(ephemerisTime == ephemerisTime)) {
+        throw std::invalid_argument("Error when retrieving rotation quaternion "
+                                    "from Spice, input time is " +
+                                    std::to_string(ephemerisTime));
     }
 
     // Declare rotation matrix.
     double rotationArray[3][3];
 
     // Calculate rotation matrix.
-    pxform_c(originalFrame.c_str(), newFrame.c_str(), ephemerisTime, rotationArray);
+    spiceMutex.lock();
+    pxform_c(
+        originalFrame.c_str(), newFrame.c_str(), ephemerisTime, rotationArray);
+    spiceMutex.unlock();
 
     // Put rotation matrix in Eigen Matrix3d.
     Eigen::Matrix3d rotationMatrix;
@@ -189,28 +221,35 @@ Eigen::Quaterniond computeRotationQuaternionBetweenFrames(const std::string &ori
     return Eigen::Quaterniond(rotationMatrix);
 }
 
-Eigen::Matrix3d computeRotationMatrixBetweenFrames(const std::string &originalFrame,
-                                                   const std::string &newFrame,
-                                                   const double ephemerisTime)
-{
-    return Eigen::Matrix3d( computeRotationQuaternionBetweenFrames(
-                                originalFrame, newFrame, ephemerisTime ) );
+Eigen::Matrix3d
+computeRotationMatrixBetweenFrames(const std::string &originalFrame,
+                                   const std::string &newFrame,
+                                   const double ephemerisTime) {
+    return Eigen::Matrix3d(computeRotationQuaternionBetweenFrames(
+        originalFrame, newFrame, ephemerisTime));
 }
 
 //! Computes time derivative of rotation matrix between two frames.
-Eigen::Matrix3d computeRotationMatrixDerivativeBetweenFrames(const std::string &originalFrame,
-                                                             const std::string &newFrame,
-                                                             const double ephemerisTime) {
+Eigen::Matrix3d
+computeRotationMatrixDerivativeBetweenFrames(const std::string &originalFrame,
+                                             const std::string &newFrame,
+                                             const double ephemerisTime) {
 
-    if( !( ephemerisTime == ephemerisTime )  )
-    {
-        throw std::invalid_argument( "Error when retrieving rotation matrix derivative from Spice, input time is " + std::to_string(ephemerisTime) );
+    if (!(ephemerisTime == ephemerisTime)) {
+        throw std::invalid_argument("Error when retrieving rotation matrix "
+                                    "derivative from Spice, input time is " +
+                                    std::to_string(ephemerisTime));
     }
 
     double stateTransition[6][6];
 
     // Calculate state transition matrix.
-    sxform_c(originalFrame.c_str(), newFrame.c_str(), ephemerisTime, stateTransition);
+    spiceMutex.lock();
+    sxform_c(originalFrame.c_str(),
+             newFrame.c_str(),
+             ephemerisTime,
+             stateTransition);
+    spiceMutex.unlock();
 
     // Put rotation matrix derivative in Eigen Matrix3d
     Eigen::Matrix3d matrixDerivative = Eigen::Matrix3d::Zero();
@@ -224,39 +263,58 @@ Eigen::Matrix3d computeRotationMatrixDerivativeBetweenFrames(const std::string &
 }
 
 //! Computes the angular velocity of one frame w.r.t. to another frame.
-Eigen::Vector3d getAngularVelocityVectorOfFrameInOriginalFrame(const std::string &originalFrame,
-                                                               const std::string &newFrame,
-                                                               const double ephemerisTime) {
+Eigen::Vector3d
+getAngularVelocityVectorOfFrameInOriginalFrame(const std::string &originalFrame,
+                                               const std::string &newFrame,
+                                               const double ephemerisTime) {
 
-    if( !( ephemerisTime == ephemerisTime )  )
-    {
-        throw std::invalid_argument( "Error when retrieving angular velocity from Spice, input time is " + std::to_string(ephemerisTime) );
+    if (!(ephemerisTime == ephemerisTime)) {
+        throw std::invalid_argument("Error when retrieving angular velocity "
+                                    "from Spice, input time is " +
+                                    std::to_string(ephemerisTime));
     }
 
     double stateTransition[6][6];
 
     // Calculate state transition matrix.
-    sxform_c(originalFrame.c_str(), newFrame.c_str(), ephemerisTime, stateTransition);
+    spiceMutex.lock();
+    sxform_c(originalFrame.c_str(),
+             newFrame.c_str(),
+             ephemerisTime,
+             stateTransition);
 
     double rotation[3][3];
     double angularVelocity[3];
 
     // Calculate angular velocity vector.
     xf2rav_c(stateTransition, rotation, angularVelocity);
+    spiceMutex.unlock();
 
-    return (Eigen::Vector3d() << angularVelocity[0], angularVelocity[1], angularVelocity[2]).finished();
+    return (Eigen::Vector3d() << angularVelocity[0],
+            angularVelocity[1],
+            angularVelocity[2])
+        .finished();
 }
 
-std::pair<Eigen::Quaterniond, Eigen::Matrix3d> computeRotationQuaternionAndRotationMatrixDerivativeBetweenFrames(
-        const std::string &originalFrame, const std::string &newFrame, const double ephemerisTime) {
+std::pair<Eigen::Quaterniond, Eigen::Matrix3d>
+computeRotationQuaternionAndRotationMatrixDerivativeBetweenFrames(
+    const std::string &originalFrame,
+    const std::string &newFrame,
+    const double ephemerisTime) {
     double stateTransition[6][6];
 
-    if( !( ephemerisTime == ephemerisTime )  )
-    {
-        throw std::invalid_argument( "Error when retrieving rotational state from Spice, input time is " + std::to_string(ephemerisTime) );
+    if (!(ephemerisTime == ephemerisTime)) {
+        throw std::invalid_argument("Error when retrieving rotational state "
+                                    "from Spice, input time is " +
+                                    std::to_string(ephemerisTime));
     }
 
-    sxform_c(originalFrame.c_str(), newFrame.c_str(), ephemerisTime, stateTransition);
+    spiceMutex.lock();
+    sxform_c(originalFrame.c_str(),
+             newFrame.c_str(),
+             ephemerisTime,
+             stateTransition);
+    spiceMutex.unlock();
 
     Eigen::Matrix3d matrixDerivative;
     Eigen::Matrix3d rotationMatrix;
@@ -271,15 +329,21 @@ std::pair<Eigen::Quaterniond, Eigen::Matrix3d> computeRotationQuaternionAndRotat
 }
 
 //! Get property of a body from Spice.
-std::vector<double> getBodyProperties(const std::string &body, const std::string &property,
+std::vector<double> getBodyProperties(const std::string &body,
+                                      const std::string &property,
                                       const int maximumNumberOfValues) {
     // Delcare variable in which raw result is to be put by Spice function.
     double propertyArray[maximumNumberOfValues];
 
     // Call Spice function to retrieve property.
     SpiceInt numberOfReturnedParameters;
-    bodvrd_c(body.c_str(), property.c_str(), maximumNumberOfValues, &numberOfReturnedParameters,
+    spiceMutex.lock();
+    bodvrd_c(body.c_str(),
+             property.c_str(),
+             maximumNumberOfValues,
+             &numberOfReturnedParameters,
              propertyArray);
+    spiceMutex.unlock();
 
     // Put result in STL vector.
     std::vector<double> bodyProperties;
@@ -297,28 +361,37 @@ double getBodyGravitationalParameter(const std::string &body) {
 
     // Call Spice function to retrieve gravitational parameter.
     SpiceInt numberOfReturnedParameters;
-    bodvrd_c(body.c_str(), "GM", 1, &numberOfReturnedParameters, gravitationalParameter);
+    spiceMutex.lock();
+    bodvrd_c(body.c_str(),
+             "GM",
+             1,
+             &numberOfReturnedParameters,
+             gravitationalParameter);
+    spiceMutex.unlock();
 
     // Convert from km^3/s^2 to m^3/s^2
     return unit_conversions::convertKilometersToMeters<double>(
-                unit_conversions::convertKilometersToMeters<double>(
-                    unit_conversions::convertKilometersToMeters<double>(
-                        gravitationalParameter[0])));
+        unit_conversions::convertKilometersToMeters<double>(
+            unit_conversions::convertKilometersToMeters<double>(
+                gravitationalParameter[0])));
 }
 
-//! Get the (arithmetic) mean of the three principal axes of the tri-axial ellipsoid shape.
+//! Get the (arithmetic) mean of the three principal axes of the tri-axial
+//! ellipsoid shape.
 double getAverageRadius(const std::string &body) {
     // Delcare variable in which raw result is to be put by Spice function.
     double radii[3];
 
     // Call Spice function to retrieve gravitational parameter.
     SpiceInt numberOfReturnedParameters;
+    spiceMutex.lock();
     bodvrd_c(body.c_str(), "RADII", 3, &numberOfReturnedParameters, radii);
+    spiceMutex.unlock();
 
     // Compute average and convert from km to m.
     return unit_conversions::convertKilometersToMeters<double>(
-                radii[0] + radii[1] + radii[2])
-            / 3.0;
+               radii[0] + radii[1] + radii[2]) /
+           3.0;
 }
 
 //! Convert a body name to its NAIF identification number.
@@ -326,85 +399,98 @@ int convertBodyNameToNaifId(const std::string &bodyName) {
     // Convert body name to NAIF ID number.
     SpiceInt bodyNaifId;
     SpiceBoolean isIdFound;
+    spiceMutex.lock();
     bods2c_c(bodyName.c_str(), &bodyNaifId, &isIdFound);
+    spiceMutex.unlock();
 
     // Convert SpiceInt (typedef for long) to int and return.
     return static_cast<int>(bodyNaifId);
 }
 
 //! Check if a certain property of a body is in the kernel pool.
-bool checkBodyPropertyInKernelPool(const std::string &bodyName, const std::string &bodyProperty) {
+bool checkBodyPropertyInKernelPool(const std::string &bodyName,
+                                   const std::string &bodyProperty) {
     // Convert body name to NAIF ID.
     const int naifId = convertBodyNameToNaifId(bodyName);
 
     // Determine if property is in pool.
+    auto lock_guard = std::unique_lock(spiceMutex);
     SpiceBoolean isPropertyInPool = bodfnd_c(naifId, bodyProperty.c_str());
     return static_cast<bool>(isPropertyInPool);
 }
 
 //! Load a Spice kernel.
 void loadSpiceKernelInTudat(const std::string &fileName) {
+    spiceMutex.lock();
     furnsh_c(fileName.c_str());
+    spiceMutex.unlock();
 }
 
 //! Get the amount of loaded Spice kernels.
 int getTotalCountOfKernelsLoaded() {
     SpiceInt count;
+    spiceMutex.lock();
     ktotal_c("ALL", &count);
+    spiceMutex.unlock();
     return count;
 }
 
 //! Clear all Spice kernels.
-void clearSpiceKernels() { kclear_c(); }
+void clearSpiceKernels() {
+    spiceMutex.lock();
+    kclear_c();
+    spiceMutex.unlock();
+}
 
 //! Get all standard Spice kernels used in tudat.
-std::vector<std::string> getStandardSpiceKernels(const std::vector<std::string> alternativeEphemerisKernels) {
+std::vector<std::string> getStandardSpiceKernels(
+    const std::vector<std::string> alternativeEphemerisKernels) {
     std::vector<std::string> standardSpiceKernels;
 
-//    std::string kernelPath = paths::getSpiceKernelPath();
-//    standardSpiceKernels.push_back(kernelPath + "/pck00010.tpc");
-//    standardSpiceKernels.push_back(kernelPath + "/gm_de431.tpc");
+    //    std::string kernelPath = paths::getSpiceKernelPath();
+    //    standardSpiceKernels.push_back(kernelPath + "/pck00010.tpc");
+    //    standardSpiceKernels.push_back(kernelPath + "/gm_de431.tpc");
 
-//    if (alternativeEphemerisKernels.size() == 0) {
-//        standardSpiceKernels.push_back(kernelPath + "/tudat_merged_spk_kernel.bsp");
-//    } else {
-//        for (unsigned int i = 0; i < alternativeEphemerisKernels.size(); i++) {
-//            standardSpiceKernels.push_back(alternativeEphemerisKernels.at(i));
-//        }
-//    }
-//    standardSpiceKernels.push_back(kernelPath + "/naif0012.tls");
+    //    if (alternativeEphemerisKernels.size() == 0) {
+    //        standardSpiceKernels.push_back(kernelPath +
+    //        "/tudat_merged_spk_kernel.bsp");
+    //    } else {
+    //        for (unsigned int i = 0; i < alternativeEphemerisKernels.size();
+    //        i++) {
+    //            standardSpiceKernels.push_back(alternativeEphemerisKernels.at(i));
+    //        }
+    //    }
+    //    standardSpiceKernels.push_back(kernelPath + "/naif0012.tls");
     return standardSpiceKernels;
 }
 
-void loadStandardSpiceKernels(const std::vector<std::string> alternativeEphemerisKernels) {
+void loadStandardSpiceKernels(
+    const std::vector<std::string> alternativeEphemerisKernels) {
 
     std::string kernelPath = paths::getSpiceKernelPath();
     loadSpiceKernelInTudat(kernelPath + "/pck00010.tpc");
-//    loadSpiceKernelInTudat(kernelPath + "/gm_de431.tpc");
+    //    loadSpiceKernelInTudat(kernelPath + "/gm_de431.tpc");
     loadSpiceKernelInTudat(kernelPath + "/inpop19a_TDB_m100_p100_spice.tpc");
     loadSpiceKernelInTudat(kernelPath + "/NOE-4-2020.tpc");
     loadSpiceKernelInTudat(kernelPath + "/NOE-5-2021.tpc");
     loadSpiceKernelInTudat(kernelPath + "/NOE-6-2018-MAIN-v2.tpc");
 
-    if (alternativeEphemerisKernels.size() == 0)
-    {
+    if (alternativeEphemerisKernels.size() == 0) {
 
         loadSpiceKernelInTudat(kernelPath + "/codes_300ast_20100725.bsp");
-        loadSpiceKernelInTudat(kernelPath + "/inpop19a_TDB_m100_p100_spice.bsp");
+        loadSpiceKernelInTudat(kernelPath +
+                               "/inpop19a_TDB_m100_p100_spice.bsp");
         loadSpiceKernelInTudat(kernelPath + "/NOE-4-2020.bsp");
         loadSpiceKernelInTudat(kernelPath + "/NOE-5-2021.bsp");
         loadSpiceKernelInTudat(kernelPath + "/NOE-6-2018-MAIN-v2.bsp");
 
-    }
-    else
-    {
-        for (unsigned int i = 0; i < alternativeEphemerisKernels.size(); i++)
-        {
+    } else {
+        for (unsigned int i = 0; i < alternativeEphemerisKernels.size(); i++) {
             loadSpiceKernelInTudat(alternativeEphemerisKernels.at(i));
         }
     }
     loadSpiceKernelInTudat(kernelPath + "/naif0012.tls");
 }
 
-}// namespace spice_interface
-}// namespace tudat
+} // namespace spice_interface
+} // namespace tudat
