@@ -100,6 +100,7 @@ void checkValidityOfRequiredEnvironmentUpdates(
                     }
                     break;
                 }
+                // RP-OLD
                 case radiation_pressure_interface_update:
                 {
                     std::map< std::string, std::shared_ptr< electromagnetism::RadiationPressureInterface > >
@@ -110,6 +111,30 @@ void checkValidityOfRequiredEnvironmentUpdates(
                         throw std::runtime_error(
                                     "Error when making environment model update settings, could not find radiation pressure interface of body "
                                     + updateIterator->second.at( i ) );
+                    }
+                    break;
+                }
+                case radiation_source_model_update:
+                {
+                    std::shared_ptr< electromagnetism::RadiationSourceModel > radiationSourceModel = bodies.at(
+                            updateIterator->second.at( i ) )->getRadiationSourceModel();
+                    if( radiationSourceModel == nullptr )
+                    {
+                        throw std::runtime_error(
+                                "Error when making environment model update settings, could not find radiation source model of body "
+                                + updateIterator->second.at( i ) );
+                    }
+                    break;
+                }
+                case radiation_pressure_target_model_update:
+                {
+                    std::shared_ptr< electromagnetism::RadiationPressureTargetModel > radiationPressureTargetModel = bodies.at(
+                            updateIterator->second.at( i ) )->getRadiationPressureTargetModel();
+                    if( radiationPressureTargetModel == nullptr )
+                    {
+                        throw std::runtime_error(
+                                "Error when making environment model update settings, could not find radiation pressure target model of body "
+                                + updateIterator->second.at( i ) );
                     }
                     break;
                 }
@@ -343,9 +368,54 @@ createTranslationalEquationsOfMotionEnvironmentUpdaterSettings(
                     singleAccelerationUpdateNeeds[ body_mass_update ].push_back(
                                 acceleratedBodyIterator->first );
                     break;
+                case radiation_pressure:
+                {
+                    singleAccelerationUpdateNeeds[ body_mass_update ].push_back(
+                            acceleratedBodyIterator->first );
+                    singleAccelerationUpdateNeeds[ radiation_source_model_update ].push_back(
+                            accelerationModelIterator->first );
+                    singleAccelerationUpdateNeeds[ radiation_pressure_target_model_update ].push_back(
+                            acceleratedBodyIterator->first );
 
+                    auto radiationPressureAcceleration =
+                            std::dynamic_pointer_cast<electromagnetism::RadiationPressureAcceleration>(
+                                    accelerationModelIterator->second.at(i));
+
+                    auto paneledRadiationSourceModel =
+                            std::dynamic_pointer_cast<electromagnetism::PaneledRadiationSourceModel>(
+                                    radiationPressureAcceleration->getSourceModel());
+                    if (paneledRadiationSourceModel != nullptr) {
+                        // Only paneled source, not point source needs rotational state and has original source
+                        singleAccelerationUpdateNeeds[ body_rotational_state_update ].push_back(
+                                accelerationModelIterator->first );
+
+                        auto paneledSourceRadiationPressureAcceleration =
+                                std::dynamic_pointer_cast<electromagnetism::PaneledSourceRadiationPressureAcceleration>(
+                                        accelerationModelIterator->second.at(i));
+
+                        std::string originalSourceName =
+                                paneledRadiationSourceModel->getOriginalSourceName();
+                        singleAccelerationUpdateNeeds[ radiation_source_model_update ].push_back(
+                                originalSourceName );
+                        singleAccelerationUpdateNeeds[ body_translational_state_update ].push_back(
+                                originalSourceName );
+                        // No original source rotational state update necessary because only isotropic point sources
+                        // are supported
+                    }
+
+                    auto paneledRadiationPressureTargetModel =
+                            std::dynamic_pointer_cast<electromagnetism::PaneledRadiationPressureTargetModel>(
+                                    radiationPressureAcceleration->getTargetModel());
+                    if (paneledRadiationPressureTargetModel != nullptr) {
+                        // Only paneled target, not cannonball target needs rotational state
+                        singleAccelerationUpdateNeeds[ body_rotational_state_update ].push_back(
+                                acceleratedBodyIterator->first );
+                    }
+                    break;
+                }
                 case cannon_ball_radiation_pressure:
                 {
+                    // RP-OLD
                     std::shared_ptr< electromagnetism::RadiationPressureInterface > radiationPressureInterface;
                     try
                     {
@@ -944,6 +1014,19 @@ std::vector< std::string > > createEnvironmentUpdaterSettingsForDependentVariabl
         }
         break;
     }
+    case received_irradiance:
+    case received_fraction:
+    case visible_source_panel_count:
+    case illuminated_source_panel_count:
+    case visible_and_illuminated_source_panel_count:
+    case visible_source_area:
+    {
+        // TODO-DOMINIK will this update the corresponding acceleration models and also the environment models specified
+        //  in acceleration update for the associated body? (e.g., the radiation source model)
+        // Update target position, this should also update the source position
+        variablesToUpdate[ body_translational_state_update ].push_back( dependentVariableSaveSettings->associatedBody_ );
+        break;
+    }
     default:
         throw std::runtime_error( "Error when getting environment updates for dependent variables, parameter " +
                                   std::to_string( dependentVariableSaveSettings->dependentVariableType_ ) + " not found." );
@@ -1052,6 +1135,7 @@ std::vector< std::string > > createFullEnvironmentUpdaterSettings(
                     push_back( bodyIterator.first );
         }
 
+        // RP-OLD
         // Get body radiation pressure interface(s) (one per source)
         std::map< std::string,
                 std::shared_ptr< RadiationPressureInterface > > radiationPressureInterfaces
@@ -1063,6 +1147,20 @@ std::vector< std::string > > createFullEnvironmentUpdaterSettings(
              iterator != radiationPressureInterfaces.end( ); iterator++ )
         {
             singleAccelerationUpdateNeeds[ radiation_pressure_interface_update ].
+                    push_back( bodyIterator.first );
+        }
+
+        // If body has radiation source model, add its update to update list
+        if( bodyIterator.second->getRadiationSourceModel() != nullptr )
+        {
+            singleAccelerationUpdateNeeds[ radiation_source_model_update ].
+                    push_back( bodyIterator.first );
+        }
+
+        // If body has radiation pressure target model, add its update to update list
+        if( bodyIterator.second->getRadiationPressureTargetModel() != nullptr )
+        {
+            singleAccelerationUpdateNeeds[ radiation_pressure_target_model_update ].
                     push_back( bodyIterator.first );
         }
 

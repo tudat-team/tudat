@@ -807,6 +807,7 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > create
             }
             break;
         }
+        // RP-OLD
         case radiation_pressure_coefficient:
         {
             if( currentBody->getRadiationPressureInterfaces( ).size( ) == 0 )
@@ -1522,7 +1523,7 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd >
             }
             break;
         }
-
+        // RP-OLD
         case arc_wise_radiation_pressure_coefficient:
         {
             // Check input consistency

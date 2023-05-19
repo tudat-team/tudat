@@ -130,7 +130,13 @@ enum PropagationDependentVariables
     aerodynamic_control_surface_free_force_coefficients_dependent_variable = 57,
     aerodynamic_control_surface_free_moment_coefficients_dependent_variable = 58,
     aerodynamic_control_surface_force_coefficients_increment_dependent_variable = 59,
-    aerodynamic_control_surface_moment_coefficients_increment_dependent_variable = 60
+    aerodynamic_control_surface_moment_coefficients_increment_dependent_variable = 60,
+    received_irradiance = 61,
+    received_fraction = 62,
+    visible_source_panel_count = 63,
+    illuminated_source_panel_count = 64,
+    visible_and_illuminated_source_panel_count = 65,
+    visible_source_area = 65
 };
 
 // Functional base class for defining settings for dependent variables that are to be saved during propagation
@@ -1348,6 +1354,57 @@ inline std::shared_ptr< SingleDependentVariableSaveSettings > minimumConstellati
 {
     return std::make_shared< MinimumConstellationStationDistanceDependentVariableSaveSettings >(
                bodyName, stationName, bodiesToCheck, elevationAngleLimit );
+}
+
+// TODO-DOMINIK add docstring
+inline std::shared_ptr< SingleDependentVariableSaveSettings > receivedIrradianceDependentVariable(
+        const std::string& targetBody,
+        const std::string& sourceBody )
+{
+    return std::make_shared< SingleDependentVariableSaveSettings >(
+            received_irradiance, targetBody, sourceBody );
+
+
+}
+inline std::shared_ptr< SingleDependentVariableSaveSettings > receivedFractionDependentVariable(
+        const std::string& targetBody,
+        const std::string& sourceBody )
+{
+    return std::make_shared< SingleDependentVariableSaveSettings >(
+            received_fraction, targetBody, sourceBody );
+
+}
+
+inline std::shared_ptr< SingleDependentVariableSaveSettings > visibleSourcePanelCountDependentVariable(
+        const std::string& targetBody,
+        const std::string& sourceBody)
+{
+    return std::make_shared< SingleDependentVariableSaveSettings >(
+            visible_source_panel_count, targetBody, sourceBody);
+}
+
+inline std::shared_ptr< SingleDependentVariableSaveSettings > illuminatedSourcePanelCountDependentVariable(
+        const std::string& targetBody,
+        const std::string& sourceBody)
+{
+    return std::make_shared< SingleDependentVariableSaveSettings >(
+            illuminated_source_panel_count, targetBody, sourceBody);
+}
+
+inline std::shared_ptr< SingleDependentVariableSaveSettings > visibleAndIlluminatedSourcePanelCountDependentVariable(
+        const std::string& targetBody,
+        const std::string& sourceBody)
+{
+    return std::make_shared< SingleDependentVariableSaveSettings >(
+            visible_and_illuminated_source_panel_count, targetBody, sourceBody);
+}
+
+inline std::shared_ptr< SingleDependentVariableSaveSettings > visibleSourceAreaDependentVariable(
+        const std::string& targetBody,
+        const std::string& sourceBody)
+{
+    return std::make_shared< SingleDependentVariableSaveSettings >(
+            visible_source_area, targetBody, sourceBody);
 }
 
 } // namespace propagators

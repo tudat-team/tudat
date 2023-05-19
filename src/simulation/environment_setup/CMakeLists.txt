@@ -25,6 +25,8 @@ set(environment_HEADERS
         createGravityFieldVariations.h
         createAtmosphereModel.h
         createFlightConditions.h
+        createRadiationSourceModel.h
+        createRadiationPressureTargetModel.h
         createSystemModel.h
         createThrustModelGuidance.h
         thrustSettings.h
@@ -50,6 +52,8 @@ set(environment_SOURCES
         createSystemModel.cpp
         createThrustModelGuidance.cpp
         thrustSettings.cpp
+        createRadiationSourceModel.cpp
+        createRadiationPressureTargetModel.cpp
         )
 
 # Add library.

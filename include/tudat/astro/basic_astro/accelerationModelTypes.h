@@ -28,6 +28,7 @@
 #include "tudat/astro/basic_astro/empiricalAcceleration.h"
 #include "tudat/astro/propulsion/massRateFromThrust.h"
 #include "tudat/astro/electromagnetism/solarSailAcceleration.h"
+#include "tudat/astro/electromagnetism/radiationPressureAcceleration.h"
 
 namespace tudat
 {
@@ -61,6 +62,7 @@ enum AvailableAcceleration
     direct_tidal_dissipation_in_central_body_acceleration,
     direct_tidal_dissipation_in_orbiting_body_acceleration,
     panelled_radiation_pressure_acceleration,
+    radiation_pressure,
     momentum_wheel_desaturation_acceleration,
     solar_sail_acceleration,
     custom_acceleration

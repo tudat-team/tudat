@@ -30,6 +30,7 @@ std::string getAccelerationModelName( const AvailableAcceleration accelerationTy
         accelerationName = "aerodynamic ";
         break;
     case cannon_ball_radiation_pressure:
+        // RP-OLD
         accelerationName = "cannonball radiation pressure ";
         break;
     case spherical_harmonic_gravity:
@@ -67,6 +68,9 @@ std::string getAccelerationModelName( const AvailableAcceleration accelerationTy
         break;
     case direct_tidal_dissipation_in_orbiting_body_acceleration:
         accelerationName  = "direct tidal dissipation in orbiting body ";
+        break;
+    case radiation_pressure:
+        accelerationName  = "radiation pressure acceleration";
         break;
     case panelled_radiation_pressure_acceleration:
         accelerationName  = "panelled radiation pressure acceleration ";
@@ -110,6 +114,7 @@ AvailableAcceleration getAccelerationModelType(
     else if( std::dynamic_pointer_cast< CannonBallRadiationPressureAcceleration >(
                  accelerationModel ) != nullptr )
     {
+        // RP-OLD
         accelerationType = cannon_ball_radiation_pressure;
     }
     else if( std::dynamic_pointer_cast< ThirdBodyCentralGravityAcceleration >(
@@ -180,6 +185,10 @@ AvailableAcceleration getAccelerationModelType(
         {
             accelerationType = direct_tidal_dissipation_in_orbiting_body_acceleration;
         }
+    }
+    else if( std::dynamic_pointer_cast< RadiationPressureAcceleration >( accelerationModel ) != NULL )
+    {
+        accelerationType = radiation_pressure;
     }
     else if( std::dynamic_pointer_cast< PanelledRadiationPressureAcceleration >( accelerationModel ) != NULL )
     {

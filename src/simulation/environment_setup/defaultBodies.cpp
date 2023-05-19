@@ -14,9 +14,10 @@
 #define DEFAULT_MOON_GRAVITY_FIELD_SETTINGS std::make_shared< FromFileSphericalHarmonicsGravityFieldSettings >( gggrx1200, 200 )
 #define DEFAULT_MARS_GRAVITY_FIELD_SETTINGS std::make_shared< FromFileSphericalHarmonicsGravityFieldSettings >( jgmro120d )
 
+#include "tudat/simulation/environment_setup/defaultBodies.h"
 #include "tudat/interface/spice/spiceInterface.h"
 #include "tudat/io/basicInputOutput.h"
-#include "tudat/simulation/environment_setup/defaultBodies.h"
+#include "tudat/astro/basic_astro/celestialBodyConstants.h"
 
 namespace tudat
 {
@@ -40,6 +41,25 @@ std::shared_ptr< AtmosphereSettings > getDefaultAtmosphereModelSettings(
     }
 
     return atmosphereSettings;
+}
+
+//! Function to create default settings for a body's radiation source model.
+std::shared_ptr<RadiationSourceModelSettings> getDefaultRadiationSourceModelSettings(
+        const std::string &bodyName,
+        const double initialTime,
+        const double finalTime)
+{
+    std::shared_ptr<RadiationSourceModelSettings> radiationSourceModelSettings;
+
+    // A default radiation source model is only implemented for the Sun.
+    if( bodyName == "Sun" )
+    {
+        radiationSourceModelSettings =
+                std::make_shared<IsotropicPointRadiationSourceModelSettings>(
+                        std::make_shared<ConstantLuminosityModelSettings>(celestial_body_constants::SUN_LUMINOSITY));
+    }
+
+    return radiationSourceModelSettings;
 }
 
 //! Function to create default settings for a body's ephemeris.
@@ -304,6 +324,8 @@ std::shared_ptr< BodySettings > getDefaultSingleBodySettings(
 
     // Get default settings for each of the environment models in the body.
     singleBodySettings->atmosphereSettings = getDefaultAtmosphereModelSettings(
+                bodyName, initialTime, finalTime );
+    singleBodySettings->radiationSourceModelSettings = getDefaultRadiationSourceModelSettings(
                 bodyName, initialTime, finalTime );
     singleBodySettings->rotationModelSettings = getDefaultRotationModelSettings(
                 bodyName, initialTime, finalTime, baseFrameOrientation );

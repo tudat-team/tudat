@@ -28,6 +28,9 @@
 #include "tudat/astro/basic_astro/physicalConstants.h"
 #include "tudat/astro/basic_astro/unitConversions.h"
 #include "tudat/astro/basic_astro/geodeticCoordinateConversions.h"
+#include "tudat/astro/electromagnetism/radiationSourceModel.h"
+#include "tudat/astro/electromagnetism/radiationPressureTargetModel.h"
+#include "tudat/astro/electromagnetism/reflectionLaw.h"
 #include "tudat/astro/ephemerides/approximatePlanetPositions.h"
 #include "tudat/astro/ephemerides/tabulatedEphemeris.h"
 #include "tudat/astro/ephemerides/simpleRotationalEphemeris.h"
@@ -39,6 +42,7 @@
 #include "tudat/astro/ephemerides/synchronousRotationalEphemeris.h"
 
 #include "tudat/interface/spice/spiceEphemeris.h"
+#include "tudat/interface/spice/spiceInterface.h"
 #include "tudat/astro/gravitation/triAxialEllipsoidGravity.h"
 #include "tudat/io/basicInputOutput.h"
 #include "tudat/io/matrixTextFileReader.h"
@@ -50,6 +54,8 @@
 #include "tudat/simulation/environment_setup/createEphemeris.h"
 #include "tudat/simulation/environment_setup/createGravityField.h"
 #include "tudat/simulation/environment_setup/createRotationModel.h"
+#include "tudat/simulation/environment_setup/createRadiationSourceModel.h"
+#include "tudat/simulation/environment_setup/createRadiationPressureTargetModel.h"
 #include "tudat/simulation/environment_setup/defaultBodies.h"
 
 namespace tudat
@@ -1450,6 +1456,7 @@ BOOST_AUTO_TEST_CASE( test_earthRotationModelSetup )
 
 
 //! Test set up of radiation pressure interfacel environment models.
+// RP-OLD
 BOOST_AUTO_TEST_CASE( test_radiationPressureInterfaceSetup )
 {
     // Load Spice kernels
@@ -1475,7 +1482,7 @@ BOOST_AUTO_TEST_CASE( test_radiationPressureInterfaceSetup )
 
     // Create bodies
     SystemOfBodies bodies = createSystemOfBodies( bodySettings );
-    
+
 
     BOOST_CHECK_EQUAL( bodies.at( "Vehicle" )->getRadiationPressureInterfaces( ).size( ), 1 );
     BOOST_CHECK_EQUAL( bodies.at( "Vehicle" )->getRadiationPressureInterfaces( ).count( "Sun" ), 1 );
@@ -1500,6 +1507,277 @@ BOOST_AUTO_TEST_CASE( test_radiationPressureInterfaceSetup )
                                 vehicleRadiationPressureInterface->getCurrentRadiationPressure( ),
                                 std::numeric_limits< double >::epsilon( ) );
 
+}
+
+
+BOOST_AUTO_TEST_CASE( test_radiationSourceModelSetup_IsotropicPoint )
+{
+    spice_interface::loadStandardSpiceKernels( );
+
+    BodyListSettings bodySettings;
+    bodySettings.addSettings( getDefaultSingleBodySettings("Sun", 0.0, 86400.0 ), "Sun" );
+
+    SystemOfBodies bodies = createSystemOfBodies( bodySettings );
+
+    const auto expectedLuminosity = 42;
+
+    auto isotropicPointSourceWithConstantLuminosityModelSettings =
+            isotropicPointRadiationSourceModelSettings(
+                    constantLuminosityModelSettings(expectedLuminosity));
+    auto isotropicPointSourceWithConstantLuminosityModel =
+            std::dynamic_pointer_cast<electromagnetism::IsotropicPointRadiationSourceModel>(
+                    createRadiationSourceModel(
+                            isotropicPointSourceWithConstantLuminosityModelSettings, "Sun", bodies));
+
+    const auto actualLuminosity =
+            isotropicPointSourceWithConstantLuminosityModel->getLuminosityModel()->getLuminosity();
+
+    BOOST_CHECK_EQUAL(actualLuminosity, expectedLuminosity);
+}
+
+BOOST_AUTO_TEST_CASE( test_radiationSourceModelSetup_StaticallyPaneled )
+{
+    spice_interface::loadStandardSpiceKernels( );
+
+    BodyListSettings bodySettings;
+    bodySettings.addSettings( getDefaultSingleBodySettings("Earth", 0.0, 86400.0 ), "Earth" );
+
+    SystemOfBodies bodies = createSystemOfBodies( bodySettings );
+
+    const auto expectedOriginalSourceName = "Sun";
+    const auto expectedNumberOfPanels = 42;
+    const auto expectedNumberOfRadiosityModels = 4;
+    const auto expectedConstantRadiosity = 420;
+    const auto expectedAlbedo = 0.42;
+    const auto expectedEmissivity = 0.32;
+    const auto expectedMinTemperature = 100;
+    const auto expectedMaxTemperature = 200;
+    const std::vector<std::string> expectedOccultingBodies {"Moon"};
+
+    auto staticallyPaneledSourceModelSettings =
+            staticallyPaneledRadiationSourceModelSettings(
+                expectedOriginalSourceName, {
+                            constantPanelRadiosityModelSettings(expectedConstantRadiosity),
+                    albedoPanelRadiosityModelSettings(expectedAlbedo),
+                    delayedThermalPanelRadiosityModelSettings(expectedEmissivity),
+                    angleBasedThermalPanelRadiosityModelSettings(
+                            expectedMinTemperature, expectedMaxTemperature, expectedEmissivity)
+                }, expectedNumberOfPanels, expectedOccultingBodies);
+    auto staticallyPaneledSourceModel =
+            std::dynamic_pointer_cast<electromagnetism::StaticallyPaneledRadiationSourceModel>(
+                    createRadiationSourceModel(
+                            staticallyPaneledSourceModelSettings, "Earth", bodies));
+    staticallyPaneledSourceModel->updateMembers(TUDAT_NAN);
+
+    BOOST_CHECK_EQUAL(staticallyPaneledSourceModel->getPanels().size(), expectedNumberOfPanels);
+
+    const auto& panel = staticallyPaneledSourceModel->getPanels().front();
+
+    BOOST_CHECK_EQUAL(panel.getRadiosityModels().size(), expectedNumberOfRadiosityModels);
+
+    const auto constantModel =
+            dynamic_cast<electromagnetism::ConstantSourcePanelRadiosityModel&>(*panel.getRadiosityModels()[0]);
+    const auto albedoModel =
+            dynamic_cast<electromagnetism::AlbedoSourcePanelRadiosityModel&>(*panel.getRadiosityModels()[1]);
+    const auto reflectionLaw = albedoModel.getReflectionLaw();
+    const auto delayedThermalModel =
+            dynamic_cast<electromagnetism::DelayedThermalSourcePanelRadiosityModel&>(*panel.getRadiosityModels()[2]);
+    const auto angleBasedThermalModel =
+            dynamic_cast<electromagnetism::AngleBasedThermalSourcePanelRadiosityModel&>(*panel.getRadiosityModels()[3]);
+
+    const auto actualOriginalSourceName = staticallyPaneledSourceModel->getOriginalSourceName();
+    const auto actualNumberOfPanels = staticallyPaneledSourceModel->getNumberOfPanels();
+    const auto actualConstantRadiosity = constantModel.getConstantRadiosity();
+    const auto actualAlbedo = reflectionLaw->getDiffuseReflectivity();
+    const auto actualEmissivityDelayed = delayedThermalModel.getEmissivity();
+    const auto actualEmissivityAngleBased = angleBasedThermalModel.getEmissivity();
+    const auto actualMinTemperature = angleBasedThermalModel.getMinTemperature();
+    const auto actualMaxTemperature = angleBasedThermalModel.getMaxTemperature();
+    const auto actualOccultingBodies = staticallyPaneledSourceModel->getOriginalSourceToSourceOccultingBodies();
+
+    BOOST_CHECK_EQUAL(actualOriginalSourceName, expectedOriginalSourceName);
+    BOOST_CHECK_EQUAL(actualNumberOfPanels, expectedNumberOfPanels);
+    BOOST_CHECK_EQUAL(actualConstantRadiosity, expectedConstantRadiosity);
+    BOOST_CHECK_EQUAL(actualAlbedo, expectedAlbedo);
+    BOOST_CHECK_EQUAL(actualEmissivityDelayed, expectedEmissivity);
+    BOOST_CHECK_EQUAL(actualEmissivityAngleBased, expectedEmissivity);
+    BOOST_CHECK_EQUAL(actualMinTemperature, expectedMinTemperature);
+    BOOST_CHECK_EQUAL(actualMaxTemperature, expectedMaxTemperature);
+    BOOST_CHECK_EQUAL_COLLECTIONS(
+        actualOccultingBodies.begin(), actualOccultingBodies.end(),
+        expectedOccultingBodies.begin(), expectedOccultingBodies.end());
+}
+
+BOOST_AUTO_TEST_CASE( test_surfacePropertyDistributionSetup_SphericalHarmonics_DLAM1 )
+{
+    using namespace tudat::electromagnetism;
+
+    auto surfacePropertyDistributionSettings = sphericalHarmonicsSurfacePropertyDistributionSettings(
+            SphericalHarmonicsSurfacePropertyDistributionModel::albedo_dlam1);
+    auto surfacePropertyDistribution =
+            std::dynamic_pointer_cast<SphericalHarmonicsSurfacePropertyDistribution>(
+                    createSurfacePropertyDistribution(surfacePropertyDistributionSettings, ""));
+
+    BOOST_CHECK(surfacePropertyDistribution->getMaximumDegree() == 15);
+    BOOST_CHECK(surfacePropertyDistribution->getMaximumOrder() == 15);
+
+    const auto expectedCosCoeff = -5.2535643e-08;
+    const auto actualCosCoeff = surfacePropertyDistribution->getCosineCoefficients()(7, 6);
+    BOOST_CHECK_CLOSE(actualCosCoeff, expectedCosCoeff, 1e-15);
+    
+    const auto expectedSinCoeff = 6.4835704e-06;
+    const auto actualSinCoeff = surfacePropertyDistribution->getSineCoefficients()(10, 3);
+    BOOST_CHECK_CLOSE(actualSinCoeff, expectedSinCoeff, 1e-15);
+
+    const auto expectedValue1 = 0.18141667202246156;
+    const auto actualValue1 = surfacePropertyDistribution->getValue(0.7, 0.42);
+    BOOST_CHECK_CLOSE(actualValue1, expectedValue1, 1e-13);
+
+    const auto expectedValue2 = 0.2001460910686691;
+    const auto actualValue2 = surfacePropertyDistribution->getValue(-1.5, 0.9);
+    BOOST_CHECK_CLOSE(actualValue2, expectedValue2, 1e-15);
+}
+
+BOOST_AUTO_TEST_CASE( test_surfacePropertyDistributionSetup_SecondDegreeZonalPeriodic_KnockeAlbedo )
+{
+    using namespace tudat::electromagnetism;
+
+    spice_interface::loadStandardSpiceKernels();
+
+    auto surfacePropertyDistributionSettings = secondDegreeZonalPeriodicSurfacePropertyDistributionSettings(
+            SecondDegreeZonalPeriodicSurfacePropertyDistributionModel::albedo_knocke);
+    auto surfacePropertyDistribution =
+            std::dynamic_pointer_cast<SecondDegreeZonalPeriodicSurfacePropertyDistribution>(
+                    createSurfacePropertyDistribution(surfacePropertyDistributionSettings, ""));
+
+    // Identical values to testSecondDegreeZonalPeriodicSurfacePropertyDistribution_Albedo in unitTestSurfacePropertyDistribution
+    surfacePropertyDistribution->updateMembers(spice_interface::convertDateStringToEphemerisTime("2005 AUG 19 13:46:17"));
+    double actualValue = surfacePropertyDistribution->getValue(unit_conversions::convertDegreesToRadians(29.73));
+    BOOST_CHECK_CLOSE(actualValue, 0.2752338314886392, 1e-13);
+
+    surfacePropertyDistribution->updateMembers(spice_interface::convertDateStringToEphemerisTime("2012 DEC 21 17:26:17"));
+    actualValue = surfacePropertyDistribution->getValue(unit_conversions::convertDegreesToRadians(81.43));
+    BOOST_CHECK_CLOSE(actualValue, 0.7192237282075249, 1e-13);
+}
+
+BOOST_AUTO_TEST_CASE( test_radiationPressureTargetModelSetup_CannonballTarget )
+{
+    const auto expectedArea = 42;
+    const auto expectedCoefficient = 1.42;
+    const std::vector<std::string> expectedOccultingBodies {"Moon"};
+    const std::map<std::string, std::vector<std::string>> expectedOccultingBodiesMap {{"", {"Moon"}}};
+
+    auto cannonballRadiationPressureTargetSettings =
+            cannonballRadiationPressureTargetModelSettings(expectedArea, expectedCoefficient, expectedOccultingBodies);
+    auto cannonballRadiationPressureTarget =
+            std::dynamic_pointer_cast<electromagnetism::CannonballRadiationPressureTargetModel>(
+                    createRadiationPressureTargetModel(
+                            cannonballRadiationPressureTargetSettings, "Vehicle", SystemOfBodies()));
+
+    const auto actualArea = cannonballRadiationPressureTarget->getArea();
+    const auto actualCoefficient = cannonballRadiationPressureTarget->getCoefficient();
+    const auto actualOccultingBodiesMap = cannonballRadiationPressureTarget->getSourceToTargetOccultingBodies();
+    const auto actualOccultingBodies = actualOccultingBodiesMap.at("");
+
+    BOOST_CHECK_EQUAL(actualArea, expectedArea);
+    BOOST_CHECK_EQUAL(actualCoefficient, expectedCoefficient);
+    BOOST_CHECK_EQUAL(actualOccultingBodiesMap.size(), 1);
+    BOOST_CHECK_EQUAL_COLLECTIONS(
+        actualOccultingBodies.begin(), actualOccultingBodies.end(),
+        expectedOccultingBodies.begin(), expectedOccultingBodies.end());
+}
+
+BOOST_AUTO_TEST_CASE( test_radiationPressureTargetModelSetup_PaneledTarget )
+{
+    const auto expectedAreaPanel1 = 42;
+    const auto expectedAreaPanel2 = 43;
+    const auto expectedSpecularReflectivityPanel1 = 0.1;
+    const auto expectedSpecularReflectivityPanel2 = 0.2;
+    const auto expectedDiffuseReflectivityPanel1 = 0.3;
+    const auto expectedDiffuseReflectivityPanel2 = 0.4;
+    const auto expectedAbsorptivityPanel1 = 0.6;
+    const auto expectedAbsorptivityPanel2 = 0.4;
+    const auto expectedWithInstantaneousReradiationPanel1 = true;
+    const auto expectedWithInstantaneousReradiationPanel2 = false;
+    const Eigen::Vector3d expectedSurfaceNormalPanel1 = Eigen::Vector3d::UnitX();
+    const Eigen::Vector3d expectedSurfaceNormalPanel2 = Eigen::Vector3d::UnitY();
+    const Eigen::Vector3d expectedSurfaceNormalPanel3 = Eigen::Vector3d(-1, -1, 0).normalized(); // towards Sun
+    const Eigen::Vector3d expectedSurfaceNormalPanel4 = Eigen::Vector3d(1, 1, 0).normalized(); // away from Sun
+
+    spice_interface::loadStandardSpiceKernels( );
+
+    BodyListSettings bodySettings("Sun");
+    bodySettings.addSettings( getDefaultSingleBodySettings("Sun", 0.0, 86400.0 ), "Sun" );
+    bodySettings.addSettings("Vehicle");
+    bodySettings.at("Vehicle")->rotationModelSettings = constantRotationModelSettings(
+            "ECLIPJ2000", "VehicleFixed", Eigen::Quaterniond::Identity());
+    bodySettings.at("Vehicle")->ephemerisSettings = constantEphemerisSettings(
+            (Eigen::Vector6d() << 1, 1, 0, 0, 0, 0).finished().normalized() * physical_constants::ASTRONOMICAL_UNIT,
+            "Sun");
+    const auto bodies = createSystemOfBodies(bodySettings);
+
+    auto paneledRadiationPressureTargetSettings =
+            paneledRadiationPressureTargetModelSettings({
+                    TargetPanelSettings(
+                            expectedAreaPanel1,
+                            expectedSpecularReflectivityPanel1,
+                            expectedDiffuseReflectivityPanel1,
+                            expectedWithInstantaneousReradiationPanel1,
+                            expectedSurfaceNormalPanel1),
+                    TargetPanelSettings(
+                            expectedAreaPanel2,
+                            expectedSpecularReflectivityPanel2,
+                            expectedDiffuseReflectivityPanel2,
+                            expectedWithInstantaneousReradiationPanel2,
+                            2 * expectedSurfaceNormalPanel2), // setup should normalize this vector
+                    TargetPanelSettings(
+                            expectedAreaPanel2,
+                            expectedSpecularReflectivityPanel2,
+                            expectedDiffuseReflectivityPanel2,
+                            expectedWithInstantaneousReradiationPanel2,
+                            "Sun"), // towards Sun
+                    TargetPanelSettings(
+                            expectedAreaPanel2,
+                            expectedSpecularReflectivityPanel2,
+                            expectedDiffuseReflectivityPanel2,
+                            expectedWithInstantaneousReradiationPanel2,
+                            "Sun", // away from Sun
+                            false)});
+    auto paneledRadiationPressureTarget =
+            std::dynamic_pointer_cast<electromagnetism::PaneledRadiationPressureTargetModel>(
+                    createRadiationPressureTargetModel(
+                            paneledRadiationPressureTargetSettings, "Vehicle", bodies));
+
+    bodies.at( "Sun" )->setStateFromEphemeris( 0. );
+    bodies.at( "Vehicle" )->setStateFromEphemeris( 0. );
+    bodies.at( "Vehicle" )->setCurrentRotationToLocalFrameFromEphemeris( 0. );
+    paneledRadiationPressureTarget->updateMembers( 0. );
+
+    BOOST_CHECK_EQUAL(paneledRadiationPressureTarget->getPanels().size(), 4);
+
+    const auto panel1 = paneledRadiationPressureTarget->getPanels()[0];
+    const auto panel2 = paneledRadiationPressureTarget->getPanels()[1];
+    const auto panel3 = paneledRadiationPressureTarget->getPanels()[2];
+    const auto panel4 = paneledRadiationPressureTarget->getPanels()[3];
+    const auto panel1ReflectionLaw =
+            std::dynamic_pointer_cast<electromagnetism::SpecularDiffuseMixReflectionLaw>(panel1.getReflectionLaw());
+    const auto panel2ReflectionLaw =
+            std::dynamic_pointer_cast<electromagnetism::SpecularDiffuseMixReflectionLaw>(panel2.getReflectionLaw());
+
+    BOOST_CHECK_CLOSE(panel1.getArea(), expectedAreaPanel1, 1e-10);
+    BOOST_CHECK_CLOSE(panel2.getArea(), expectedAreaPanel2, 1e-10);
+    BOOST_CHECK_CLOSE(panel1ReflectionLaw->getSpecularReflectivity(), expectedSpecularReflectivityPanel1, 1e-10);
+    BOOST_CHECK_CLOSE(panel2ReflectionLaw->getSpecularReflectivity(), expectedSpecularReflectivityPanel2, 1e-10);
+    BOOST_CHECK_CLOSE(panel1ReflectionLaw->getDiffuseReflectivity(), expectedDiffuseReflectivityPanel1, 1e-10);
+    BOOST_CHECK_CLOSE(panel2ReflectionLaw->getDiffuseReflectivity(), expectedDiffuseReflectivityPanel2, 1e-10);
+    BOOST_CHECK_CLOSE(panel1ReflectionLaw->getAbsorptivity(), expectedAbsorptivityPanel1, 1e-10);
+    BOOST_CHECK_CLOSE(panel2ReflectionLaw->getAbsorptivity(), expectedAbsorptivityPanel2, 1e-10);
+    BOOST_CHECK(panel1ReflectionLaw->isWithInstantaneousReradiation() == expectedWithInstantaneousReradiationPanel1);
+    BOOST_CHECK(panel2ReflectionLaw->isWithInstantaneousReradiation() == expectedWithInstantaneousReradiationPanel2);
+    TUDAT_CHECK_MATRIX_CLOSE_FRACTION(panel1.getSurfaceNormal(), expectedSurfaceNormalPanel1, 1e-10);
+    TUDAT_CHECK_MATRIX_CLOSE_FRACTION(panel2.getSurfaceNormal(), expectedSurfaceNormalPanel2, 1e-10);
+    TUDAT_CHECK_MATRIX_CLOSE_FRACTION(panel3.getSurfaceNormal(), expectedSurfaceNormalPanel3, 1e-10);
+    TUDAT_CHECK_MATRIX_CLOSE_FRACTION(panel4.getSurfaceNormal(), expectedSurfaceNormalPanel4, 1e-10);
 }
 
 
@@ -1766,6 +2044,7 @@ BOOST_AUTO_TEST_CASE( test_flightConditionsSetup )
 
 
 //! Test set up of solar sailing radiation pressure interface environment models.
+// RP-OLD
 BOOST_AUTO_TEST_CASE( test_solarSailingRadiationPressureInterfaceSetup )
 {
 
@@ -1834,7 +2113,7 @@ BOOST_AUTO_TEST_CASE( test_solarSailingRadiationPressureInterfaceSetup )
 
     // Create bodies
     SystemOfBodies bodies = createSystemOfBodies( bodySettings );
-    
+
 
     BOOST_CHECK_EQUAL( bodies.at( "Vehicle" )->getRadiationPressureInterfaces( ).size( ), 1 );
     BOOST_CHECK_EQUAL( bodies.at( "Vehicle" )->getRadiationPressureInterfaces( ).count( "Sun" ), 1 );
@@ -1936,6 +2215,7 @@ BOOST_AUTO_TEST_CASE( test_groundStationCreation )
 
 
 //! Test set up of panelled radiation pressure interface environment models.
+// RP-OLD
 BOOST_AUTO_TEST_CASE( test_panelledRadiationPressureInterfaceSetup )
 {
 
@@ -2009,7 +2289,7 @@ BOOST_AUTO_TEST_CASE( test_panelledRadiationPressureInterfaceSetup )
 
     // Create bodies
     SystemOfBodies bodies = createSystemOfBodies( bodySettings );
-    
+
 
     Eigen::Vector7d unitRotationalState = Eigen::Vector7d::Zero( );
     unitRotationalState.segment( 0, 4 ) = linear_algebra::convertQuaternionToVectorFormat(
@@ -2049,4 +2329,3 @@ BOOST_AUTO_TEST_SUITE_END( )
 
 } // namespace unit_tests
 } // namespace tudat
-

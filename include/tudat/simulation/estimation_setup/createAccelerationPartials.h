@@ -377,6 +377,7 @@ std::shared_ptr< acceleration_partials::AccelerationPartial > createAnalyticalAc
         }
         break;
     }
+    // RP-OLD
     case cannon_ball_radiation_pressure:
     {
         // Check if identifier is consistent with type.

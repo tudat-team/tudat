@@ -1703,6 +1703,7 @@ std::function< double( ) > getDoubleDependentVariableFunction(
                                               bodies.at( bodyWithProperty )->getFlightConditions( ) ) );
             break;
         case radiation_pressure_dependent_variable:
+            // RP-OLD
             if( bodies.at( bodyWithProperty )->getRadiationPressureInterfaces( ).count( secondaryBody ) == 0 )
             {
                 std::string errorMessage = "Error, no radiation pressure interfaces when requesting radiation pressure output of " +
@@ -2130,6 +2131,7 @@ std::function< double( ) > getDoubleDependentVariableFunction(
         }
         case radiation_pressure_coefficient_dependent_variable:
         {
+            // RP-OLD
             if( bodies.at( bodyWithProperty )->getRadiationPressureInterfaces( ).count( secondaryBody ) == 0 )
             {
                 std::string errorMessage = "Error, no radiation pressure interfaces when requesting radiation pressure output of " +
@@ -2345,6 +2347,115 @@ std::function< double( ) > getDoubleDependentVariableFunction(
                     return customVariables( 0 );
                 };
             }
+        case received_irradiance:
+        {
+            auto radiationPressureAccelerationList = getAccelerationBetweenBodies(
+                dependentVariableSettings->associatedBody_,
+                dependentVariableSettings->secondaryBody_,
+                stateDerivativeModels, basic_astrodynamics::radiation_pressure );
+
+            if (radiationPressureAccelerationList.empty())
+            {
+                std::string errorMessage = "Error, radiation pressure acceleration with target " +
+                        dependentVariableSettings->associatedBody_ + " and source " +
+                        dependentVariableSettings->secondaryBody_  +
+                       " not found";
+                throw std::runtime_error(errorMessage);
+            }
+
+            auto radiationPressureAcceleration =
+                    std::dynamic_pointer_cast<electromagnetism::RadiationPressureAcceleration>(
+                            radiationPressureAccelerationList.front());
+
+            variableFunction = [=] () { return radiationPressureAcceleration->getReceivedIrradiance(); };
+
+            break;
+        }
+        case received_fraction:
+        {
+            auto radiationPressureAccelerationList = getAccelerationBetweenBodies(
+                dependentVariableSettings->associatedBody_,
+                dependentVariableSettings->secondaryBody_,
+                stateDerivativeModels, basic_astrodynamics::radiation_pressure );
+
+            if (radiationPressureAccelerationList.empty())
+            {
+                std::string errorMessage = "Error, radiation pressure acceleration with target " +
+                        dependentVariableSettings->associatedBody_ + " and source " +
+                        dependentVariableSettings->secondaryBody_  +
+                       " not found";
+                throw std::runtime_error(errorMessage);
+            }
+
+            auto radiationPressureAcceleration =
+                    std::dynamic_pointer_cast<electromagnetism::IsotropicPointSourceRadiationPressureAcceleration>(
+                            radiationPressureAccelerationList.front());
+            if (radiationPressureAcceleration == nullptr)
+            {
+                throw std::runtime_error("Error, source body " + dependentVariableSettings->secondaryBody_ +
+                    " does not have an isotropic point source, which is required for the received fraction dependent " +
+                    "variable");
+            }
+
+            variableFunction = [=] () { return radiationPressureAcceleration->getSourceToTargetReceivedFraction(); };
+
+            break;
+        }
+        case visible_source_panel_count:
+        case illuminated_source_panel_count:
+        case visible_and_illuminated_source_panel_count:
+        case visible_source_area:
+        {
+            auto radiationPressureAccelerationList = getAccelerationBetweenBodies(
+                dependentVariableSettings->associatedBody_,
+                dependentVariableSettings->secondaryBody_,
+                stateDerivativeModels, basic_astrodynamics::radiation_pressure );
+
+            if (radiationPressureAccelerationList.empty())
+            {
+                std::string errorMessage = "Error, radiation pressure acceleration with target " +
+                        dependentVariableSettings->associatedBody_ + " and source " +
+                        dependentVariableSettings->secondaryBody_  +
+                       " not found";
+                throw std::runtime_error(errorMessage);
+            }
+
+            auto radiationPressureAcceleration =
+                    std::dynamic_pointer_cast<electromagnetism::PaneledSourceRadiationPressureAcceleration>(
+                            radiationPressureAccelerationList.front());
+            if (radiationPressureAcceleration == nullptr)
+            {
+                if (dependentVariable == visible_source_area) {
+                    throw std::runtime_error("Error, source body " + dependentVariableSettings->secondaryBody_ +
+                         " does not have a paneled source, which is required for the visible source area "+
+                         "dependent variable");
+                }
+                else
+                {
+                    throw std::runtime_error("Error, source body " + dependentVariableSettings->secondaryBody_ +
+                         " does not have a paneled source, which is required for the visible/illuminated source "+
+                         "panel count dependent variable");
+                }
+            }
+
+            switch (dependentVariable)
+            {
+                case visible_source_panel_count:
+                    variableFunction = [=] () { return radiationPressureAcceleration->getVisibleSourcePanelCount(); };
+                    break;
+                case illuminated_source_panel_count:
+                    variableFunction = [=] () { return radiationPressureAcceleration->getIlluminatedSourcePanelCount(); };
+                    break;
+                case visible_and_illuminated_source_panel_count:
+                    variableFunction = [=] () { return radiationPressureAcceleration->getVisibleAndIlluminatedSourcePanelCount(); };
+                    break;
+                case visible_source_area:
+                    variableFunction = [=] () { return radiationPressureAcceleration->getVisibleSourceArea(); };
+                    break;
+                default:
+                    break;
+            }
+
             break;
         }
         default:

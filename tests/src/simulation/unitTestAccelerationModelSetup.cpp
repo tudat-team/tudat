@@ -19,6 +19,7 @@
 #include <Eigen/Core>
 
 #include "tudat/astro/basic_astro/physicalConstants.h"
+#include "tudat/astro/basic_astro/celestialBodyConstants.h"
 #include "tudat/astro/basic_astro/unitConversions.h"
 #include "tudat/astro/ephemerides/approximatePlanetPositions.h"
 #include "tudat/astro/ephemerides/tabulatedEphemeris.h"
@@ -413,9 +414,89 @@ BOOST_AUTO_TEST_CASE( test_polyhedronGravityModelSetup )
 
 }
 
-
 //! Test radiation pressure acceleration
 BOOST_AUTO_TEST_CASE( test_radiationPressureAcceleration )
+{
+    using namespace tudat::simulation_setup;
+    using namespace tudat;
+
+    // Load Spice kernels
+    spice_interface::loadStandardSpiceKernels( );
+
+    // Get settings for celestial bodies
+    BodyListSettings bodySettings;
+    bodySettings.addSettings( getDefaultSingleBodySettings( "Earth", 0.0, 10.0 * 86400.0 ), "Earth" );
+    bodySettings.addSettings( getDefaultSingleBodySettings( "Sun", 0.0, 10.0 * 86400.0 ), "Sun" );
+
+    // Get settings for vehicle
+    double area = 2.34;
+    double coefficient = 1.2;
+    double bodyMass = 500.0;
+    bodySettings.addSettings( "Vehicle" );
+    bodySettings.at("Vehicle")->constantMass = bodyMass;
+    bodySettings.at( "Vehicle" )->radiationPressureTargetModelSettings =
+            std::make_shared<CannonballRadiationPressureTargetModelSettings>(area, coefficient);
+    bodySettings.at( "Vehicle" )->ephemerisSettings =
+            std::make_shared< KeplerEphemerisSettings >(
+                ( Eigen::Vector6d( ) << 12000.0E3, 0.13, 0.3, 0.0, 0.0, 0.0 ).finished( ),
+                0.0, spice_interface::getBodyGravitationalParameter( "Earth" ), "Earth", "ECLIPJ2000" );
+
+    // Create bodies
+    SystemOfBodies bodies = createSystemOfBodies( bodySettings );
+    
+
+    // Define settings for accelerations
+    SelectedAccelerationMap accelerationSettingsMap;
+    accelerationSettingsMap[ "Vehicle" ][ "Sun" ].push_back(radiationPressureAcceleration());
+
+    // Define origin of integration
+    std::map< std::string, std::string > centralBodies;
+    centralBodies[ "Vehicle" ] = "Earth";
+
+    // Create accelerations
+    AccelerationMap accelerationsMap = createAccelerationModelsMap(
+                bodies, accelerationSettingsMap, centralBodies );
+    auto radiationPressureAcceleration =
+            std::dynamic_pointer_cast<electromagnetism::IsotropicPointSourceRadiationPressureAcceleration>(
+                    accelerationsMap[ "Vehicle" ][ "Sun" ][ 0 ]);
+
+    // Set (arbitrary) test time.
+    double testTime = 5.0 * 86400.0;
+
+    // Update environment to current time.
+    bodies.at( "Sun" )->setStateFromEphemeris< double, double >( testTime );
+    bodies.at( "Earth" )->setStateFromEphemeris< double, double >( testTime );
+    bodies.at( "Vehicle" )->setStateFromEphemeris< double, double >( testTime );
+    bodies.at("Sun")->getRadiationSourceModel()->updateMembers(testTime);
+    bodies.at( "Vehicle" )->getRadiationPressureTargetModel()->updateMembers(testTime);
+    radiationPressureAcceleration->updateMembers(testTime);
+
+    // Get acceleration
+    Eigen::Vector3d calculatedAcceleration = radiationPressureAcceleration->getAcceleration();
+    double calculatedReceivedIrradiance = radiationPressureAcceleration->getReceivedIrradiance();
+    double calculatedReceivedFraction = radiationPressureAcceleration->getSourceToTargetReceivedFraction();
+
+    // Manually calculate acceleration
+    Eigen::Vector3d sourceTargetRelativePosition =
+            ( bodies.at( "Vehicle" )->getState() -  bodies.at( "Sun" )->getState() ).segment( 0, 3 );
+    auto sourceDistance = sourceTargetRelativePosition.norm();
+    auto irradiance =
+                celestial_body_constants::SUN_LUMINOSITY / (4 * mathematical_constants::PI * sourceDistance * sourceDistance);
+    auto radiationPressure = irradiance / physical_constants::SPEED_OF_LIGHT;
+    auto expectedForceMagnitude = radiationPressure * area * coefficient;
+    auto expectedForceDirection = sourceTargetRelativePosition.normalized();
+    Eigen::Vector3d expectedAcceleration = expectedForceDirection * expectedForceMagnitude / bodyMass;
+
+    // Compare results
+    TUDAT_CHECK_MATRIX_CLOSE_FRACTION(
+                expectedAcceleration, calculatedAcceleration, ( 2.0 * std::numeric_limits< double >::epsilon( ) ) );
+    BOOST_CHECK_CLOSE(irradiance, calculatedReceivedIrradiance, 1e-15);
+    BOOST_CHECK_CLOSE(1.0, calculatedReceivedFraction, 1e-15);
+}
+
+//! Test cannonball radiation pressure acceleration
+// RP-OLD
+BOOST_AUTO_TEST_CASE( test_cannonballRadiationPressureAcceleration )
 {
     using namespace tudat::simulation_setup;
     using namespace tudat;
@@ -807,6 +888,7 @@ BOOST_AUTO_TEST_CASE( test_aerodynamicAccelerationModelSetupWithCoefficientIndep
 }
 
 //! Test panelled radiation pressure acceleration
+// RP-OLD
 BOOST_AUTO_TEST_CASE( test_panelledRadiationPressureAcceleration )
 {
     using namespace tudat::simulation_setup;

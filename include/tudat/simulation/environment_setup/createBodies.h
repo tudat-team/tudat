@@ -24,6 +24,8 @@
 #include "tudat/simulation/environment_setup/createGroundStations.h"
 #include "tudat/simulation/environment_setup/createRotationModel.h"
 #include "tudat/simulation/environment_setup/createRadiationPressureInterface.h"
+#include "tudat/simulation/environment_setup/createRadiationSourceModel.h"
+#include "tudat/simulation/environment_setup/createRadiationPressureTargetModel.h"
 #include "tudat/simulation/environment_setup/createFlightConditions.h"
 #include "tudat/simulation/propagation_setup/dynamicsSimulator.h"
 
@@ -60,8 +62,15 @@ struct BodySettings
     std::shared_ptr< BodyShapeSettings > shapeModelSettings;
 
     //! Settings for the radiations pressure interfaces that the body is to contain (source body as key).
+    // RP-OLD
     std::map< std::string,
     std::shared_ptr< RadiationPressureInterfaceSettings > > radiationPressureSettings;
+
+    //! Settings for the radiation source model that the body is to contain.
+    std::shared_ptr< RadiationSourceModelSettings > radiationSourceModelSettings;
+
+    //! Settings for the radiation pressure target model that the body is to contain.
+    std::shared_ptr< RadiationPressureTargetModelSettings > radiationPressureTargetModelSettings;
 
     //! Settings for the aerodynamic coefficients that the body is to contain.
     std::shared_ptr< AerodynamicCoefficientSettings > aerodynamicCoefficientSettings;
@@ -80,6 +89,7 @@ void addAerodynamicCoefficientInterface(
         const SystemOfBodies& bodies, const std::string bodyName,
         const std::shared_ptr< AerodynamicCoefficientSettings > aerodynamicCoefficientSettings );
 
+// RP-OLD
 void addRadiationPressureInterface(
         const SystemOfBodies& bodies, const std::string bodyName,
         const std::shared_ptr< RadiationPressureInterfaceSettings > radiationPressureSettings );
@@ -294,6 +304,7 @@ SystemOfBodies createSystemOfBodies(
 
 
     // Create radiation pressure coefficient objects for each body (if required).
+    // RP-OLD
     for( unsigned int i = 0; i < orderedBodySettings.size( ); i++ )
     {
         std::map< std::string, std::shared_ptr< RadiationPressureInterfaceSettings > >
@@ -311,6 +322,30 @@ SystemOfBodies createSystemOfBodies(
                             orderedBodySettings.at( i ).first, bodyList ) );
         }
 
+    }
+
+    // Create radiation source model objects for each body (if required).
+    for( unsigned int i = 0; i < orderedBodySettings.size( ); i++ )
+    {
+        if( orderedBodySettings.at( i ).second->radiationSourceModelSettings != nullptr )
+        {
+            bodyList.at( orderedBodySettings.at( i ).first )->setRadiationSourceModel(
+                        createRadiationSourceModel(
+                            orderedBodySettings.at( i ).second->radiationSourceModelSettings,
+                            orderedBodySettings.at( i ).first, bodyList ));
+        }
+    }
+
+    // Create radiation pressure target model objects for each body (if required).
+    for( unsigned int i = 0; i < orderedBodySettings.size( ); i++ )
+    {
+        if( orderedBodySettings.at( i ).second->radiationPressureTargetModelSettings != nullptr )
+        {
+            bodyList.at( orderedBodySettings.at( i ).first )->setRadiationPressureTargetModel(
+                        createRadiationPressureTargetModel(
+                            orderedBodySettings.at( i ).second->radiationPressureTargetModelSettings,
+                            orderedBodySettings.at( i ).first, bodyList ) );
+        }
     }
 
     for( unsigned int i = 0; i < orderedBodySettings.size( ); i++ )

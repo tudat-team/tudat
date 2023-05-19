@@ -468,6 +468,24 @@ int getDependentVariableSize(
     case minimum_constellation_ground_station_distance:
         variableSize = 3;
         break;
+    case received_irradiance:
+        variableSize = 1;
+        break;
+    case received_fraction:
+        variableSize = 1;
+        break;
+    case visible_source_panel_count:
+        variableSize = 1;
+        break;
+    case illuminated_source_panel_count:
+        variableSize = 1;
+        break;
+    case visible_and_illuminated_source_panel_count:
+        variableSize = 1;
+        break;
+    case visible_source_area:
+        variableSize = 1;
+        break;
     default:
         std::string errorMessage = "Error, did not recognize dependent variable size of type: " +
                 std::to_string( dependentVariableSettings->dependentVariableType_ );
