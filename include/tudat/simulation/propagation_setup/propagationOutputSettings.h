@@ -136,7 +136,7 @@ enum PropagationDependentVariables
     visible_source_panel_count = 63,
     illuminated_source_panel_count = 64,
     visible_and_illuminated_source_panel_count = 65,
-    visible_source_area = 65
+    visible_source_area = 66
 };
 
 // Functional base class for defining settings for dependent variables that are to be saved during propagation
