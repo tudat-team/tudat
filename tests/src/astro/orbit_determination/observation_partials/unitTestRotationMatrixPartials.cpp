@@ -32,7 +32,7 @@ using namespace tudat::estimatable_parameters;
 using namespace tudat::observation_partials;
 
 BOOST_AUTO_TEST_SUITE( test_rotation_matrix_partaisl )
-//
+
 //! Test whether partial derivatives of rotation matrix computed by SimpleRotationalEphemeris works correctly
 BOOST_AUTO_TEST_CASE( testSimpleRotationalEphemerisPartials )
 {
@@ -255,33 +255,69 @@ BOOST_AUTO_TEST_CASE( testSynchronousRotationPartials )
     Eigen::Matrix< double, 1, 6 > analyticalLibrationAnglePartial =
         calculatePartialOfDirectLibrationAngleWrtCartesianStates( currentState, scaledLibrationAmplitude );
 
-    for( int i = 0; i < 3; i++ )
+    Eigen::Vector6d statePerturbation = Eigen::Vector6d::Zero( );
+    for( unsigned int useRsw = 0; useRsw < 2; useRsw++ )
     {
-        currentState = nominalState;
-        currentState( i ) += positionPerturbation;
-        double upPerturbedLibrationAngle = synchronousRotationModel->getLongitudeLibrationCalculator( )->getLibrationAngleWrtFullySynchronousRotation(
-            currentState, testTime );
+        Eigen::Matrix6d transformationMatrix = Eigen::Matrix6d::Identity( );
+        Eigen::Matrix< double, 1, 6 > analyticalLibrationAnglePartialToUse = analyticalLibrationAnglePartial;
+        if( useRsw == 1 )
+        {
+            transformationMatrix.block( 0, 0, 3, 3 ) *= reference_frames::getInertialToRswSatelliteCenteredFrameRotationMatrix(
+                currentState );
+            transformationMatrix.block( 3, 3, 3, 3 ) *= reference_frames::getInertialToRswSatelliteCenteredFrameRotationMatrix(
+                currentState );
+            analyticalLibrationAnglePartialToUse = analyticalLibrationAnglePartialToUse * transformationMatrix;
+        }
+        for ( int i = 0; i < 3; i++ )
+        {
+            currentState = nominalState;
+            statePerturbation.setZero( );
+            statePerturbation( i ) = positionPerturbation;
+            statePerturbation = transformationMatrix * statePerturbation;
+            currentState += statePerturbation;
 
-        currentState = nominalState;
-        currentState( i ) -= positionPerturbation;
-        double downPerturbedLibrationAngle = synchronousRotationModel->getLongitudeLibrationCalculator( )->getLibrationAngleWrtFullySynchronousRotation(
-            currentState, testTime );
+            double upPerturbedLibrationAngle =
+                synchronousRotationModel->getLongitudeLibrationCalculator( )->getLibrationAngleWrtFullySynchronousRotation(
+                    currentState, testTime );
 
-        double librationAnglePositionPartial = ( upPerturbedLibrationAngle - downPerturbedLibrationAngle ) / ( 2.0 * positionPerturbation );
-        BOOST_CHECK_CLOSE_FRACTION( librationAnglePositionPartial, analyticalLibrationAnglePartial( i ), 1.0E-6 );
+            currentState = nominalState;
+            statePerturbation.setZero( );
+            statePerturbation( i ) = positionPerturbation;
+            statePerturbation = transformationMatrix * statePerturbation;
+            currentState -= statePerturbation;
+            double downPerturbedLibrationAngle =
+                synchronousRotationModel->getLongitudeLibrationCalculator( )->getLibrationAngleWrtFullySynchronousRotation(
+                    currentState, testTime );
 
-        currentState = nominalState;
-        currentState( i + 3 ) += velocityPerturbation;
-        upPerturbedLibrationAngle = synchronousRotationModel->getLongitudeLibrationCalculator( )->getLibrationAngleWrtFullySynchronousRotation(
-            currentState, testTime );
+            double librationAnglePositionPartial =
+                ( upPerturbedLibrationAngle - downPerturbedLibrationAngle ) / ( 2.0 * positionPerturbation );
+            BOOST_CHECK_CLOSE_FRACTION( librationAnglePositionPartial, analyticalLibrationAnglePartialToUse( i ), 1.0E-6 );
 
-        currentState = nominalState;
-        currentState( i + 3 ) -= velocityPerturbation;
-        downPerturbedLibrationAngle = synchronousRotationModel->getLongitudeLibrationCalculator( )->getLibrationAngleWrtFullySynchronousRotation(
-            currentState, testTime );
+            currentState = nominalState;
+            statePerturbation.setZero( );
+            statePerturbation( i + 3 ) = velocityPerturbation;
+            statePerturbation = transformationMatrix * statePerturbation;
+            currentState += statePerturbation;
 
-        double librationAngleVelocityPartial = ( upPerturbedLibrationAngle - downPerturbedLibrationAngle ) / ( 2.0 * velocityPerturbation );
-        BOOST_CHECK_CLOSE_FRACTION( librationAngleVelocityPartial, analyticalLibrationAnglePartial( i + 3 ), 1.0E-6 );
+            upPerturbedLibrationAngle =
+                synchronousRotationModel->getLongitudeLibrationCalculator( )->getLibrationAngleWrtFullySynchronousRotation(
+                    currentState, testTime );
+
+            currentState = nominalState;
+            statePerturbation.setZero( );
+            statePerturbation( i + 3 ) = velocityPerturbation;
+            statePerturbation = transformationMatrix * statePerturbation;
+            currentState -= statePerturbation;
+
+            downPerturbedLibrationAngle =
+                synchronousRotationModel->getLongitudeLibrationCalculator( )->getLibrationAngleWrtFullySynchronousRotation(
+                    currentState, testTime );
+
+            double librationAngleVelocityPartial =
+                ( upPerturbedLibrationAngle - downPerturbedLibrationAngle ) / ( 2.0 * velocityPerturbation );
+            BOOST_CHECK_CLOSE_FRACTION( librationAngleVelocityPartial, analyticalLibrationAnglePartialToUse( i + 3 ),
+                                        1.0E-6 );
+        }
     }
 
 
