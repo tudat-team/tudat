@@ -387,13 +387,11 @@ void SphericalHarmonicsGravityPartial::update( const double currentTime )
 //                std::cout<<"Partial pre-correction "<<i<<std::endl<<currentPartialWrtVelocity_.block( 0, i, 3, 1 )<<std::endl;
                 currentPartialWrtVelocity_.block( 0, i, 3, 1 ) -=
                         rotationPositionPartials.at( i + 3 ) * ( currentRotationToBodyFixedFrame_ * nonCentralAcceleration );
-//                std::cout<<"Partial mid-correction "<<i<<std::endl<<currentPartialWrtVelocity_.block( 0, i, 3, 1 )<<std::endl;
 
                 currentPartialWrtVelocity_.block( 0, i, 3, 1 ) -=
                     currentRotationToBodyFixedFrame_.inverse( ) * nonCentralBodyFixedPartial *
                     ( rotationPositionPartials.at( i + 3 ).transpose( ) *
                       ( positionFunctionOfAcceleratedBody_( ) - positionFunctionOfAcceleratingBody_( ) ) );
-//                std::cout<<"Partial post-correction "<<i<<std::endl<<currentPartialWrtVelocity_.block( 0, i, 3, 1 )<<std::endl<<std::endl;
 
             }
         }

@@ -1213,18 +1213,18 @@ calculatePartialOfRotationMatrixToBaseFrameWrParameter( const double time )
 
     if( directLongitudeLibrationCalculator_ != nullptr )
     {
-        Eigen::Matrix3d lockedRotation =
-                synchronousRotationaModel_->getFullyLockedRotationToBaseFrame( time );
-        Eigen::Matrix3d librationRotationDerivativeWrtAngle =
-                reference_frames::getDerivativeOfZAxisRotationWrtAngle( correctionRotation );
-
-        Eigen::Matrix< double, 1, 6 > librationDerivatives =
-                calculatePartialOfDirectLibrationAngleWrtCartesianStates(
-                    currentState, directLongitudeLibrationCalculator_->getScaledLibrationAmplitude( ) );
-        for( int i = 0; i < 6; i++ )
-        {
-            rotationMatrixPartials[ i ] += lockedRotation * librationRotationDerivativeWrtAngle * librationDerivatives( i );
-        }
+//        Eigen::Matrix3d lockedRotation =
+//                synchronousRotationaModel_->getRotationMatrixToBaseFrame( time );
+//        Eigen::Matrix3d librationRotationDerivativeWrtAngle =
+//                reference_frames::getDerivativeOfZAxisRotationWrtAngle( correctionRotation );
+//
+//        Eigen::Matrix< double, 1, 6 > librationDerivatives =
+//                calculatePartialOfDirectLibrationAngleWrtCartesianStates(
+//                    currentState, directLongitudeLibrationCalculator_->getScaledLibrationAmplitude( ) );
+//        for( int i = 0; i < 6; i++ )
+//        {
+//            rotationMatrixPartials[ i ] += lockedRotation * librationRotationDerivativeWrtAngle * librationDerivatives( i );
+//        }
     }
 
     return rotationMatrixPartials;
