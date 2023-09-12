@@ -644,11 +644,20 @@ public:
         Eigen::VectorXd constraintRightHandSide;
         parametersToEstimate_->getConstraints( constraintStateMultiplier, constraintRightHandSide );
 
+        Eigen::MatrixXd normalizedConstraintStateMultiplier = Eigen::MatrixXd(
+            constraintStateMultiplier.rows( ), constraintStateMultiplier.cols( ) );
+
+        for( unsigned int i = 0; i < constraintStateMultiplier.rows( ); i++ )
+        {
+            normalizedConstraintStateMultiplier.block( i, 0, 1, constraintStateMultiplier.cols( ) ) =
+                constraintStateMultiplier.block( i, 0, 1, constraintStateMultiplier.cols( ) ).cwiseQuotient( normalizationTerms.transpose( ) );
+        }
+
         // Compute inverse of updated covariance
         Eigen::MatrixXd inverseNormalizedCovariance = linear_algebra::calculateInverseOfUpdatedCovarianceMatrix(
                 designMatrixEstimatedParameters.block( 0, 0, designMatrixEstimatedParameters.rows( ), numberEstimatedParameters_ ),
                 estimationInput->getWeightsMatrixDiagonals( ),
-                normalizedInverseAprioriCovarianceMatrix, constraintStateMultiplier, constraintRightHandSide );
+                normalizedInverseAprioriCovarianceMatrix, normalizedConstraintStateMultiplier, constraintRightHandSide );
 
         // Compute contribution consider parameters
         Eigen::MatrixXd covarianceContributionConsiderParameters;
@@ -796,10 +805,19 @@ public:
                 Eigen::VectorXd constraintRightHandSide;
                 parametersToEstimate_->getConstraints( constraintStateMultiplier, constraintRightHandSide );
 
+                Eigen::MatrixXd normalizedConstraintStateMultiplier = Eigen::MatrixXd(
+                    constraintStateMultiplier.rows( ), constraintStateMultiplier.cols( ) );
+
+                for( unsigned int i = 0; i < constraintStateMultiplier.rows( ); i++ )
+                {
+                    normalizedConstraintStateMultiplier.block( i, 0, 1, constraintStateMultiplier.cols( ) ) =
+                        constraintStateMultiplier.block( i, 0, 1, constraintStateMultiplier.cols( ) ).cwiseQuotient( normalizationTerms.transpose( ) );
+                }
+
                 // Perform LSQ inversion
                 leastSquaresOutput = std::move( linear_algebra::performLeastSquaresAdjustmentFromDesignMatrix(
                         designMatrixEstimatedParameters, residuals, estimationInput->getWeightsMatrixDiagonals( ),
-                        normalizedInverseAprioriCovarianceMatrix, 1, 1.0E8, constraintStateMultiplier, constraintRightHandSide,
+                        normalizedInverseAprioriCovarianceMatrix, 1, 1.0E8, normalizedConstraintStateMultiplier, constraintRightHandSide,
                         designMatrixConsiderParameters, normalizedConsiderParametersDeviation ) );
 
                 if( constraintStateMultiplier.rows( ) > 0 )
