@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include <string>
 
 #include "tudat/astro/basic_astro/physicalConstants.h"
 #include "tudat/astro/basic_astro/timeConversions.h"
@@ -16,6 +17,10 @@ namespace tudat
 
 namespace system_models
 {
+
+std::map< int, std::pair<double, double> > convertAllanVarianceNodesToAmplitudes(
+    const std::map< int, double > allanVarianceNodes );
+    //const std::string& varianceType
 
 
 //! Function to convert allan variance amplitudes (time domain) to phase noise amplitudes (frequency domain)
@@ -34,6 +39,9 @@ std::map< int, double > convertAllanVarianceAmplitudesToPhaseNoiseAmplitudes(
         const double frequencyDomainCutoffFrequency,
         const bool isInverseSquareTermFlickerPhaseNoise = 0 );
 
+std::pair< std::map<double, double>, std::vector<double > > convertAllanVarianceAmplitudesToPhaseNoiseAmplitudesMichael(
+        const std::map< int, std::pair < double, double > > allanVarianceAmplitudes,
+        const std::string& varianceType);
 //! Function to generate clock noise for a clock with given allan variance behaviour
 /*!
  *  Function to generate clock noise for a clock with given allan variance behaviour (polynomial with integer time powers -2 >= power <= 1 )
@@ -55,6 +63,13 @@ std::pair< std::vector< double >, double > generateClockNoise(
         const int numberOfTimeSteps, const bool isInverseSquareTermFlickerPhaseNoise = 0,
         const double seed = statistics::defaultRandomSeedGenerator->getRandomVariableValue( )  );
 
+std::pair< std::vector< double >, double > generateClockNoiseMichael(
+    const std::map< int, double > allanVarianceNodes,
+     const std::string& varianceType,
+    const double startTime, const double endTime,
+    const int numberOfTimeSteps, const bool isInverseSquareTermFlickerPhaseNoise = 0,
+    const double seed = statistics::defaultRandomSeedGenerator->getRandomVariableValue( )  );
+
 //! Function to generate clock noise for a clock with given allan variance behaviour
 /*!
  *  Function to generate clock noise for a clock with given allan variance behaviour (polynomial with integer time powers -2 >= power <= 1 )
@@ -75,6 +90,11 @@ std::map< double, double > generateClockNoiseMap( const std::map< int, double >&
                                                   const double startTime, const double endTime,
                                                   const double timeStep, const bool isInverseSquareTermFlickerPhaseNoise = 0,
                                                   const double seed = statistics::defaultRandomSeedGenerator->getRandomVariableValue( ) );
+
+std::map< double, double > generateClockNoiseMapMichael( const std::map< int, double >& allanVarianceNodes,
+                                                         const std::string& varianceType,
+                                                         const double startTime, const double endTime,
+                                                         const double timeStep, const double seed );
 
 //! Function to generate a function to retrieve clock noise for a clock with given allan variance behaviour
 /*!
@@ -99,6 +119,12 @@ std::function< double( const double ) > getClockNoiseInterpolator(
         const std::map< int, double > allanVarianceAmplitudes,
         const double startTime, const double endTime,
         const double timeStep, const bool isInverseSquareTermFlickerPhaseNoise = 0, const double seed = time( 0 ) );
+
+std::function< double( const double ) > getClockNoiseInterpolatorMichael(
+        const std::map< int, double > allanVarianceNodes,
+        const std::string& varianceType,
+        const double startTime, const double endTime,
+        const double timeStep,  const double seed = time( 0 ) );
 
 //! Class to represent timing system hardware (such as USO).
 class TimingSystem
