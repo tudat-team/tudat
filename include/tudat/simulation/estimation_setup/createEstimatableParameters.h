@@ -1935,10 +1935,10 @@ std::shared_ptr< estimatable_parameters::EstimatableParameterSet< InitialStatePa
                                                       parameterNames[ i ], bodies, propagatorSettings ) );
             if( vectorParameterIsFound == true && parameterOrderWarningPrinted == false )
             {
-                std::cerr<<"Warning when creating estimated parameters. The parameters will be ordered such that all parameters (excluding initial states) "<<
-                           "defined by a single variable will be stored before those represented by a list of variables. "<<
-                           "The parameter order will be different than those in your parameter settings. It is recommended that you "<<
-                           "check the parameter order by calling the print_parameter_names(Python)/printEstimatableParameterEntries(C++) function"<<std::endl;
+                //std::cerr<<"Warning when creating estimated parameters. The parameters will be ordered such that all parameters (excluding initial states) "<<
+                 //          "defined by a single variable will be stored before those represented by a list of variables. "<<
+                 //          "The parameter order will be different than those in your parameter settings. It is recommended that you "<<
+                  //         "check the parameter order by calling the print_parameter_names(Python)/printEstimatableParameterEntries(C++) function"<<std::endl;
                 parameterOrderWarningPrinted = true;
             }
         }
