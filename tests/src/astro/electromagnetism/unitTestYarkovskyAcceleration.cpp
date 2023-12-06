@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE( testYarkovskyAccelerationSimple )
                                        ( 10.0 * std::numeric_limits< double >::epsilon( ) ) );
 }
 
-Eigen::Vector6d bodyState = Eigen::Vector6d { AU, 0, 0, 12.0e5, 3.0e5, 4.0e5 };
+Eigen::Vector6d bodyState = ( Eigen::Vector6d( ) << AU, 0, 0, 12.0e5, 3.0e5, 4.0e5 ).finished( );
 
 Eigen::Vector6d getBodyState( )
 {

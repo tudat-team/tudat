@@ -32,6 +32,7 @@ set(io_SOURCES
         "tabulatedAtmosphereReader.cpp"
         "util.cpp"
         "readOdfFile.cpp"
+        "readMpcFile.cpp"
         "readTabulatedMediaCorrections.cpp"
         "readTabulatedWeatherData.cpp"
         )
@@ -70,6 +71,7 @@ set(io_HEADERS
         "tabulatedAtmosphereReader.h"
         "util.h"
         "readOdfFile.h"
+        "readMpcFile.h"
         "readBinaryFile.h"
         "readTabulatedMediaCorrections.h"
         "readTabulatedWeatherData.h"

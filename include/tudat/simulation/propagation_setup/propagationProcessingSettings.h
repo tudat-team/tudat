@@ -570,7 +570,7 @@ private:
         else
         {
             throw std::runtime_error(
-                        "Error, cannot set constituent single-arc output settings more than once in multi-arc output settings" );
+                        "Error, cannot set constituent single-arc output settings more than once in hybrid-arc output settings" );
         }
     }
 

@@ -13,6 +13,7 @@
 
 #include <unordered_map>
 #include <map>
+#include <set>
 #include <vector>
 #include <iostream>
 #include <stdexcept>
@@ -909,6 +910,28 @@ int countNumberOfOccurencesInVector( const std::vector< T >& vector, const T& va
         }
     }
     return counter;
+}
+
+template <typename T>
+std::set< T > vectorToSet( const std::vector< T >& vector )
+{
+    std::set< T > set;
+    for( unsigned int i = 0; i < vector.size( ); i++ )
+    {
+        set.insert( vector.at( i ) );
+    }
+    return set;
+}
+
+template <typename T>
+std::vector< T > setToVector( const std::set< T >& set )
+{
+    std::vector< T > vector;
+    for( auto it : set )
+    {
+        vector.push_back( it );
+    }
+    return vector;
 }
 
 } // namespace utilities
