@@ -15,6 +15,8 @@
 
 #include "tudat/basics/testMacros.h"
 #include "tudat/io/readMpcFile.h"
+#include "tudat/simulation/estimation_setup/processMpcFile.h"
+
 //
 //namespace tudat
 //{
@@ -23,6 +25,8 @@
 
 using namespace tudat;
 using namespace tudat::input_output;
+using namespace tudat::observation_models;
+
 //
 //BOOST_AUTO_TEST_SUITE( test_mpc_file_reader )
 //
@@ -49,6 +53,9 @@ int main( )
     {
         std::cout<<provisionalOnlyNames.at( i )<<std::endl;
     }
+
+    std::vector< std::shared_ptr< SingleObservationSet< > > > observationSets = createMpcSingleObservationSets( mpcFileContents );
+    ObservationCollection< > observationCollection( observationSets );
 
 
 

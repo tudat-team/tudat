@@ -108,7 +108,41 @@ public:
         return provisionalOnlyNames_;
     }
 
+    void filterForStations(
+        const std::vector< std::string >& stationsToRemove = std::vector< std::string >( ),
+        const std::vector< std::string >& stationsToRetain = std::vector< std::string >( ) )
+    {
 
+    }
+
+    void filterWithTime( const double startEpoch = TUDAT_NAN, const double endEpoch = TUDAT_NAN )
+    {
+
+    }
+
+    void getObservationsForBody(
+        const std::string& bodyName,
+        std::map< std::string, std::vector< std::pair< Eigen::Vector2d, double > > > angularPositionsPerStation ) const
+    {
+        if( bodyNameEntries_.count( bodyName ) == 0 )
+        {
+            throw std::runtime_error( "Error when retrieving MPC data for " + bodyName + " no such body found." );
+        }
+        std::vector< int > requestedBodyEntries = bodyNameEntries_.at( bodyName );
+
+        for( unsigned int i = 0; i < requestedBodyEntries.size( ); i++ )
+        {
+            const MPCFileSingleLine& currentLine = mpcFileLines_.at( requestedBodyEntries.at( i ) );
+            angularPositionsPerStation[ currentLine.observatoryCode_ ].push_back( std::make_pair(
+                ( Eigen::Vector2d( ) << currentLine.rightAscension_, currentLine.declination_ ).finished( ),
+                currentLine.secondsSinceJ2000Utc_ ) );
+        }
+    }
+
+    std::vector< std::string > getListOfBodies( ) const
+    {
+        return utilities::createVectorFromMapKeys( bodyNameEntries_ );
+    }
 private:
 
     double getAngleInRadiansFromString( const std::string& angleString, const bool isNegative, const bool isRightAscension );
