@@ -2226,6 +2226,9 @@ bool isReferencePointGroundStation( const SystemOfBodies &bodies,
                                     const std::string& bodyName,
                                     const std::string& referencePointName );
 
+std::shared_ptr< system_models::TimingSystem > getTimingSystem( const std::pair< std::string, std::string > linkEndName,
+                                                                const SystemOfBodies& bodyMap );
+
 //! Function to compute the acceleration of a body, using its ephemeris and finite differences
 /*!
  *  Function to compute the acceleration of a body, using its ephemeris and 8th order finite difference and 100 s time step

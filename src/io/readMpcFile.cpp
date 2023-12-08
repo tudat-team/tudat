@@ -210,6 +210,11 @@ void MpcFileContents::postProcessProvisionalBodyEntries( )
     }
 
     provisionalOnlyNames_ = utilities::setToVector( provisionalNameList );
+
+    for( unsigned int i = 0; i < provisionalOnlyNames_.size( ); i++ )
+    {
+        bodyNameEntries_[ provisionalOnlyNames_.at( i ) ] =  bodyProvisionalNameEntries_.at( provisionalOnlyNames_.at( i ) );
+    }
 }
 
 

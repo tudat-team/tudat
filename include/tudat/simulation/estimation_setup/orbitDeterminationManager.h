@@ -681,7 +681,10 @@ public:
      *  \return Object containing estimated parameter value and associateed data, such as residuals and observation partials.
      */
     std::shared_ptr< EstimationOutput< ObservationScalarType, TimeType > > estimateParameters(
-            const std::shared_ptr< EstimationInput< ObservationScalarType, TimeType > > estimationInput )
+            const std::shared_ptr< EstimationInput< ObservationScalarType, TimeType > > estimationInput,
+            const  Eigen::VectorXd designMatrixRowsToSetToZero,
+            const  Eigen::VectorXd designMatrixRowsToSetToZeroForStateContribution,
+            const int numberOfBodiesToIntegrate)
 
     {
         currentParameterEstimate_ = parametersToEstimate_->template getFullParameterValues< ObservationScalarType >( );
@@ -766,7 +769,7 @@ public:
             // Normalise estimated parameters partials and inverse apriori covariance
             Eigen::VectorXd normalizationTerms = normalizeDesignMatrix( designMatrixEstimatedParameters );
             Eigen::MatrixXd normalizedInverseAprioriCovarianceMatrix = normalizeAprioriCovariance(
-                    estimationInput->getInverseOfAprioriCovariance( numberEstimatedParameters_ ), normalizationTerms );
+            estimationInput->getInverseOfAprioriCovariance( numberEstimatedParameters_ ), normalizationTerms );
 
             // Normalise partials w.r.t. consider parameters, consider covariance and parameters deviations
             Eigen::VectorXd normalizationTermsConsider, normalizedConsiderParametersDeviation;
@@ -783,7 +786,20 @@ public:
                 normalizedConsiderCovariance = Eigen::MatrixXd::Zero( 0, 0 );
                 normalizedConsiderParametersDeviation = Eigen::VectorXd::Zero( 0 );
             }
-
+//
+//=======
+//                    estimationInput->getInverseOfAprioriCovariance( parameterVectorSize ), normalizationTerms );
+//            // Michael
+//            for (unsigned int i = 0; i != designMatrixRowsToSetToZeroForStateContribution.size(); i++){
+//                designMatrix.block( designMatrixRowsToSetToZeroForStateContribution[i],
+//                                    0,
+//                                    1,
+//                                    6 * numberOfBodiesToIntegrate ) = Eigen::VectorXd::Zero( 6 * numberOfBodiesToIntegrate );
+//            }
+//            for (unsigned int i = 0; i != designMatrixRowsToSetToZero.size(); i++){
+//                designMatrix.block( designMatrixRowsToSetToZero[i], 0, 1, numberOfEstimatedParameters ) = Eigen::VectorXd::Zero( numberOfEstimatedParameters );
+//            }
+//>>>>>>> michael-origin/arbitraryClock
             // Perform least squares calculation for correction to parameter vector.
             std::pair< Eigen::VectorXd, Eigen::MatrixXd > leastSquaresOutput;
             try

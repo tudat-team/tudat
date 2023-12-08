@@ -40,6 +40,7 @@
 #include "tudat/astro/orbit_determination/estimatable_parameters/freeCoreNutationRate.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/desaturationDeltaV.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/longitudeLibrationAmplitude.h"
+#include "tudat/astro/orbit_determination/estimatable_parameters/polynomialClockCorrections.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/constantThrust.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/yarkovskyParameter.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/referencePointPosition.h"
@@ -521,6 +522,7 @@ std::vector< std::shared_ptr< estimatable_parameters::EstimatableParameterSettin
             std::vector< std::string > centralBodies = translationalPropagatorSettings->centralBodies_;
 
             Eigen::Matrix< InitialStateParameterType, Eigen::Dynamic, 1 > initialStates =  translationalPropagatorSettings->getInitialStates( );
+
             for( unsigned int i = 0; i < propagatedBodies.size( ); i++ )
             {
                 initialStateParameterSettings.push_back(
@@ -1984,19 +1986,76 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd >
         }
         case custom_estimated_parameter:
         {
-            std::shared_ptr< CustomEstimatableParameterSettings > customParameterSettings =
-                std::dynamic_pointer_cast< CustomEstimatableParameterSettings >( vectorParameterName );
-            if( customParameterSettings == nullptr )
+            std::shared_ptr<CustomEstimatableParameterSettings> customParameterSettings =
+                std::dynamic_pointer_cast<CustomEstimatableParameterSettings>( vectorParameterName );
+            if ( customParameterSettings == nullptr )
             {
                 throw std::runtime_error( "Error, expected variable custom parameter settings " );
             }
             else
             {
-                vectorParameterToEstimate = std::make_shared< CustomEstimatableParameter >
+                vectorParameterToEstimate = std::make_shared<CustomEstimatableParameter>
                     ( customParameterSettings->parameterType_.second.second,
                       customParameterSettings->parameterSize_,
                       customParameterSettings->getParameterFunction_,
                       customParameterSettings->setParameterFunction_ );
+            }
+            break;
+        }
+        case global_polynomial_clock_corrections:
+        {
+            std::shared_ptr< GlobalPolynomialClockCorrectionsParameterSettings > polynomialClockParameterSettings =
+                    std::dynamic_pointer_cast< GlobalPolynomialClockCorrectionsParameterSettings >( vectorParameterName );
+            if( polynomialClockParameterSettings == NULL )
+            {
+                std::cerr<<"Error, expected global polynomial clock variation settings "<<std::endl;
+            }
+            else
+            {
+                std::shared_ptr< system_models::TimingSystem > timingSystem =
+                        getTimingSystem( polynomialClockParameterSettings->parameterType_.second, bodies );
+                if( timingSystem == NULL )
+                {
+                    std::cerr<<"Error when making global polynomial clock variation parameter, could not find timing system of:  "<<
+                             polynomialClockParameterSettings->parameterType_.second.first<<" "<<
+                             polynomialClockParameterSettings->parameterType_.second.second<<std::endl;
+                }
+                else
+                {
+                    vectorParameterToEstimate = std::make_shared< GlobalPolynomialClockCorrections >(
+                            timingSystem, polynomialClockParameterSettings->correctionPowers_,
+                            polynomialClockParameterSettings->parameterType_.second.first,
+                            polynomialClockParameterSettings->parameterType_.second.second );
+                }
+            }
+            break;
+        }
+        case arc_wise_polynomial_clock_corrections:
+        {
+            std::shared_ptr< MultiArcPolynomialClockCorrectionsParameterSettings > polynomialClockParameterSettings =
+                    std::dynamic_pointer_cast< MultiArcPolynomialClockCorrectionsParameterSettings >( vectorParameterName );
+            if( polynomialClockParameterSettings == NULL )
+            {
+                std::cerr<<"Error, expected multi-arc polynomial clock variation settings "<<std::endl;
+            }
+            else
+            {
+                std::shared_ptr< system_models::TimingSystem > timingSystem =
+                        getTimingSystem( polynomialClockParameterSettings->parameterType_.second, bodies );
+                if( timingSystem == NULL )
+                {
+                    std::cerr<<"Error when making multi-arc polynomial clock variation parameter, could not find timing system of:  "<<
+                             polynomialClockParameterSettings->parameterType_.second.first<<" "<<
+                             polynomialClockParameterSettings->parameterType_.second.second<<std::endl;
+                }
+                else
+                {
+                    vectorParameterToEstimate = std::make_shared< MultiArcClockCorrections >(
+                            timingSystem, polynomialClockParameterSettings->correctionPowers_,
+                            polynomialClockParameterSettings->arcIndices_,
+                            polynomialClockParameterSettings->parameterType_.second.first,
+                            polynomialClockParameterSettings->parameterType_.second.second );
+                }
             }
             break;
         }
@@ -2112,10 +2171,10 @@ std::shared_ptr< estimatable_parameters::EstimatableParameterSet< InitialStatePa
                                                       parameterNames[ i ], bodies, propagatorSettings ) );
             if( vectorParameterIsFound == true && parameterOrderWarningPrinted == false )
             {
-                std::cerr<<"Warning when creating estimated parameters. The parameters will be ordered such that all parameters (excluding initial states) "<<
-                           "defined by a single variable will be stored before those represented by a list of variables. "<<
-                           "The parameter order will be different than those in your parameter settings. It is recommended that you "<<
-                           "check the parameter order by calling the print_parameter_names(Python)/printEstimatableParameterEntries(C++) function"<<std::endl;
+                //std::cerr<<"Warning when creating estimated parameters. The parameters will be ordered such that all parameters (excluding initial states) "<<
+                 //          "defined by a single variable will be stored before those represented by a list of variables. "<<
+                 //          "The parameter order will be different than those in your parameter settings. It is recommended that you "<<
+                  //         "check the parameter order by calling the print_parameter_names(Python)/printEstimatableParameterEntries(C++) function"<<std::endl;
                 parameterOrderWarningPrinted = true;
             }
         }
@@ -2207,7 +2266,7 @@ getAssociatedMultiArcParameter(
     }
     default:
         throw std::runtime_error( "Error when getting multi-arc parameter from single-arc equivalent, parameter type " +
-                                  boost::lexical_cast< std::string >( singleArcParameter->getParameterName( ).first ) +
+                                          getParameterTypeString( singleArcParameter->getParameterName( ).first ) +
                                   " not recognized." );
     }
     return multiArcParameter;
