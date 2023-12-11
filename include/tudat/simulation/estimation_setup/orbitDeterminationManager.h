@@ -144,32 +144,41 @@ void calculateDesignMatrixAndResiduals(
                 std::pair< int, int > observationIndices = observationsCollection->getObservationSetStartAndSize( ).at(
                     currentObservableType ).at( currentLinkEnds ).at( i );
 
-                // Compute estimated ranges and range partials from current parameter estimate.
-                Eigen::Matrix< ObservationScalarType, Eigen::Dynamic, 1 > observationsVector;
-                Eigen::MatrixXd partialsMatrix;
-                observationManagers.at( currentObservableType )->
-                        computeObservationsWithPartials(
-                        currentObservations->getObservationTimes( ), currentLinkEnds,
-                        currentObservations->getReferenceLinkEnd( ),
-                        currentObservations->getAncilliarySettings( ),
-                        observationsVector,
-                        partialsMatrix,
-                        calculateResiduals,
-                        calculatePartials );
-
-                if( calculatePartials )
+//                std::cout<<"Current size "<<currentObservations->getObservationTimes( ).size( )<<
+//                " "<<currentObservations->getObservations( ).size( )<<" "<<observationIndices.first<<" "<<observationIndices.second<<std::endl;
+                if( observationIndices.second > 0 )
                 {
-                    // Set current observation partials in matrix of all partials
-                    designMatrix.block( observationIndices.first, 0, observationIndices.second,
-                                        totalNumberParameters ) = partialsMatrix;
-                }
+                    // Compute estimated ranges and range partials from current parameter estimate.
+                    Eigen::Matrix< ObservationScalarType, Eigen::Dynamic, 1 > observationsVector;
+                    Eigen::MatrixXd partialsMatrix;
+                    observationManagers.at( currentObservableType )->
+                            computeObservationsWithPartials(
+                            currentObservations->getObservationTimes( ), currentLinkEnds,
+                            currentObservations->getReferenceLinkEnd( ),
+                            currentObservations->getAncilliarySettings( ),
+                            observationsVector,
+                            partialsMatrix,
+                            calculateResiduals,
+                            calculatePartials );
 
-                // Compute residuals for current link ends and observable type.
-                if( calculateResiduals )
-                {
-                    residuals.segment( observationIndices.first, observationIndices.second ) =
-                        ( currentObservations->getObservationsVector( ) - observationsVector ).template cast< double >( );
+                    if( calculatePartials )
+                    {
+//                        std::cout<<designMatrix.rows( )<<" "<<designMatrix.cols( )<<std::endl;
+//                        std::cout<<observationIndices.first<<" "<<0<<" "<<observationIndices.second<<" "<<totalNumberParameters<<std::endl;
+//                        std::cout<<partialsMatrix.rows( )<<" "<<partialsMatrix.cols( )<<std::endl<<std::endl;
 
+                        // Set current observation partials in matrix of all partials
+                        designMatrix.block( observationIndices.first, 0, observationIndices.second,
+                                            totalNumberParameters ) = partialsMatrix;
+                    }
+
+                    // Compute residuals for current link ends and observable type.
+                    if( calculateResiduals )
+                    {
+                        residuals.segment( observationIndices.first, observationIndices.second ) =
+                            ( currentObservations->getObservationsVector( ) - observationsVector ).template cast< double >( );
+
+                    }
                 }
             }
         }
@@ -1149,7 +1158,7 @@ protected:
         }
         else
         {
-            considerParametersValues_ = Eigen::Matrix< ObservationScalarType, Eigen::Dynamic, 1 >::Zero( 0 );
+            considerParametersValues_ = ParameterVectorType::Zero( 0 );
         }
 
     }
@@ -1359,7 +1368,7 @@ protected:
 
 };
 
-//extern template class OrbitDeterminationManager< double, double >;
+extern template class OrbitDeterminationManager< double, double >;
 
 
 

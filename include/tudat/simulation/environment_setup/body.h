@@ -25,6 +25,8 @@
 #include "tudat/astro/basic_astro/bodyShapeModel.h"
 #include "tudat/astro/basic_astro/timeConversions.h"
 #include "tudat/astro/electromagnetism/radiationPressureInterface.h"
+#include "tudat/astro/electromagnetism/radiationSourceModel.h"
+#include "tudat/astro/electromagnetism/radiationPressureTargetModel.h"
 #include "tudat/astro/ephemerides/ephemeris.h"
 #include "tudat/astro/ephemerides/rotationalEphemeris.h"
 #include "tudat/astro/ephemerides/tabulatedEphemeris.h"
@@ -581,6 +583,8 @@ public:
     {
         if( !isStateSet_ )
         {
+            std::vector< double > test;
+            test.at( 0 );
             throw std::runtime_error( "Error when retrieving state from body " + bodyName_ + ", state of body is not yet defined" );
         }
         else
@@ -1257,7 +1261,30 @@ public:
             const std::string &radiatingBody,
             const std::shared_ptr<electromagnetism::RadiationPressureInterface>
             radiationPressureInterface) {
+        // RP-OLD
         radiationPressureInterfaces_[radiatingBody] = radiationPressureInterface;
+    }
+
+    //! Function to set the radiation source model of the body.
+    /*!
+     *  Function to set the radiation source model of the body.
+     *  \param radiationSourceModel Radiation source model of the body.
+     */
+    void setRadiationSourceModel(
+            const std::shared_ptr<electromagnetism::RadiationSourceModel> radiationSourceModel)
+    {
+        radiationSourceModel_ = radiationSourceModel;
+    }
+
+    //! Function to set the radiation pressure target model of the body.
+    /*!
+     *  Function to set the radiation pressure target model of the body.
+     *  \param radiationPressureTargetModel Radiation pressure target model of the body.
+     */
+    void setRadiationPressureTargetModel(
+            const std::shared_ptr<electromagnetism::RadiationPressureTargetModel> radiationPressureTargetModel)
+    {
+        radiationPressureTargetModel_ = radiationPressureTargetModel;
     }
 
     //! Function to set object containing all variations in the gravity field of this body.
@@ -1363,7 +1390,28 @@ public:
      */
     std::map<std::string, std::shared_ptr<electromagnetism::RadiationPressureInterface>>
     getRadiationPressureInterfaces() {
+        // RP-OLD
         return radiationPressureInterfaces_;
+    }
+
+    //! Function to retrieve the radiation source model of the body.
+    /*!
+     *  Function to retrieve the radiation source model of the body.
+     *  \return Radiation source model of the body.
+     */
+    const std::shared_ptr<electromagnetism::RadiationSourceModel> getRadiationSourceModel() const
+    {
+        return radiationSourceModel_;
+    }
+
+    //! Function to retrieve the radiation pressure target model of the body.
+    /*!
+     *  Function to retrieve the radiation pressure target model of the body.
+     *  \return Radiation pressure target model of the body.
+     */
+    const std::shared_ptr<electromagnetism::RadiationPressureTargetModel> getRadiationPressureTargetModel() const
+    {
+        return radiationPressureTargetModel_;
     }
 
     //! Function to retrieve a single object describing variation in the gravity field of this body.
@@ -1605,7 +1653,10 @@ public:
      * \return Ground station object that is retrieved
      */
     std::shared_ptr<ground_stations::GroundStation> getGroundStation(const std::string &stationName) const {
-        if (groundStationMap.count(stationName) == 0) {
+        if (groundStationMap.count(stationName) == 0)
+        {
+            std::vector< double > a;
+            a.at( 0 );
             throw std::runtime_error("Error, station " + stationName + " does not exist");
         }
 
@@ -1762,13 +1813,15 @@ private:
     std::shared_ptr< RigidBodyProperties > massProperties_;
 
     //! List of radiation pressure models for the body, with the sources bodies as key
+    // RP-OLD
     std::map<std::string, std::shared_ptr<electromagnetism::RadiationPressureInterface>>
-    radiationPressureInterfaces_;
+            radiationPressureInterfaces_;
 
-    //! Predefined iterator for efficiency purposes.
-    std::map<std::string,
-    std::shared_ptr<electromagnetism::RadiationPressureInterface>>::iterator
-    radiationPressureIterator_;
+    //! Radiation source model of the body.
+    std::shared_ptr<electromagnetism::RadiationSourceModel> radiationSourceModel_;
+
+    //! Radiation pressure target model of the body.
+    std::shared_ptr<electromagnetism::RadiationPressureTargetModel> radiationPressureTargetModel_;
 
     //! List of ground station objects on Body
     std::map<std::string, std::shared_ptr<ground_stations::GroundStation>> groundStationMap;
@@ -2060,7 +2113,7 @@ public:
 
     int count( const std::string& bodyName ) const
     {
-        return bodyMap_.count( bodyName );
+        return static_cast< int >( bodyMap_.count( bodyName ) );
     }
 
     bool doesBodyExist( const std::string& bodyName ) const
@@ -2075,7 +2128,7 @@ public:
 
     int getNumberOfBodies( ) const
     {
-        return bodyMap_.size( );
+        return static_cast< int >( bodyMap_.size( ) );
     }
 
     template< typename StateScalarType = double , typename TimeType = double >
@@ -2165,6 +2218,13 @@ std::string getGlobalFrameOrigin(const SystemOfBodies &bodies);
  */
 void setAreBodiesInPropagation(const SystemOfBodies &bodies,
                                const bool areBodiesInPropagation);
+
+bool isReferencePointGroundStation( const std::shared_ptr< Body > body,
+                                    const std::string& referencePointName );
+
+bool isReferencePointGroundStation( const SystemOfBodies &bodies,
+                                    const std::string& bodyName,
+                                    const std::string& referencePointName );
 
 //! Function to compute the acceleration of a body, using its ephemeris and finite differences
 /*!

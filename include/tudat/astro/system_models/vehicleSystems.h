@@ -16,7 +16,10 @@
 
 #include <memory>
 
+#include "tudat/astro/electromagnetism/reflectionLaw.h"
+#include "tudat/astro/ephemerides/rotationalEphemeris.h"
 #include "tudat/astro/system_models/engineModel.h"
+#include "tudat/astro/system_models/vehicleExteriorPanels.h"
 #include "tudat/astro/observation_models/observationFrequencies.h"
 
 namespace tudat
@@ -40,7 +43,7 @@ public:
      * \param dryMass Total dry mass of the vehicle (not defined; NaN by default).
      */
     VehicleSystems( const double dryMass = TUDAT_NAN ):
-        dryMass_( dryMass ){ }
+        currentOrientationTime_( TUDAT_NAN ), dryMass_( dryMass ){ }
 
     //! Destructor
     ~VehicleSystems( ){ }
@@ -167,6 +170,63 @@ public:
         return wallEmissivity_;
     }
 
+    void resetTime( )
+    {
+        currentOrientationTime_ = TUDAT_NAN;
+    }
+
+    void updatePartOrientations( const double time )
+    {
+        if( !(time == currentOrientationTime_ ) )
+        {
+            for( auto it : vehiclePartOrientation_ )
+            {
+                currentVehiclePartRotationToBodyFixedFrame_[ it.first ] = it.second->getRotationToBaseFrame( time );
+            }
+            currentOrientationTime_ = time;
+        }
+    }
+
+    Eigen::Quaterniond getPartRotationToBaseFrame( const std::string& partName )
+    {
+        if( currentOrientationTime_ == TUDAT_NAN )
+        {
+            throw std::runtime_error( "Error when retrieving orientation of body part " + partName + ", current time is NaN" );
+        }
+        else if( currentVehiclePartRotationToBodyFixedFrame_.count( partName ) == 0 )
+        {
+            if( vehiclePartOrientation_.count( partName ) == 0 )
+            {
+                throw std::runtime_error(
+                    "Error when retrieving orientation of body part " + partName + ", part rotation model not defined" );
+            }
+            else
+            {
+                throw std::runtime_error(
+                    "Error when retrieving orientation of body part " + partName + ", part not updated" );
+            }
+        }
+
+        return currentVehiclePartRotationToBodyFixedFrame_.at( partName );
+    }
+
+    void setVehicleExteriorPanels(
+        const std::map< std::string, std::vector< std::shared_ptr< VehicleExteriorPanel > > > vehicleExteriorPanels )
+    {
+        vehicleExteriorPanels_ = vehicleExteriorPanels;
+    }
+
+    std::map< std::string, std::vector< std::shared_ptr< VehicleExteriorPanel > > > getVehicleExteriorPanels( )
+    {
+        return vehicleExteriorPanels_;
+    }
+
+    void setVehiclePartOrientation(
+        const std::map< std::string, std::shared_ptr< ephemerides::RotationalEphemeris > > vehiclePartOrientation )
+    {
+        vehiclePartOrientation_ = vehiclePartOrientation;
+    }
+
     void setTransponderTurnaroundRatio(
              std::function< double (
                      observation_models::FrequencyBands uplinkBand,
@@ -198,7 +258,48 @@ public:
         return transponderTurnaroundRatio_;
     }
 
+    bool doesReferencePointExist( const std::string referencePoint )
+    {
+        return ( bodyFixedReferencePoint_.count( referencePoint ) > 0 );
+    }
+
+    Eigen::Vector3d getReferencePointPosition( const std::string referencePoint )
+    {
+        return bodyFixedReferencePoint_.at( referencePoint );
+    }
+
+    void setReferencePointPosition( const std::string referencePoint, const Eigen::Vector3d location )
+    {
+        bodyFixedReferencePoint_[ referencePoint ] = location;
+    }
+
+    std::map< std::string, Eigen::Vector3d > getBodyFixedReferencePoints( )
+    {
+        return bodyFixedReferencePoint_;
+    }
+
+
+    template< typename StateScalarType, typename TimeType >
+    Eigen::Matrix< StateScalarType, 6, 1 > getReferencePointStateInBodyFixedFrame(
+        const std::string referencePoint, const TimeType& time )
+    {
+        Eigen::Matrix< StateScalarType, 6, 1 > pointLocation = Eigen::Matrix< StateScalarType, 6, 1 >::Zero( );
+        pointLocation.segment( 0, 3 ) = bodyFixedReferencePoint_.at( referencePoint ).template cast< StateScalarType >( );
+        return pointLocation;
+    }
+
+
 private:
+
+    std::map< std::string, Eigen::Vector3d > bodyFixedReferencePoint_;
+
+    std::map< std::string, std::shared_ptr< ephemerides::RotationalEphemeris > > vehiclePartOrientation_;
+
+    std::map< std::string, std::vector< std::shared_ptr< VehicleExteriorPanel > > > vehicleExteriorPanels_;
+
+    double currentOrientationTime_;
+
+    std::map< std::string, Eigen::Quaterniond > currentVehiclePartRotationToBodyFixedFrame_;
 
     //! Named list of engine models in the vehicle
     std::map< std::string, std::shared_ptr< EngineModel > > engineModels_;
