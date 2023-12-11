@@ -13,6 +13,7 @@
 
 #include "tudat/astro/aerodynamics/exponentialAtmosphere.h"
 #include "tudat/astro/aerodynamics/tabulatedAtmosphere.h"
+#include "tudat/astro/aerodynamics/marsDtmAtmosphereModel.h"
 #if TUDAT_BUILD_WITH_NRLMSISE
 #include "tudat/astro/aerodynamics/nrlmsise00Atmosphere.h"
 #include "tudat/astro/aerodynamics/nrlmsise00InputFunctions.h"
@@ -178,6 +179,21 @@ std::shared_ptr< aerodynamics::AtmosphereModel > createAtmosphereModel(
                         tabulatedAtmosphereSettings->getBoundaryHandling( ),
                         tabulatedAtmosphereSettings->getDefaultExtrapolationValue( ) );
         }
+        break;
+    }
+    case mars_dtm_atmosphere:
+    {
+        std::shared_ptr< MarsDtmAtmosphereSettings > marsDtmAtmosphereSettings =
+            std::dynamic_pointer_cast< MarsDtmAtmosphereSettings >( atmosphereSettings );
+
+        if( marsDtmAtmosphereSettings == nullptr )
+        {
+            throw std::runtime_error( "Error when creating Mars DTM atmosphere model, model settings are incompatible." );
+        }
+
+        // Create atmosphere model using NRLMISE00 input function
+        atmosphereModel = std::make_shared< aerodynamics::MarsDtmAtmosphereModel >(
+            marsDtmAtmosphereSettings->getPolarRadius( ), marsDtmAtmosphereSettings->getMarsDtmFile( ) );
         break;
     }
 #if TUDAT_BUILD_WITH_NRLMSISE
