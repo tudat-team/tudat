@@ -140,7 +140,8 @@ public:
     virtual double getPressure( const double altitude, const double longitude,
                                 const double latitude, const double time )
     {
-
+        throw std::runtime_error( "Error wen getting Mars DTM pressure; model not yet implemented." );
+        return TUDAT_NAN;
     }
 
     //! Get local temperature.
@@ -171,7 +172,8 @@ public:
     virtual double getSpeedOfSound( const double altitude, const double longitude,
                                     const double latitude, const double time )
     {
-
+        throw std::runtime_error( "Error wen getting Mars DTM speed of sounds; model not yet implemented." );
+        return TUDAT_NAN;
     }
 
 
