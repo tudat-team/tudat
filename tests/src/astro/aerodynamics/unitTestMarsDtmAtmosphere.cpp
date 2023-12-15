@@ -19,51 +19,108 @@
 #include "iostream"
 
 #include <boost/test/unit_test.hpp>
-#include "tudat/astro/basic_astro/timeConversions.h"
 
-#include "tudat/astro/aerodynamics/marsDtmAtmosphereModel.h"
+#include "tudat/basics/testMacros.h"
+#include "tudat/astro/aerodynamics/customAerodynamicCoefficientInterface.h"
+#include "tudat/astro/aerodynamics/aerodynamicAcceleration.h"
+#include "tudat/astro/reference_frames/aerodynamicAngleCalculator.h"
+#include "tudat/simulation/propagation_setup/dynamicsSimulator.h"
+#include "tudat/interface/spice/spiceEphemeris.h"
+#include "tudat/interface/spice/spiceRotationalEphemeris.h"
+#include "tudat/io/basicInputOutput.h"
+#include "tudat/simulation/environment_setup/body.h"
+#include "tudat/simulation/estimation_setup/createNumericalSimulator.h"
+#include "tudat/simulation/environment_setup/defaultBodies.h"
+
 using namespace tudat::aerodynamics;
 
 int main( )
 {
-    //std::string filename = "/Users/ralkahal/Documents/PhD/atmodensitypds/dtm_mars";
-    std::string filename = "/Users/ralkahal/Documents/PhD/Programs/atmodensitydtm/dtm_mars";
-    MarsDtmAtmosphereModel atmosphereModel = MarsDtmAtmosphereModel(3376.78E3, filename);
-    //atmosphereModel.computelocalsolartime(0.0,16 ,12,2000, 0.0, 1.0697333);
-    std::cout<<atmosphereModel.computeGl(0.0,0.0,1.0697333,0.0,16,12,2000,1)<<std::endl;
-    //std::cout<<std::abs((tudat::basic_astrodynamics::convertCalendarDateToJulianDaysSinceEpoch(
-     //       2021, 2, 7, 0.0, 0.0, 0.0, tudat::basic_astrodynamics::JULIAN_DAY_ON_J2000) -
-    //tudat::basic_astrodynamics::convertCalendarDateToJulianDaysSinceEpoch(2022,2,18,0.0,0.0,0.0,tudat::basic_astrodynamics::JULIAN_DAY_ON_J2000))*24/24.63)<<std::endl;
+    using namespace tudat;
+    using namespace aerodynamics;
+    using namespace simulation_setup;
+    using namespace numerical_integrators;
+    using namespace simulation_setup;
+    using namespace basic_astrodynamics;
+    using namespace propagators;
+    using namespace basic_mathematics;
+    using namespace basic_astrodynamics;
 
-    //marsDate date2 = marsDate(2022, 2, 18, 0.0, 0.0, 0.0);
-    //std::cout << date2.marsDayofYear(date2) << std::endl;
-    //std::cout<<"Geopotential height "<< atmosphereModel.computeGeopotentialAltitude( 255.0E3 )<<std::endl;
-    //std::cout<<atmosphereModel.computeCurrentTemperature( 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000, 1)<<std::endl;
-    //std::cout<<atmosphereModel.computeGamma( 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000, 1)<<std::endl;
-    //std::cout<< atmosphereModel.heightDistributionFunction(255.0E3, 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000, 1)<<std::endl;
-    //std::ofstream outputFile("/Users/ralkahal/Documents/PhD/Programs/atmodensitydtm/density_output.txt");
-    // Check if the file is opened successfully
-    /*
-    if (!outputFile.is_open()) {
-        std::cerr << "Unable to open the file!" << std::endl;
-        return 1; // return an error code
-    }
-    */
-   // for (int altitude = 138E3; altitude <= 1000E3; altitude += 10E3) {
-     //   double alt_km = static_cast<double>(altitude);
-        //double rho = atmosphereModel.getTotalDensity( alt_km, 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000);
+    //Load spice kernels.
+    spice_interface::loadStandardSpiceKernels( );
 
-        // Write altitude and corresponding density to the file
-     //   outputFile  << alt_km << " " <<  rho << "\n";
-    //}
+    // Create Earth object
+    BodyListSettings defaultBodySettings =
+        getDefaultBodySettings( { "Mars" } );
+    defaultBodySettings.at( "Mars" )->atmosphereSettings = marsDtmAtmosphereSettings( TODO );
+    SystemOfBodies bodies = createSystemOfBodies( defaultBodySettings );
 
-    // Close the file when you are done
-    //outputFile.close();
-    //std::cout << "Density computation and output written to file successfully." << std::endl;
-    std::cout << atmosphereModel.getTotalDensity( 1000.0E3, 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000) << std::endl;
+    // Create vehicle object.
+    double vehicleMass = 5.0E3;
+    bodies.createEmptyBody( "Vehicle" );
+    bodies.at( "Vehicle" )->setConstantBodyMass( vehicleMass );
 
-//    return 0;
-    //std::cout << atmosphereModel.getTotalDensity( 138.0E3, 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000) <<std::endl;
+    // Set aerodynamic coefficients.
+    std::shared_ptr<AerodynamicCoefficientSettings> aerodynamicCoefficientSettings =
+        std::make_shared<ConstantAerodynamicCoefficientSettings>(
+            2.0, 4.0, Eigen::Vector3d::Zero( ), Eigen::Vector3d::UnitX( ), Eigen::Vector3d::Zero( ),
+            negative_aerodynamic_frame_coefficients, negative_aerodynamic_frame_coefficients );
+    bodies.at( "Vehicle" )->setAerodynamicCoefficientInterface(
+        createAerodynamicCoefficientInterface( aerodynamicCoefficientSettings, "Vehicle", bodies ));
+
+    // Define acceleration model settings.
+    SelectedAccelerationMap accelerationMap;
+    std::vector<std::string> bodiesToPropagate;
+    std::vector<std::string> centralBodies;
+    std::map<std::string, std::vector<std::shared_ptr<AccelerationSettings> > > accelerationsOfVehicle;
+    accelerationsOfVehicle[ "Mars" ].push_back( std::make_shared<AccelerationSettings>( point_mass_gravity ));
+    accelerationsOfVehicle[ "Mars" ].push_back( std::make_shared<AccelerationSettings>( aerodynamic ));
+    accelerationMap[ "Vehicle" ] = accelerationsOfVehicle;
+    bodiesToPropagate.push_back( "Vehicle" );
+    centralBodies.push_back( "Mars" );
+
+    // Set initial state
+    Eigen::Vector6d systemInitialState = TODO (add Cartesian initial state w.r.t. Mars )
+
+    // Create acceleration models and propagation settings.
+    basic_astrodynamics::AccelerationMap accelerationModelMap = createAccelerationModelsMap(
+        bodies, accelerationMap, bodiesToPropagate, centralBodies );
+
+    // Set variables to save
+    std::vector<std::shared_ptr<SingleDependentVariableSaveSettings> > dependentVariables;
+    dependentVariables.push_back(
+        std::make_shared<SingleDependentVariableSaveSettings>(
+            altitude_dependent_variable, "Vehicle", "Earth" ));
+    dependentVariables.push_back(
+        std::make_shared<BodyAerodynamicAngleVariableSaveSettings>(
+            "Vehicle", reference_frames::longitude_angle ));
+    dependentVariables.push_back(
+        std::make_shared<BodyAerodynamicAngleVariableSaveSettings>(
+            "Vehicle", reference_frames::latitude_angle ));
+    dependentVariables.push_back(
+        std::make_shared<SingleDependentVariableSaveSettings>(
+            local_density_dependent_variable, "Vehicle", "Earth" ));
+    dependentVariables.push_back(
+        std::make_shared<SingleAccelerationDependentVariableSaveSettings>(
+            aerodynamic, "Vehicle", "Earth", 0 ));
+
+    // Set propagation/integration settings
+    std::shared_ptr<PropagationTimeTerminationSettings> terminationSettings =
+        std::make_shared<propagators::PropagationTimeTerminationSettings>( 1000.0 );
+    std::shared_ptr<IntegratorSettings<> > integratorSettings =
+        std::make_shared<IntegratorSettings<> >
+            ( rungeKutta4, 0.0, 10.0 );
+    std::shared_ptr<tudat::propagators::TranslationalStatePropagatorSettings<double> >
+        translationalPropagatorSettings =
+        std::make_shared<TranslationalStatePropagatorSettings < double> >
+        ( centralBodies, accelerationModelMap, bodiesToPropagate, systemInitialState, 0.0,
+            integratorSettings, terminationSettings,
+            cowell, dependentVariables );
+
+    // Create simulation object and propagate dynamics.
+    SingleArcDynamicsSimulator<> dynamicsSimulator(
+        bodies, translationalPropagatorSettings );
+
 }
 //
 //namespace tudat
