@@ -95,7 +95,7 @@ namespace aerodynamics
     mmass_( {44.01, 16.00, 28.0, 40.0, 28.0, 32.0, 4.0, 1.0, 2.0} )// molar mass of the species
     {
         coefficients_ = loadCoefficients( filename );
-        currentLegendrePolynomials_.resize( 6 );
+        currentLegendrePolynomials_.resize( 7 );
         currentLegendrePolynomials_[ 0 ] = 0.0;
         //std::cout << "Loaded Matrix values:" << std::endl;
         //std::cout << coefficients_[0][3] << "\t";
