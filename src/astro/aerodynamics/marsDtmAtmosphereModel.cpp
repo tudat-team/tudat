@@ -97,8 +97,8 @@ namespace aerodynamics
         coefficients_ = loadCoefficients( filename );
         currentLegendrePolynomials_.resize( 6 );
         currentLegendrePolynomials_[ 0 ] = 0.0;
-        std::cout << "Loaded Matrix values:" << std::endl;
-        std::cout << coefficients_[0][3] << "\t";
+        //std::cout << "Loaded Matrix values:" << std::endl;
+        //std::cout << coefficients_[0][3] << "\t";
     }
 
     // function to compute the local true solar time
@@ -135,7 +135,7 @@ namespace aerodynamics
         //Areocentric Solar Longitude
         double Ls1 = omegaFMS + EoC;
         Ls = basic_mathematics::computeModulo( Ls1,360.0);
-        std::cout << "Ls: " << Ls << std::endl;
+        //std::cout << "Ls: " << Ls << std::endl;
         //Equation of Time
         double EoT = 2.861 * sin( unit_conversions::convertDegreesToRadians(2*Ls))
                      - 0.071 * sin( unit_conversions::convertDegreesToRadians(4*Ls))
@@ -145,12 +145,12 @@ namespace aerodynamics
         double MST =  24*((basic_astrodynamics::convertCalendarDateToJulianDay(year,month,day,hours,minutes,0.0) - 2451549.5)/1.0274912517 + 44796.0 - 0.0009626); //double MST
         //std::cout << "MST1: " << MST << std::endl;
         MST = basic_mathematics::computeModulo( MST,24.0);// Modulo MST
-        std::cout << "MST: " << MST << std::endl;
+        //std::cout << "MST: " << MST << std::endl;
         //Local Mean Solar Time
         double LMST =  basic_mathematics::computeModulo( MST-longitude*(24.0/360.0),24.0);
         //Local True Solar Time
         double LTST = basic_mathematics::computeModulo(LMST + EoT*(24.0/360.0),24.0);
-        std::cout << "LTST: " << LTST << std::endl;
+        //std::cout << "LTST: " << LTST << std::endl;
         //Subsolar Longitude
         double subSolarLongitude = MST*(360.0/24.0) + EoT + 180.0;
         // return LTST in seconds.
@@ -232,10 +232,10 @@ namespace aerodynamics
         using basic_mathematics::computeLegendrePolynomialExplicit;
         marsDate date2 = marsDate(year_, month_, day_, hours_ , minutes_, 0.0);
         double doy = date2.marsDayofYear(date2); //day of year
-        std::cout << "doy: " << doy << std::endl;
+        //std::cout << "doy: " << doy << std::endl;
         double t = computeLocalSolarTime(longitude, day_, month_, year_, hours_, minutes_); //seconds
         int F = 0.0; // flux parameter is set to 0 for now.
-        std::cout<<"coefficients_[14][indexg]" << coefficients_[14][indexg] << std::endl;
+        //std::cout<<"coefficients_[14][indexg]" << coefficients_[14][indexg] << std::endl;
         // Non-periodic term
         double NP = (coefficients_[1][indexg] * F) + coefficients_[30][indexg] * currentLegendrePolynomials_[1]
                 + coefficients_[31][indexg] * currentLegendrePolynomials_[ 2 ]
@@ -316,10 +316,6 @@ namespace aerodynamics
         double da41 = computeDustStorm( Ls );
         double fpds = coefficients_[40][indexg]*da41 + coefficients_[69][indexg]*taus[3];
         double Gl = fpds + f0 + PA + PSA + PD;
-        std::cout << "f0: " << f0 << std::endl;
-        std::cout << "PA: " << PA << std::endl;
-        std::cout << "PSA: " << PSA << std::endl;
-        std::cout << "PD: " << PD << std::endl;
         return Gl;
     }
 
@@ -334,7 +330,7 @@ namespace aerodynamics
     {
         double T0 = coefficients_[0][indexg];
         double Ti;
-        double Gl = computeGl(latitude, longitude, minutes_, hours_, day_ , month_, year_, indexg);
+        double Gl = computeGl_Subr(latitude, longitude, minutes_, hours_, day_ , month_, year_, indexg);
         Ti = T0*(1.0 + Gl);
         return Ti;
     }
@@ -386,15 +382,14 @@ namespace aerodynamics
             rho0 = coefficients_[0][col]*mmass_[indexm]/avogadroConstant_; //g/cm3
             //std::cout << "coefficients_[0][col]: " << coefficients_[0][col] << std::endl;
             double fi = heightDistributionFunction(altitude, latitude, longitude, minutes_, hours_, day_ , month_, year_, indexm);
-            if (col == 7)
-                std::cout << "fi CO2: " << fi << std::endl;
+            //if (col == 7)
+            //    std::cout << "fi CO2: " << fi << std::endl;
 
-            double gl = computeGl(latitude, longitude, minutes_, hours_, day_ , month_, year_, col);
-            std::cout << "gl: " << gl << std::endl;
-            std::cout << "col" << col << std::endl;
+            double gl = computeGl_Subr(latitude, longitude, minutes_, hours_, day_ , month_, year_, col);
+
             rho += rho0*fi*exp(gl);
             indexm +=1;
-            std::cout << "rho: " << indexm << " " << rho << std::endl;
+            //std::cout << "rho: " << indexm << " " << rho << std::endl;
         }
         return rho;
     }

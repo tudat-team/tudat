@@ -52,7 +52,8 @@ int main( )
     // Create Earth object
     BodyListSettings defaultBodySettings =
         getDefaultBodySettings( { "Mars" } );
-    defaultBodySettings.at( "Mars" )->atmosphereSettings = marsDtmAtmosphereSettings( TODO );
+    std::string filename = "/Users/ralkahal/Documents/PhD/Programs/atmodensitydtm/dtm_mars";
+    defaultBodySettings.at( "Mars" )->atmosphereSettings = marsDtmAtmosphereSettings( filename, 3378.0E3);
     SystemOfBodies bodies = createSystemOfBodies( defaultBodySettings );
 
     // Create vehicle object.
@@ -80,7 +81,8 @@ int main( )
     centralBodies.push_back( "Mars" );
 
     // Set initial state
-    Eigen::Vector6d systemInitialState = TODO (add Cartesian initial state w.r.t. Mars )
+    Eigen::Vector6d systemInitialState;
+    systemInitialState
 
     // Create acceleration models and propagation settings.
     basic_astrodynamics::AccelerationMap accelerationModelMap = createAccelerationModelsMap(
@@ -90,7 +92,7 @@ int main( )
     std::vector<std::shared_ptr<SingleDependentVariableSaveSettings> > dependentVariables;
     dependentVariables.push_back(
         std::make_shared<SingleDependentVariableSaveSettings>(
-            altitude_dependent_variable, "Vehicle", "Earth" ));
+            altitude_dependent_variable, "Vehicle", "Mars" ));
     dependentVariables.push_back(
         std::make_shared<BodyAerodynamicAngleVariableSaveSettings>(
             "Vehicle", reference_frames::longitude_angle ));
@@ -99,10 +101,10 @@ int main( )
             "Vehicle", reference_frames::latitude_angle ));
     dependentVariables.push_back(
         std::make_shared<SingleDependentVariableSaveSettings>(
-            local_density_dependent_variable, "Vehicle", "Earth" ));
+            local_density_dependent_variable, "Vehicle", "Mars" ));
     dependentVariables.push_back(
         std::make_shared<SingleAccelerationDependentVariableSaveSettings>(
-            aerodynamic, "Vehicle", "Earth", 0 ));
+            aerodynamic, "Vehicle", "Mars", 0 ));
 
     // Set propagation/integration settings
     std::shared_ptr<PropagationTimeTerminationSettings> terminationSettings =
