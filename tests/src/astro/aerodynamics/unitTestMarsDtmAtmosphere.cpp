@@ -82,7 +82,7 @@ int main( )
 
     // Set initial state
     Eigen::Vector6d systemInitialState;
-    systemInitialState
+    systemInitialState << 3378.0E3, 3000E3, 4200E3, 0.0, 0.0, 0.0;
 
     // Create acceleration models and propagation settings.
     basic_astrodynamics::AccelerationMap accelerationModelMap = createAccelerationModelsMap(
