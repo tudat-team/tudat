@@ -391,7 +391,7 @@ namespace aerodynamics
             indexm +=1;
             //std::cout << "rho: " << indexm << " " << rho << std::endl;
         }
-        return rho;
+        return rho*1000;
     }
 
 
