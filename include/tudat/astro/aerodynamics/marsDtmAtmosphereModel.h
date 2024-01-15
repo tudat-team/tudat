@@ -103,7 +103,10 @@ class MarsDtmAtmosphereModel: public AtmosphereModel
 public:
 
 
-    MarsDtmAtmosphereModel(const double polarRadius, const std::string &filename);
+    MarsDtmAtmosphereModel(
+        const double polarRadius,
+        const std::string &filename,
+        const std::function< double( const double ) > f107Function = [](const double){return 65.0;} );
 
     //! Default destructor.
     /*!
@@ -218,7 +221,10 @@ private:
                              const double latitude, const double time );
 
     double polarRadius_;
+
     std::basic_string<char, std::char_traits<char>, std::allocator<char>> filename_;
+
+    std::function< double( const double ) > f107Function_;
 
     std::vector< double > alpha_;
     std::vector< double > mmass_;
@@ -227,6 +233,7 @@ private:
     std::vector<double> taus;
 
     double Ls;
+    double currentF107_;
     std::vector< double > currentLegendrePolynomials_;
     double currentGeopotentialAltitude_;
     double currentTemperature_138;

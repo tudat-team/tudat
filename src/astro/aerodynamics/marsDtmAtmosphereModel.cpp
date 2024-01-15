@@ -20,6 +20,7 @@ namespace aerodynamics
     {
         // Compute the hash key??
         basic_astrodynamics::DateTime currentDateTime_ = basic_astrodynamics::getCalendarDateFromTime( time );
+        currentF107_ =  f107Function_( time );
         currentDensity_ = getTotalDensity(
                 altitude, longitude, latitude,
                 currentDateTime_.getMinute(), currentDateTime_.getHour(), currentDateTime_.getDay(), currentDateTime_.getMonth(), currentDateTime_.getYear() );
@@ -88,9 +89,11 @@ namespace aerodynamics
         return dayOfYear;
     }
 
-    MarsDtmAtmosphereModel::MarsDtmAtmosphereModel(const double polarRadius, const std::string &filename) :
+    MarsDtmAtmosphereModel::MarsDtmAtmosphereModel(const double polarRadius, const std::string &filename,
+                                                   const std::function< double( const double ) > f107Function ) :
     polarRadius_( polarRadius ), // polar radius of Mars
     filename_ ( filename ), // file name of the coefficients
+    f107Function_( f107Function ),
     alpha_( {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.38, -0.40, 0.0}), // thermal diffusion coefficients
     mmass_( {44.01, 16.00, 28.0, 40.0, 28.0, 32.0, 4.0, 1.0, 2.0} )// molar mass of the species
     {
@@ -234,7 +237,7 @@ namespace aerodynamics
         double doy = date2.marsDayofYear(date2); //day of year
         //std::cout << "doy: " << doy << std::endl;
         double t = computeLocalSolarTime(longitude, day_, month_, year_, hours_, minutes_); //seconds
-        int F = 0.0; // flux parameter is set to 0 for now.
+        double F = currentF107_ - 65.0;
         //std::cout<<"coefficients_[14][indexg]" << coefficients_[14][indexg] << std::endl;
         // Non-periodic term
         double NP = (coefficients_[1][indexg] * F) + coefficients_[30][indexg] * currentLegendrePolynomials_[1]
@@ -279,9 +282,7 @@ namespace aerodynamics
         double sin2h = 2.0*sin(hl0)*cos(hl0);
         //flux terms:
         double ff0 = 0.0;
-        double F107 = 65.0;
-        double Fbar = 65.0;
-        double F = Fbar - F107;
+        double F = currentF107_ - 65.0;
         double F2 = F*F;
         double f0 = coefficients_[4][indexg]*F + coefficients_[39][indexg] * F2;
         double f1f = 1.0 + f0*ff0; // coupling terms
