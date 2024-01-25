@@ -213,6 +213,13 @@ public:
 
     double computeDustStorm(const double Ls);
 
+    double getSolarLongitude() const {
+        return Ls;
+    }
+
+    double getSolarFluxIndex() const{
+        return currentF107_;
+    }
 protected:
 
 private:

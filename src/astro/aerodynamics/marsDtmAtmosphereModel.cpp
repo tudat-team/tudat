@@ -284,6 +284,7 @@ namespace aerodynamics
         double ff0 = 0.0;
         double F = currentF107_ - 65.0;
         double F2 = F*F;
+        std::cout << "F: " << F << std::endl;
         double f0 = coefficients_[4][indexg]*F + coefficients_[39][indexg] * F2;
         double f1f = 1.0 + f0*ff0; // coupling terms
         //flux + latitude terms
