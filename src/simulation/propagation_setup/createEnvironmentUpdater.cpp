@@ -1098,7 +1098,10 @@ std::vector< std::string > > createEnvironmentUpdaterSettingsForDependentVariabl
     case body_inertia_tensor:
         variablesToUpdate[ body_mass_distribution_update ].push_back( dependentVariableSaveSettings->associatedBody_ );
         break;
-    default:
+    case solar_longitude:
+        variablesToUpdate[ body_mass_distribution_update ].push_back( dependentVariableSaveSettings->associatedBody_ );
+        break;
+        default:
         throw std::runtime_error( "Error when getting environment updates for dependent variables, parameter " +
                                   std::to_string( dependentVariableSaveSettings->dependentVariableType_ ) + " not found." );
     }

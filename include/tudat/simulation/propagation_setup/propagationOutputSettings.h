@@ -136,7 +136,8 @@ enum PropagationDependentVariables
     received_irradiance = 63,
     received_fraction = 64,
     visible_and_emitting_source_panel_count = 65,
-    visible_source_area = 66
+    visible_source_area = 66,
+    solar_longitude = 67
 };
 
 // Functional base class for defining settings for dependent variables that are to be saved during propagation

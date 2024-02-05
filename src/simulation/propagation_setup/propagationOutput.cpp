@@ -486,6 +486,9 @@ int getDependentVariableSize(
     case visible_source_area:
         variableSize = 1;
         break;
+    case solar_longitude:
+        variableSize = 1;
+        break;
     default:
         std::string errorMessage = "Error, did not recognize dependent variable size of type: " +
                 std::to_string( dependentVariableSettings->dependentVariableType_ );

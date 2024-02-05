@@ -7,7 +7,7 @@
 #include "tudat/math/basic/legendrePolynomials.h"
 #include "tudat/astro/basic_astro/unitConversions.h"
 #include "tudat/astro/basic_astro/celestialBodyConstants.h"
-
+#include <tuple>
 
 namespace tudat
 {
@@ -89,6 +89,45 @@ namespace aerodynamics
         return dayOfYear;
     }
 
+    std::tuple<double, double> computeSolarLongitude(const double longitude, const int day ,const int month,const int year, const int hours, const int minutes){
+
+        //Day since J2000 epoch in Terrestrial Time (or TAI)
+        double timeElaspsedJD = basic_astrodynamics::convertCalendarDateToJulianDaysSinceEpoch(
+                year, month, day, hours, minutes, 0.0, basic_astrodynamics::JULIAN_DAY_ON_J2000);
+        //std::cout << "timeElaspsedJD: " << timeElaspsedJD << std::endl;
+        //Mars orbital parameters:
+        //Mars Mean Anomaly
+        double meanAnomaly = 19.3870 + 0.52402073 * timeElaspsedJD; //degrees
+        //std::cout << "MeanAnomaly: " << MeanAnomaly << std::endl;
+        //Angle of Fiction Mean Sun
+        double omegaFMS = 270.3863 + 0.52403840 * timeElaspsedJD;
+        //std::cout << "OmegaFMS: " << OmegaFMS << std::endl;
+        //Perturbers
+        double PBS =
+                0.0071 * cos(unit_conversions::convertDegreesToRadians(0.985626 * timeElaspsedJD / 2.2353 + 49.409))
+                + 0.0057 * cos(unit_conversions::convertDegreesToRadians(0.985626 * timeElaspsedJD / 2.7543 + 168.173))
+                + 0.0039 * cos(unit_conversions::convertDegreesToRadians(0.985626 * timeElaspsedJD / 1.1177 + 191.837))
+                + 0.0037 * cos(unit_conversions::convertDegreesToRadians(0.985626 * timeElaspsedJD / 15.7866 + 21.736))
+                + 0.0021 * cos(unit_conversions::convertDegreesToRadians(0.985626 * timeElaspsedJD / 2.1354 + 15.704))
+                + 0.0020 * cos(unit_conversions::convertDegreesToRadians(0.985626 * timeElaspsedJD / 2.4694 + 95.528))
+                + 0.0018 * cos(unit_conversions::convertDegreesToRadians(0.985626 * timeElaspsedJD / 32.8493 + 49.095));
+        //std::cout << "PBS: " << PBS << std::endl;
+        //Equation of Center
+        double EoC = (10.691 + 3.0E-7 * timeElaspsedJD) * sin(unit_conversions::convertDegreesToRadians(meanAnomaly))
+                     + 0.623 * sin(unit_conversions::convertDegreesToRadians(2 * meanAnomaly))
+                     + 0.050 * sin(unit_conversions::convertDegreesToRadians(3 * meanAnomaly))
+                     + 0.005 * sin(unit_conversions::convertDegreesToRadians(4 * meanAnomaly))
+                     + 0.0005 * sin(unit_conversions::convertDegreesToRadians(5 * meanAnomaly)) +
+                     PBS;//Equation of Center
+        //std::cout << "EoC: " << EoC << std::endl;
+        //Areocentric Solar Longitude
+        double Ls1 = omegaFMS + EoC;
+        double Ls = basic_mathematics::computeModulo(Ls1, 360.0);
+        return std::make_tuple(Ls, EoC);
+    }
+
+
+
     MarsDtmAtmosphereModel::MarsDtmAtmosphereModel(const double polarRadius, const std::string &filename,
                                                    const std::function< double( const double ) > f107Function ) :
     polarRadius_( polarRadius ), // polar radius of Mars
@@ -100,49 +139,24 @@ namespace aerodynamics
         coefficients_ = loadCoefficients( filename );
         currentLegendrePolynomials_.resize( 7 );
         currentLegendrePolynomials_[ 0 ] = 0.0;
+        Ls_ = 0.0;
         //std::cout << "Loaded Matrix values:" << std::endl;
         //std::cout << coefficients_[0][3] << "\t";
     }
 
     // function to compute the local true solar time
     // equations from: https://www.giss.nasa.gov/tools/mars24/help/algorithm.html
-    double MarsDtmAtmosphereModel::computeLocalSolarTime(const double longitude, const int day ,const int month,const int year, const double hours, const double minutes)
+    double MarsDtmAtmosphereModel::computeLocalSolarTime(const double longitude, const int day ,const int month,const int year, const int hours, const int minutes)
     {
-        //Day since J2000 epoch in Terrestrial Time (or TAI)
-        double timeElaspsedJD =basic_astrodynamics::convertCalendarDateToJulianDaysSinceEpoch(
-                year, month, day, hours, minutes, 0.0, basic_astrodynamics::JULIAN_DAY_ON_J2000 );
-        //std::cout << "timeElaspsedJD: " << timeElaspsedJD << std::endl;
-        //Mars orbital parameters:
-        //Mars Mean Anomaly
-        double meanAnomaly = 19.3870 + 0.52402073 * timeElaspsedJD; //degrees
-        //std::cout << "MeanAnomaly: " << MeanAnomaly << std::endl;
-        //Angle of Fiction Mean Sun
-        double omegaFMS = 270.3863 + 0.52403840 * timeElaspsedJD;
-        //std::cout << "OmegaFMS: " << OmegaFMS << std::endl;
-        //Perturbers
-        double PBS = 0.0071 * cos( unit_conversions::convertDegreesToRadians(0.985626*timeElaspsedJD/2.2353 + 49.409))
-                     + 0.0057 * cos( unit_conversions::convertDegreesToRadians(0.985626*timeElaspsedJD/2.7543 + 168.173))
-                     + 0.0039 * cos( unit_conversions::convertDegreesToRadians(0.985626*timeElaspsedJD/1.1177 + 191.837))
-                     + 0.0037 * cos( unit_conversions::convertDegreesToRadians(0.985626*timeElaspsedJD/15.7866 + 21.736))
-                     + 0.0021 * cos( unit_conversions::convertDegreesToRadians(0.985626*timeElaspsedJD/2.1354 + 15.704))
-                     + 0.0020 * cos( unit_conversions::convertDegreesToRadians(0.985626*timeElaspsedJD/2.4694 + 95.528))
-                     + 0.0018 * cos( unit_conversions::convertDegreesToRadians(0.985626*timeElaspsedJD/32.8493 + 49.095));
-        //std::cout << "PBS: " << PBS << std::endl;
-        //Equation of Center
-        double EoC = (10.691 + 3.0E-7 * timeElaspsedJD) * sin( unit_conversions::convertDegreesToRadians(meanAnomaly))
-                     + 0.623 * sin( unit_conversions::convertDegreesToRadians(2*meanAnomaly))
-                     + 0.050 * sin( unit_conversions::convertDegreesToRadians(3*meanAnomaly))
-                     + 0.005 * sin( unit_conversions::convertDegreesToRadians(4*meanAnomaly))
-                     + 0.0005 * sin( unit_conversions::convertDegreesToRadians(5*meanAnomaly)) + PBS;//Equation of Center
-        //std::cout << "EoC: " << EoC << std::endl;
-        //Areocentric Solar Longitude
-        double Ls1 = omegaFMS + EoC;
-        Ls = basic_mathematics::computeModulo( Ls1,360.0);
+
+        auto outResults = computeSolarLongitude(longitude, day, month, year, hours, minutes);
+        double EoC = std::get<1>(outResults);
+        Ls_ = std::get<0>(outResults);
         //std::cout << "Ls: " << Ls << std::endl;
         //Equation of Time
-        double EoT = 2.861 * sin( unit_conversions::convertDegreesToRadians(2*Ls))
-                     - 0.071 * sin( unit_conversions::convertDegreesToRadians(4*Ls))
-                     + 0.002 * sin( unit_conversions::convertDegreesToRadians(6*Ls)) - EoC; // Equation of Time
+        double EoT = 2.861 * sin( unit_conversions::convertDegreesToRadians(2*Ls_))
+                     - 0.071 * sin( unit_conversions::convertDegreesToRadians(4*Ls_))
+                     + 0.002 * sin( unit_conversions::convertDegreesToRadians(6*Ls_)) - EoC; // Equation of Time
         //std::cout << "EoT: " << EoT << std::endl;
         //Mean Solar Time at Mars's prime merdian, i.e., Airy Mean Time
         double MST =  24*((basic_astrodynamics::convertCalendarDateToJulianDay(year,month,day,hours,minutes,0.0) - 2451549.5)/1.0274912517 + 44796.0 - 0.0009626); //double MST
@@ -229,7 +243,7 @@ namespace aerodynamics
     }
 
     // Function to compute the spherical harmonic expansions defined as G(l) as in the paper (Bruinsma and Lemoine, 2002)
-    double MarsDtmAtmosphereModel::computeGl(const double latitude, const double longitude, const double minutes_, const double hours_, const int day_ ,const int month_,const int year_, const int indexg)
+    double MarsDtmAtmosphereModel::computeGl(const double latitude, const double longitude, const int minutes_, const int hours_, const int day_ ,const int month_,const int year_, const int indexg)
     {
         updateLegendrePolynomials( latitude );
         using basic_mathematics::computeLegendrePolynomialExplicit;
@@ -263,7 +277,7 @@ namespace aerodynamics
     }
 
     //Function to compute the spherical harmonic expansions defined as G(l) as in the subroutine provided by Bruinsma
-    double MarsDtmAtmosphereModel::computeGl_Subr(const double latitude, const double longitude, const double minutes_, const double hours_, const int day_ ,const int month_,const int year_, const int indexg)
+    double MarsDtmAtmosphereModel::computeGl_Subr(const double latitude, const double longitude, const int minutes_, const int hours_, const int day_ ,const int month_,const int year_, const int indexg)
     {
         //Get the zonal Legendre polynomials for the current latitude
         updateLegendrePolynomials( latitude );
@@ -273,6 +287,7 @@ namespace aerodynamics
         //Get the day of year
         marsDate date2 = marsDate(year_, month_, day_, hours_ , minutes_, 0.0);
         double doy = date2.marsDayofYear(date2);
+        //std::cout << "doy: " << doy << std::endl;
         //Get the local solar time
         double t = computeLocalSolarTime(longitude, day_, month_, year_, hours_, minutes_); //hours
         //Get the local solar time in radians + pi.
@@ -284,7 +299,7 @@ namespace aerodynamics
         double ff0 = 0.0;
         double F = currentF107_ - 65.0;
         double F2 = F*F;
-        std::cout << "F: " << F << std::endl;
+        //std::cout << "F: " << F << std::endl;
         double f0 = coefficients_[4][indexg]*F + coefficients_[39][indexg] * F2;
         double f1f = 1.0 + f0*ff0; // coupling terms
         //flux + latitude terms
@@ -315,7 +330,7 @@ namespace aerodynamics
                 + coefficients_[34][indexg] * computeLegendrePolynomialExplicit(4,2,sin(latitude)) * (cos2h) + coefficients_[35][indexg] * computeLegendrePolynomialExplicit(4,2,sin(latitude)) * sin2h
                 + coefficients_[36][indexg] * computeLegendrePolynomialExplicit(2,2,sin(latitude)) * (cos2h) * F + coefficients_[37][indexg] * computeLegendrePolynomialExplicit(2,2,sin(latitude)) * sin2h * F;
         //dust terms
-        double da41 = computeDustStorm( Ls );
+        double da41 = computeDustStorm( Ls_ );
         double fpds = coefficients_[40][indexg]*da41 + coefficients_[69][indexg]*taus[3];
         double Gl = fpds + f0 + PA + PSA + PD;
         return Gl;
@@ -328,16 +343,18 @@ namespace aerodynamics
     }
 
     // Function to compute the current temperature (exospheric, 138 km, and partial temperatures)
-    double MarsDtmAtmosphereModel::computeCurrentTemperature( const double latitude, const double longitude, const double minutes_, const double hours_, const int day_ ,const int month_,const int year_, const int indexg)
+    double MarsDtmAtmosphereModel::computeCurrentTemperature( const double latitude, const double longitude, const int minutes_, const int hours_, const int day_ ,const int month_,const int year_, const int indexg)
     {
         double T0 = coefficients_[0][indexg];
         double Ti;
         double Gl = computeGl_Subr(latitude, longitude, minutes_, hours_, day_ , month_, year_, indexg);
+        //std::cout << "Gl: " << Gl << std::endl;
+        //std::cout << "T0: " << T0 << std::endl;
         Ti = T0*(1.0 + Gl);
         return Ti;
     }
     // Function to compute gamma parameter
-    double MarsDtmAtmosphereModel::computeGamma( const double latitude, const double longitude, const double minutes_, const double hours_, const int day_ ,const int month_,const int year_, const int indexm)
+    double MarsDtmAtmosphereModel::computeGamma( const double latitude, const double longitude, const int minutes_, const int hours_, const int day_ ,const int month_,const int year_, const int indexm)
     {
         double universalGasConstant = 8.314;//physical_constants::MOLAR_GAS_CONSTANT; //J/mol/K //kg m^2 / s^2 / K / mol
         //double g138 =celestial_body_constants::MARS_GRAVITATIONAL_PARAMETER/((138.0E3+3376.78E3)*(138.0E3+3376.78E3)); //m/s2
@@ -346,6 +363,10 @@ namespace aerodynamics
         currentTemperature_138 = computeCurrentTemperature( latitude, longitude, minutes_, hours_, day_ , month_, year_, 3); //K
         currentTemperature_inf = computeCurrentTemperature( latitude, longitude, minutes_, hours_, day_ , month_, year_, 1); //K
         currentdTemperature_ = computeCurrentTemperature( latitude, longitude, minutes_, hours_, day_ , month_, year_, 5); //K
+        double tmt = currentTemperature_inf - currentTemperature_138;
+        if (tmt <= 0.0) {
+            currentTemperature_138 = 0.99 * currentTemperature_inf;
+        }
         sigma = currentdTemperature_/(currentTemperature_inf-currentTemperature_138);
         //std::cout << "sigma: " << sigma << std::endl;
         double gamma = mmass_[indexm] * g138 / ( universalGasConstant * sigma * currentTemperature_inf); //km^-1
@@ -361,12 +382,17 @@ namespace aerodynamics
 
     // Function to compute the height distribution function
     double MarsDtmAtmosphereModel::heightDistributionFunction(const double altitude, const double latitude,
-                                                              const double longitude, const double minutes_, const double hours_, const int day_ ,const int month_,const int year_,const int indexm)
+                                                              const double longitude, const int minutes_, const int hours_, const int day_ ,const int month_,const int year_,const int indexm)
     {
         currentGeopotentialAltitude_ = computeGeopotentialAltitude( altitude ); //km
+        //std::cout << "currentGeopotentialAltitude_: " << currentGeopotentialAltitude_ << std::endl;
         double gamma= computeGamma( latitude, longitude, minutes_, hours_, day_ , month_, year_, indexm); //km^-1
         currentTemperature_z = currentTemperature_inf - (currentTemperature_inf - currentTemperature_138)* exp(-sigma*currentGeopotentialAltitude_);
-        //std::cout << "Tz: " << Tz << std::endl;
+       // std::cout << "T138: " << currentTemperature_138 << std::endl;
+       // std::cout << "Tinf: " << currentTemperature_inf << std::endl;
+       // std::cout << "exp(-sigma*currentGeopotentialAltitude_): " << exp(-sigma*currentGeopotentialAltitude_) << std::endl;
+       // std::cout << "Tz: " << currentTemperature_z << std::endl;
+
         double fi = pow((currentTemperature_138/currentTemperature_z),(1+alpha_[indexm]+gamma))* exp(-sigma*gamma*currentGeopotentialAltitude_);
         //std::cout << "fi: " << fi << std::endl;
         return fi;
@@ -374,7 +400,7 @@ namespace aerodynamics
 
     // Function to compute the total density
     double MarsDtmAtmosphereModel::getTotalDensity( const double altitude, const double latitude,
-                                                    const double longitude, const double minutes_, const double hours_, const int day_ ,const int month_,const int year_)
+                                                    const double longitude, const int minutes_, const int hours_, const int day_ ,const int month_,const int year_)
     {
         double avogadroConstant_ = 6.022E23;//physical_constants::AVOGADRO_CONSTANT;
         double rho0;
@@ -391,7 +417,8 @@ namespace aerodynamics
 
             rho += rho0*fi*exp(gl);
             indexm +=1;
-            //std::cout << "rho: " << indexm << " " << rho << std::endl;
+          //  std::cout << "fi: " << indexm << " " << fi << std::endl;
+          //  std::cout << "rho: " << indexm << " " << rho << std::endl;
         }
         return rho*1000;
     }

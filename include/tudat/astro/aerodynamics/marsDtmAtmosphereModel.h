@@ -97,6 +97,8 @@ namespace aerodynamics
             marsDate(2028, 8, 17 , 0, 0, 0)
     };
 
+// Function to compute the solar longitude of Mars
+std::tuple<double, double> computeSolarLongitude(const double longitude, const int day ,const int month,const int year, const int hours, const int minutes);
 
 class MarsDtmAtmosphereModel: public AtmosphereModel
 {
@@ -184,41 +186,41 @@ public:
     const double Omega = 2.0*mathematical_constants::PI/686.98;//(686.98*24.63);//rad/h//2*M_PI/(659355072); //rad/s
     const double omega = 2.0*mathematical_constants::PI/88668;//24.63;//2*M_PI/(88668); // rad/s
 
-    double computeLocalSolarTime(const double longitude, const int day, const int month, const int year, const double hours,
-                                 const double minutes);
+    double computeLocalSolarTime(const double longitude, const int day, const int month, const int year, const int hours,
+                                 const int minutes);
     void updateLegendrePolynomials( const double latitude );
-    double computeGl(const double latitude, const double longitude, const double minutes, const double hours_, const int day_,
+    double computeGl(const double latitude, const double longitude, const int minutes, const int hours_, const int day_,
                      const int month_, const int year_, const int indexg);
     double computeGeopotentialAltitude( const double altitude );
 
-    double computeCurrentTemperature( const double latitude, const double longitude, const double minutes_, const double hours_, const int day_ ,const int month_,const int year_, const int indexg);
+    double computeCurrentTemperature( const double latitude, const double longitude, const int minutes_, const int hours_, const int day_ ,const int month_,const int year_, const int indexg);
 
-    double computeGamma(const double latitude, const double longitude, const double minutes_, const double hours_, const int day_ ,const int month_,const int year_, const int indexm);
+    double computeGamma(const double latitude, const double longitude, const int minutes_, const int hours_, const int day_ ,const int month_,const int year_, const int indexm);
 
     double heightDistributionFunction(const double altitude, const double latitude,
-                                      const double longitude, const double minutes_, const double hours_, const int day_ ,const int month_,const int year_,const int indexm);
+                                      const double longitude, const int minutes_, const int hours_, const int day_ ,const int month_,const int year_,const int indexm);
 
     double getTotalDensity( const double altitude, const double latitude,
-                            const double longitude, const double minutes_, const double hours_, const int day_ , const int month_, const int year_);
+                            const double longitude, const int minutes_, const int hours_, const int day_ , const int month_, const int year_);
 
     double getCurrentLegendrePolynomial( const int degree )
     {
        return currentLegendrePolynomials_.at( degree );
     }
 
-    double computeGl_Subr(const double latitude, const double longitude, const double minutes_, const double hours_,
+    double computeGl_Subr(const double latitude, const double longitude, const int minutes_, const int hours_,
                           const int day_, const int month_, const int year_, const int indexg);
 
     void defineDustPars(const int rows);
 
     double computeDustStorm(const double Ls);
 
-    double getSolarLongitude() const {
-        return Ls;
-    }
-
     double getSolarFluxIndex() const{
         return currentF107_;
+    }
+    double getSolarLongitude() const{
+        std::cout << "Solar Longitude: " << Ls_ << std::endl;
+        return Ls_;
     }
 protected:
 
@@ -239,7 +241,7 @@ private:
     std::vector<std::vector<double>> coefficients_;
     std::vector<double> taus;
 
-    double Ls;
+    double Ls_;
     double currentF107_;
     std::vector< double > currentLegendrePolynomials_;
     double currentGeopotentialAltitude_;

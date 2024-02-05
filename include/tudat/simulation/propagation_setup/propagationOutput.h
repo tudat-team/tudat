@@ -25,6 +25,7 @@
 #include "tudat/simulation/propagation_setup/propagationSettings.h"
 #include "tudat/simulation/environment_setup/createFlightConditions.h"
 #include "tudat/math/basic/rotationRepresentations.h"
+#include "tudat/astro/aerodynamics/marsDtmAtmosphereModel.h"
 
 namespace tudat
 {
@@ -2512,6 +2513,12 @@ std::function< double( ) > getDoubleDependentVariableFunction(
                     return customVariables( 0 );
                 };
             }
+            break;
+        }
+        case solar_longitude:
+        {
+            variableFunction = std::bind( &::tudat::aerodynamics::MarsDtmAtmosphereModel::getSolarLongitude,
+                                          std::dynamic_pointer_cast< aerodynamics::MarsDtmAtmosphereModel >( bodies.at( bodyWithProperty )->getAtmosphereModel( ) ) );
             break;
         }
         default:
