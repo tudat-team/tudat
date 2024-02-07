@@ -105,11 +105,7 @@ void AtmosphericFlightConditions::setAerodynamicCoefficientsIndependentVariableF
         const AerodynamicCoefficientsIndependentVariables independentVariable,
         const std::function< double( ) > coefficientDependency )
 {
-    if( ( independentVariable == mach_number_dependent ) ||
-            ( independentVariable == angle_of_attack_dependent ) ||
-            ( independentVariable == angle_of_sideslip_dependent )||
-            ( independentVariable == altitude_dependent ) ||
-            ( independentVariable == time_dependent ) )
+    if( ( independentVariable != undefined_independent_variable ) && independentVariable != control_surface_deflection_dependent )
     {
         throw std::runtime_error(
                     std::string( "Error when setting aerodynamic coefficient function dependency, value of parameter " ) +
@@ -208,6 +204,18 @@ double AtmosphericFlightConditions::getAerodynamicCoefficientIndependentVariable
         break;
     case time_dependent:
         currentIndependentVariable = currentTime_;
+        break;
+    case temperature_dependent:
+        currentIndependentVariable = getCurrentFreestreamTemperature( );
+        break;
+    case velocity_dependent:
+        currentIndependentVariable = getCurrentAirspeed( );
+        break;
+    case he_number_density_dependent:
+        currentIndependentVariable = getCurrentNumberDensity( he_species );
+        break;
+    case o_number_density_dependent:
+        currentIndependentVariable = getCurrentNumberDensity( o_species );
         break;
     case control_surface_deflection_dependent:
     {
