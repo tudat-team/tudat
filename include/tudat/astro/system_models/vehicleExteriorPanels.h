@@ -93,6 +93,9 @@ protected:
     std::string trackedBody_;
 
     std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw_;
+
+    std::shared_ptr< aerodynamics::RarefiedFlowInteractionModel > rarefiedFlowInteractionModel_;
+
 };
 
 } // namespace system_models

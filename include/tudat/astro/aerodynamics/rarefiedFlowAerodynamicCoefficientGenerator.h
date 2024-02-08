@@ -206,7 +206,8 @@ private:
         double angleOfSideslip = 0.0;
         if( sideslipAngleIndex_ >= 0 )
         {
-            dataPointsOfIndependentVariables_[ sideslipAngleIndex_ ][ independentVariableIndices[ sideslipAngleIndex_ ]];
+            angleOfSideslip =
+                dataPointsOfIndependentVariables_[ sideslipAngleIndex_ ][ independentVariableIndices[ sideslipAngleIndex_ ]];
         }
 
         // Check whether the inclinations of the vehicle part have already been computed.
