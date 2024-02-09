@@ -211,12 +211,35 @@ double AtmosphericFlightConditions::getAerodynamicCoefficientIndependentVariable
     case velocity_dependent:
         currentIndependentVariable = getCurrentAirspeed( );
         break;
+
+
+    // number density of atmospheric species
     case he_number_density_dependent:
         currentIndependentVariable = getCurrentNumberDensity( he_species );
         break;
     case o_number_density_dependent:
         currentIndependentVariable = getCurrentNumberDensity( o_species );
         break;
+    case o_number_density_dependent:
+        currentIndependentVariable = getCurrentNumberDensity( n2_species );
+        break;
+    case o_number_density_dependent:
+        currentIndependentVariable = getCurrentNumberDensity( o2_species );
+        break;
+    case o_number_density_dependent:
+        currentIndependentVariable = getCurrentNumberDensity( ar_species );
+        break;
+    case o_number_density_dependent:
+        currentIndependentVariable = getCurrentNumberDensity( h_species );
+        break;
+    case o_number_density_dependent:
+        currentIndependentVariable = getCurrentNumberDensity( n_species );
+        break;
+    case o_number_density_dependent:
+        currentIndependentVariable = getCurrentNumberDensity( anomalous_o_species );
+        break;
+
+
     case control_surface_deflection_dependent:
     {
         try

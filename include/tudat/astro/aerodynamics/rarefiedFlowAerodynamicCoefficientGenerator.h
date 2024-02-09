@@ -8,7 +8,8 @@
  *    http://tudat.tudelft.nl/LICENSE.
  *
  *    References
- *
+ *      Doornbos, E. N. Thermospheric Density and Wind Determination from Satellite Dynamics, 2011. 
+ *      (Page 66+)
  */
 
 #ifndef TUDAT_RAREFIEDFLOW_AERODYNAMIC_COEFFICIENT_GENERATOR_H
@@ -63,8 +64,9 @@ public:
                                                  std::find(dataPointsOfIndependentVariables.begin(), dataPointsOfIndependentVariables.end(), angle_of_attack_dependent ) );
         }
 
-        // Allocate memory for panel inclinations and currentPressureCoefficients_.
-        currentPanelInclinations_.resize( vehiclePanels_.size( ) );
+        // Allocate memory for panel cosine values for drag and lift and .
+        currentCosineOfNormalDragAngles_.resize( vehiclePanels_.size( ) );
+        currentCosineOfNormalLiftAngles_.resize( vehiclePanels_.size( ) );
         currentPressureCoefficients_.resize( vehiclePanels_.size( ) );
         
         for( int i = 0; i < NumberOfIndependentVariables; i++ )
@@ -131,15 +133,33 @@ public:
         freestreamVelocityDirection( 1 ) = freestreamVelocityDirectionY;
         freestreamVelocityDirection( 2 ) = freestreamVelocityDirectionZ;
 
-        // Declare cosine of inclination angle.
-        double cosineOfInclination;
+        // define drag unit vector
+        Eigen::Vector3d u_drag = freestreamVelocityDirection.normalized();
+        // Declare lift unit vector
+        Eigen::Vector3d u_lift;
+
+        // Declare cosine of angle between panel normal vector and drag unit vector (=velocity vector).
+        double cosineOfNormalDragAngle;
+        // Declare cosine of angle between panel normal vector and lift unit vector.
+        double cosineOfNormalLiftAngle;
 
         // Loop over all panels of given vehicle part and set inclination angles.
         for( unsigned int k = 0; k < vehiclePanels_.size( ); k++ )
         {
-            cosineOfInclination = vehiclePanels_[ k ]->getFrameFixedSurfaceNormal( )( ).dot( freestreamVelocityDirection );
-            // Set inclination angle.
-            currentPanelInclinations_[ k ] = mathematical_constants::PI / 2.0 - std::acos( cosineOfInclination );
+
+            cosineOfNormalDragAngle = -(u_drag).dot(vehiclePanels_[ k ]->getFrameFixedSurfaceNormal( )( )); // gammai in Doornbos
+
+            u_lift = -(u_drag.cross(vehiclePanels_[ k ]->getFrameFixedSurfaceNormal( )( ))).cross(u_drag);
+            u_lift.normalize();
+
+            cosineOfNormalLiftAngle = -(u_lift).dot(vehiclePanels_[ k ]->getFrameFixedSurfaceNormal( )( )); // li in Doornbos
+
+            // Set cosine of drag and lift angles (wrt to panel normal).
+            currentCosineOfNormalDragAngles_[k] = cosineOfNormalDragAngle;
+            currentCosineOfNormalLiftAngles_[k] = cosineOfNormalLiftAngle;
+            
+            // Set inclination angle -> unused by rarefied flow model.
+            // currentPanelInclinations_[ k ] = mathematical_constants::PI / 2.0 - std::acos( cosineOfInclination );
    
         }
     }
@@ -152,12 +172,12 @@ public:
 
     void clearData( )
     {
-        currentPanelInclinations_.clear( );
+        currentCosineOfNormalDragAngles_.clear( );
+        currentCosineOfNormalLiftAngles_.clear( );
         currentPressureCoefficients_.clear( );
         previouslyComputedInclinations_.clear( );
         this->clearBaseData( );
     }
-
 
 private:
 
@@ -211,25 +231,31 @@ private:
         }
 
         // Check whether the inclinations of the vehicle part have already been computed.
-        if ( previouslyComputedInclinations_.count( std::make_pair( angleOfAttack, angleOfSideslip ) ) == 0 )
+        if ( previouslyComputedCosines_.count( std::make_pair( angleOfAttack, angleOfSideslip ) ) == 0 )
         {
             // Determine panel inclinations for part.
             determineInclinations( angleOfAttack, angleOfSideslip );
 
             // Add panel inclinations to container
-            previouslyComputedInclinations_[ std::pair< double, double >(
-                angleOfAttack, angleOfSideslip ) ] = currentPanelInclinations_;
+            previouslyComputedCosines_[ std::pair< double, double >(
+                angleOfAttack, angleOfSideslip ) ] = 
+                std::make_pair(currentCosineOfNormalDragAngles_, currentCosineOfNormalLiftAngles_);
         }
 
         else
         {
             // Fetch inclinations from container
-            currentPanelInclinations_ = previouslyComputedInclinations_[ std::make_pair(
-                angleOfAttack, angleOfSideslip ) ];
+            currentCosineOfNormalDragAngles_ = previouslyComputedCosines_[ std::make_pair(
+                angleOfAttack, angleOfSideslip ) ].first; 
+            currentCosineOfNormalLiftAngles_ = previouslyComputedCosines_[ std::make_pair(
+                angleOfAttack, angleOfSideslip ) ].second;
         }
 
-        // Set currentPressureCoefficients_ array for given independent variables.
-        determinePressureCoefficients( independentVariableIndices );
+        // Set currentPanelGammas_ array for given independent variables.
+        determinePanelGammas( independentVariableIndices );
+
+        // Set currentPanelGammas_ array for given independent variables.
+        determinePanelGammas( independentVariableIndices );
 
         // Calculate force coefficients from pressure coefficients.
         coefficients.segment( 0, 3 ) = calculateForceCoefficients( );
