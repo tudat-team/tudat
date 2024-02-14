@@ -35,6 +35,8 @@
 #include "tudat/astro/basic_astro/timeConversions.h"
 #include "tudat/astro/aerodynamics/marsDtmAtmosphereModel.h"
 #include "tudat/io/solarActivityData.h"
+#include "tudat/astro/basic_astro/unitConversions.h"
+
 
 int main( ) {
     using namespace tudat;
@@ -52,7 +54,7 @@ int main( ) {
     std::string filename = "/Users/ralkahal/OneDrive - Delft University of Technology/PhD/Programs/atmodensitydtm/dtm_mars";
 
     //marsDtmAtmosphereSettings =
-    std::make_shared< AtmosphereSettings >( mars_dtm_atmosphere );
+    //std::shared_ptr< AtmosphereSettings > atmosphereSettings;
     std::shared_ptr< AtmosphereSettings > marsDtmAtmosphereSettings;
     //std::shared_ptr< AtmosphereModel > atmosphereModel =
     //       std::dynamic_pointer_cast< MarsDtmAtmosphereModel >(
@@ -92,7 +94,7 @@ int main( ) {
     //std::cout<<atmosphereModel->computeCurrentTemperature( 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000, 1)<<std::endl;
     //std::cout<<atmosphereModel->computeGamma( 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000, 1)<<std::endl;
     //std::cout<< atmosphereModel->heightDistributionFunction(255.0E3, 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000, 1)<<std::endl;
-   /*std::ofstream outputFile(
+  /* std::ofstream outputFile(
            "/Users/ralkahal/OneDrive - Delft University of Technology/PhD/Programs/atmodensitydtm/density_output_pure.txt");
     // Check if the file is opened successfully
 
@@ -114,38 +116,49 @@ int main( ) {
     //for (int altitude = 138E3; altitude <= 1000E3; altitude += 10E3) {
     //  double alt_km = static_cast<double>(altitude);
     int alt_km = 400E3;
-    //for (int time = 0; time <= 1 * 24 * 60 * 60; time += 60) {
-/*
-        int minutes = (time / 60) % 60;
-        int hours = (time / (60 * 60)) % 24;
-        int days = ((time / (60 * 60 * 24)) % 31) + 1; // Adding 1 to ensure days are between 1 and 31
-        int months = ((time / (60 * 60 * 24 * 31)) % 12) + 1; // Adding 1 to ensure months are between 1 and 12
-        int years = (time / (60 * 60 * 24 * 31 * 12)) + 2000;
-*/
-  //      std::cout << "Time: " << time << " minutes: " << minutes << " hours: " << hours << " days: " << days << " months: " << months << " years: " << years << std::endl;
+    //668 * 24 * 60 * 60
+    for (int time = 0.0; time <= 345600 ; time += 86400) {
+        //for (int time = 0; time <= 365 * 24 * 60 * 60; time += 60) {
 
-        int minutes = 0;
-        int hours =0;
-        int days = 1;
-        int months = 1;
-        int years = 2001;
+        basic_astrodynamics::DateTime currentDateTime_ = basic_astrodynamics::getCalendarDateFromTime(time);
+        int minutes = currentDateTime_.getMinute();
+        int hours = currentDateTime_.getHour();
+        int days = currentDateTime_.getDay();
+        int months = currentDateTime_.getMonth();
+        int years = currentDateTime_.getYear();
 
-        double rho = atmosphereModel->getTotalDensity(alt_km, 0.0, 0.0, minutes, hours, days, months, years);
-        auto results = computeSolarLongitude( 0.0,  days, months, years, hours, minutes);
-        double Ls = std::get<0>(results);
+        std::string filename =
+                "/Users/ralkahal/OneDrive - Delft University of Technology/PhD/atmodensitypds/densityFiles/" +
+                std::to_string(time) + ".txt";
+        std::ofstream outfile(filename);
 
-        double currentF107 = atmosphereModel->getSolarFluxIndex();
-        // Write altitude and corresponding density to the file
-        std::cout << rho << "  " << Ls << " " << currentF107 << std::endl;
-        //outputFile << rho << " " << Ls << "\n";
+        //std::cout << "Time: " << time << " minutes: " << minutes << " hours: " << hours << " days: " << days << " months: " << months << " years: " << years << std::endl;
+        //double latitude = 0.0;
+        //double longitude = 0.0;
+        if (outfile.is_open()) {
+            for (double latitude = -90.0; latitude <= 90.0; latitude += 1.0) {
+                for (double longitude = 0.0; longitude <= 360.0; longitude += 1.0) {
+                    double rho = atmosphereModel->getTotalDensity(alt_km, unit_conversions::convertDegreesToRadians(latitude), unit_conversions::convertDegreesToRadians(longitude), minutes, hours, days,
+                                                                  months, years);
+                    auto results = computeSolarLongitude(longitude, days, months, years, hours, minutes);
+                    double Ls = std::get<0>(results);
+                    double currentF107 = 0.0; // Assuming this is defined somewhere
+                    outfile << latitude << " " << longitude << " " << rho << " " << Ls << "\n";
+                }
+            }
 
-      //  }
-    // Close the file when you are done
-        //outputFile.close();
-    //std::cout << "Density computation and output written to file successfully." << std::endl;
-    //std::cout << atmosphereModel->getTotalDensity( 1000.0E3, 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000) << std::endl;
+        } else {
+            std::cerr << "Error creating file " << filename << std::endl;
+        }
+        outfile.close();
 
-//    return 0;
+
+
+
+        //std::cout << "Density computation and output written to file successfully." << std::endl;
+        //std::cout << atmosphereModel->getTotalDensity( 1000.0E3, 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000) << std::endl;
+    }
+    return 0;
     //std::cout << atmosphereModel->getTotalDensity( 138.0E3, 0.0, 0.0, 1.0697333, 0.0, 16 ,12, 2000) <<std::endl;
 
 //
@@ -164,6 +177,7 @@ int main( ) {
 //BOOST_AUTO_TEST_SUITE_END( )
 //
 //} // namespace unit_tests
-//} // namespace tudat
+// namespace tudat
+//
 }
 

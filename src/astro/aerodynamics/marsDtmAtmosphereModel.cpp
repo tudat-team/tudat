@@ -297,7 +297,7 @@ namespace aerodynamics
         double sin2h = 2.0*sin(hl0)*cos(hl0);
         //flux terms:
         double ff0 = 0.0;
-        double F = currentF107_ - 65.0;
+        double F = 65.0-65.0;//currentF107_ - 65.0;
         double F2 = F*F;
         //std::cout << "F: " << F << std::endl;
         double f0 = coefficients_[4][indexg]*F + coefficients_[39][indexg] * F2;
