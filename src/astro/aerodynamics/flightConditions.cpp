@@ -220,22 +220,22 @@ double AtmosphericFlightConditions::getAerodynamicCoefficientIndependentVariable
     case o_number_density_dependent:
         currentIndependentVariable = getCurrentNumberDensity( o_species );
         break;
-    case o_number_density_dependent:
+    case n2_number_density_dependent:
         currentIndependentVariable = getCurrentNumberDensity( n2_species );
         break;
-    case o_number_density_dependent:
+    case o2_number_density_dependent:
         currentIndependentVariable = getCurrentNumberDensity( o2_species );
         break;
-    case o_number_density_dependent:
+    case ar_number_density_dependent:
         currentIndependentVariable = getCurrentNumberDensity( ar_species );
         break;
-    case o_number_density_dependent:
+    case h_number_density_dependent:
         currentIndependentVariable = getCurrentNumberDensity( h_species );
         break;
-    case o_number_density_dependent:
+    case n_number_density_dependent:
         currentIndependentVariable = getCurrentNumberDensity( n_species );
         break;
-    case o_number_density_dependent:
+    case anomalous_o_number_density_dependent:
         currentIndependentVariable = getCurrentNumberDensity( anomalous_o_species );
         break;
 

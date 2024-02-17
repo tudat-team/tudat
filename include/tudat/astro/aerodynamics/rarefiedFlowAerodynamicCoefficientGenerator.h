@@ -28,6 +28,7 @@
 #include "tudat/astro/aerodynamics/aerodynamicCoefficientGenerator.h"
 #include "tudat/basics/basicTypedefs.h"
 #include "tudat/astro/system_models/vehicleExteriorPanels.h"
+#include "tudat/astro/aerodynamics/rarefiedFlowInteractionModel.h"
 
 namespace tudat
 {
@@ -45,43 +46,18 @@ public:
             const double referenceArea,
             const double referenceLength,
             const Eigen::Vector3d& momentReferencePoint,
-            const bool savePressureCoefficients = false ) : AerodynamicCoefficientGenerator< NumberOfIndependentVariables, 6 >(
+            const bool savePressureCoefficients = false,
+            ) : AerodynamicCoefficientGenerator< NumberOfIndependentVariables, 6 >(
         dataPointsOfIndependentVariables, referenceLength, referenceArea,
         momentReferencePoint, utilities::createVectorFromMapKeys( dataPointsOfIndependentVariables ),
         positive_aerodynamic_frame_coefficients, positive_aerodynamic_frame_coefficients ),
     vehiclePanels_( vehiclePanels ), dataPointsOfIndependentVariables_( utilities::createVectorFromMapValues( dataPointsOfIndependentVariables ) ),
     angleOfAttackIndex_( -1 ), sideslipAngleIndex_( -1 )
     {
-        if( dataPointsOfIndependentVariables.count( angle_of_attack_dependent ) > 0 )
-        {
-            angleOfAttackIndex_ = std::distance( dataPointsOfIndependentVariables.begin( ),
-                                     std::find(dataPointsOfIndependentVariables.begin(), dataPointsOfIndependentVariables.end(), angle_of_attack_dependent ) );
-        }
 
-        if( dataPointsOfIndependentVariables.count( angle_of_sideslip_dependent ) > 0 )
-        {
-            sideslipAngleIndex_ = std::distance( dataPointsOfIndependentVariables.begin( ),
-                                                 std::find(dataPointsOfIndependentVariables.begin(), dataPointsOfIndependentVariables.end(), angle_of_attack_dependent ) );
-        }
+        calculatePartForceCoefficientVector( );
+        calculatePartMomentCoefficientVector( );   
 
-        // Allocate memory for panel cosine values for drag and lift and .
-        currentCosineOfNormalDragAngles_.resize( vehiclePanels_.size( ) );
-        currentCosineOfNormalLiftAngles_.resize( vehiclePanels_.size( ) );
-        currentPressureCoefficients_.resize( vehiclePanels_.size( ) );
-        
-        for( int i = 0; i < NumberOfIndependentVariables; i++ )
-        {
-            numberOfPointsPerIndependentVariables_[ i ] =
-                dataPointsOfIndependentVariables_[ i ].size( );
-        }
-
-        isCoefficientGenerated_.resize( numberOfPointsPerIndependentVariables_ );
-
-        std::fill( isCoefficientGenerated_.origin( ),
-                   isCoefficientGenerated_.origin( ) + isCoefficientGenerated_.num_elements( ), 0 );
-
-        generateCoefficients( );
-        this->createInterpolator( );
     }
 
     //! Default destructor.
@@ -102,11 +78,6 @@ public:
     Eigen::Vector6d getAerodynamicCoefficientsDataPoint(
             const boost::array< int, NumberOfIndependentVariables > independentVariables )
     {
-        if( isCoefficientGenerated_( independentVariables ) == 0 )
-        {
-            determineVehicleCoefficients( independentVariables );
-        }
-
         // Return requested coefficients.
         return aerodynamicCoefficients_( independentVariables );
     }
@@ -138,14 +109,14 @@ public:
         // Declare lift unit vector
         Eigen::Vector3d u_lift;
 
-        // Declare cosine of angle between panel normal vector and drag unit vector (=velocity vector).
-        double cosineOfNormalDragAngle;
-        // Declare cosine of angle between panel normal vector and lift unit vector.
-        double cosineOfNormalLiftAngle;
-
         // Loop over all panels of given vehicle part and set inclination angles.
         for( unsigned int k = 0; k < vehiclePanels_.size( ); k++ )
         {
+
+            // Declare cosine of angle between panel normal vector and drag unit vector (=velocity vector).
+            double cosineOfNormalDragAngle;
+            // Declare cosine of angle between panel normal vector and lift unit vector.
+            double cosineOfNormalLiftAngle;
 
             cosineOfNormalDragAngle = -(u_drag).dot(vehiclePanels_[ k ]->getFrameFixedSurfaceNormal( )( )); // gammai in Doornbos
 
@@ -160,7 +131,7 @@ public:
             
             // Set inclination angle -> unused by rarefied flow model.
             // currentPanelInclinations_[ k ] = mathematical_constants::PI / 2.0 - std::acos( cosineOfInclination );
-   
+
         }
     }
     
@@ -174,118 +145,31 @@ public:
     {
         currentCosineOfNormalDragAngles_.clear( );
         currentCosineOfNormalLiftAngles_.clear( );
-        currentPressureCoefficients_.clear( );
+        currentForceCoefficientvectors_.clear( );
         previouslyComputedInclinations_.clear( );
         this->clearBaseData( );
     }
 
 private:
-
-    void generateCoefficients( )
-    {
-        // Allocate variable to pass to coefficient determination for independent
-        // variable indices.
-        boost::array<int, NumberOfIndependentVariables> independentVariableIndices;
-        for( int i = 0; i < NumberOfIndependentVariables; i++ )
-        {
-            independentVariableIndices[ i ] = 0;
-        }
-
-        iterateOverAllIndependentVariables( independentVariableIndices );
-    }
-
-    void iterateOverAllIndependentVariables( boost::array< int, NumberOfIndependentVariables >& independentVariableIndices)
-    {
-        TODO write recursive for loop over variable dimension
-        {
-            determineVehicleCoefficients( independentVariableIndices );
-        }
-    }
-
-    //! Generate aerodynamic coefficients at a single set of independent variables.
-    /*!
-     * Generates aerodynamic coefficients at a single set of independent variables.
-     * Determines values and sets corresponding entry in vehicleCoefficients_ array.
-     * \param independentVariableIndices Array of indices from lists of Mach number,
-     *          angle of attack and angle of sideslip points at which to perform analysis.
-     */
-    void determineVehicleCoefficients( const boost::array< int, NumberOfIndependentVariables >& independentVariableIndices )
-    {
-        // Declare coefficients vector and initialize to zeros.
-        Eigen::Vector6d coefficients = Eigen::Vector6d::Zero( );
-
-        // Loop over all vehicle parts, calculate aerodynamic coefficients and add
-        // to aerodynamicCoefficients_.
-        double angleOfAttack = 0.0;
-        if( angleOfAttackIndex_ >= 0 )
-        {
-            angleOfAttack =
-                dataPointsOfIndependentVariables_[ angleOfAttackIndex_ ][ independentVariableIndices[ angleOfAttackIndex_ ]];
-        }
-
-        double angleOfSideslip = 0.0;
-        if( sideslipAngleIndex_ >= 0 )
-        {
-            angleOfSideslip =
-                dataPointsOfIndependentVariables_[ sideslipAngleIndex_ ][ independentVariableIndices[ sideslipAngleIndex_ ]];
-        }
-
-        // Check whether the inclinations of the vehicle part have already been computed.
-        if ( previouslyComputedCosines_.count( std::make_pair( angleOfAttack, angleOfSideslip ) ) == 0 )
-        {
-            // Determine panel inclinations for part.
-            determineInclinations( angleOfAttack, angleOfSideslip );
-
-            // Add panel inclinations to container
-            previouslyComputedCosines_[ std::pair< double, double >(
-                angleOfAttack, angleOfSideslip ) ] = 
-                std::make_pair(currentCosineOfNormalDragAngles_, currentCosineOfNormalLiftAngles_);
-        }
-
-        else
-        {
-            // Fetch inclinations from container
-            currentCosineOfNormalDragAngles_ = previouslyComputedCosines_[ std::make_pair(
-                angleOfAttack, angleOfSideslip ) ].first; 
-            currentCosineOfNormalLiftAngles_ = previouslyComputedCosines_[ std::make_pair(
-                angleOfAttack, angleOfSideslip ) ].second;
-        }
-
-        // Set currentPanelGammas_ array for given independent variables.
-        determinePanelGammas( independentVariableIndices );
-
-        // Set currentPanelGammas_ array for given independent variables.
-        determinePanelGammas( independentVariableIndices );
-
-        // Calculate force coefficients from pressure coefficients.
-        coefficients.segment( 0, 3 ) = calculateForceCoefficients( );
-
-        // Calculate moment coefficients from pressure coefficients.
-        coefficients.segment( 3, 3 ) = calculateMomentCoefficients( );
-        
-
-        if( savePressureCoefficients_ )
-        {
-            pressureCoefficientList_[ independentVariableIndices ] = currentPressureCoefficients_;
-        }
-
-        this->aerodynamicCoefficients_( independentVariableIndices ) = coefficients;
-        isCoefficientGenerated_( independentVariableIndices ) = true;
-    }
     
-    //! Determine pressure coefficients on a given part.
+    //! Determine force coefficient vectors on a given part.
     /*!
-     * Determines pressure coefficients on a single vehicle part.
-     * Calls the updateExpansionPressures and updateCompressionPressures for given vehicle part.
+     * Determines force coefficient vectors on a single vehicle part.
+     * Calls something to be described
      * \param partNumber Index from vehicleParts_ array for which to determine coefficients.
      * \param independentVariableIndices Array of indices of independent variables.
      */
-    void determinePressureCoefficients( const boost::array< int, NumberOfIndependentVariables >& independentVariableIndices )
+    void determinePanelForceCoefficientVectors( const boost::array< int, NumberOfIndependentVariables >& independentVariableIndices )
     {
         for( unsigned int i = 0; i < vehiclePanels_.size( ); i++ )
         {
-            double currentPanelInclination = currentPanelInclinations_.at( i );
-            currentPressureCoefficients_[ i ] = vehiclePanels_.at( i )->computePressureCoefficient( currentPanelInclination, TODO add indendepnt variables );
+
+            double currentCosineOfNormalDragAngle = currentCosineOfNormalDragAngles_.at( i );
+            double currentCosineOfNormalLiftAngle = currentCosineOfNormalLiftAngles_.at( i );
+            currentPanelForceCoefficientvectors_[ i ] = vehiclePanels_.at( i )->computePanelForceCoefficientVector( 
+                currentCosineOfNormalDragAngle, currentCosineOfNormalLiftAngle, vehiclePanels_.at( i ).getPanelArea( ),
+                u_lift, u_drag, Vinf, T_atm, number_densities, total_number_density, Aref);
+
         }
     }
 
@@ -296,27 +180,19 @@ private:
      * \param partNumber Index from vehicleParts_ array for which determine coefficients.
      * \return Force coefficients for requested vehicle part.
      */
-    Eigen::Vector3d calculateForceCoefficients( const int partNumber )
+    Eigen::Vector3d calculatePartForceCoefficientVector( const int partNumber )
     {
         // Declare force coefficient vector and intialize to zeros.
-        Eigen::Vector3d forceCoefficients = Eigen::Vector3d::Zero( );
+        Eigen::Vector3d partForceCoefficientVector = Eigen::Vector3d::Zero( );
 
         // Loop over all panels and add pressures, scaled by panel area, to force
         // coefficients.
         for ( int i = 0 ; i < vehiclePanels_.size( ) ; i++ )
         {
-            forceCoefficients -=
-                currentPressureCoefficients_.at( i ) *
-                vehiclePanels_.at( i )->getPanelArea( ) *
-                vehiclePanels_.at( i )->getFrameFixedSurfaceNormal( )( );
+            partForceCoefficientVector += currentPanelForceCoefficientvectors_.at( i );
         }
-
-        // Normalize result by reference area.
-        forceCoefficients /= this->referenceArea_;
-
-        return forceCoefficients;
+        return partForceCoefficientVector;
     }
-
 
     //! Determine moment coefficients of a part.
     /*!
@@ -326,42 +202,30 @@ private:
      * \param partNumber Index from vehicleParts_ array for which to determine coefficients.
      * \return Moment coefficients for requested vehicle part.
      */
-    Eigen::Vector3d calculateMomentCoefficients( const int partNumber )
+    Eigen::Vector3d calculatePartMomentCoefficientVector( const int partNumber )
     {
 
         // Declare moment coefficient vector and intialize to zeros.
-        Eigen::Vector3d momentCoefficients = Eigen::Vector3d::Zero( );
+        Eigen::Vector3d partMomentCoefficientVector = Eigen::Vector3d::Zero( );
 
         // Declare moment arm for panel moment determination.
-        Eigen::Vector3d referenceDistance;
+        Eigen::Vector3d panelPositionVector;
 
         // Loop over all panels and add moments due pressures.
         for ( int i = 0 ; i < vehiclePanels_.size( ) ; i++ )
         {
             // Determine moment arm for given panel centroid.
-            referenceDistance = ( vehiclePanels_.at( i )->getPanelCentroid(  ) -
+            panelPositionVector = ( vehiclePanels_.at( i )->getPanelCentroid(  ) -
                                   this->momentReferencePoint_ );
 
-            momentCoefficients -=
-                currentPressureCoefficients_.at( i ) *
-                vehiclePanels_.at( i )->getPanelArea( ) *
-                    referenceDistance.cross( vehiclePanels_.at( i )->getFrameFixedSurfaceNormal( )( ) );
+            partMomentCoefficientVector += rarefiedFlowInteractionModel::computePanelMomentCoefficientVector( 
+                currentForceCoefficientVectors_.at( i ), panelPositionVector, this->referenceLength_ );
         }
 
-
-        // Scale result by reference length and area.
-        momentCoefficients /= ( this->referenceLength_ * this->referenceArea_ );
-
-        return momentCoefficients;
+        return partMomentCoefficientVector;
     }
 
 
-    //! Multi-array as which indicates which coefficients have been calculated already.
-    /*!
-     * Multi-array as which indicates which coefficients have been calculated already. Indices of
-     * entries coincide with indices of aerodynamicCoefficients_.
-     */
-    boost::multi_array< bool, NumberOfIndependentVariables > isCoefficientGenerated_;
     
     std::vector< double > currentPanelInclinations_;
 
@@ -373,8 +237,7 @@ private:
     
     std::vector< double > currentPressureCoefficients_;
 
-    std::map< boost::array< int, NumberOfIndependentVariables >, std::vector< double >  > pressureCoefficientList_;
-    
+    std::map< boost::array< int, NumberOfIndependentVariables >, std::vector< double >  > pressureCoefficientList_;    
 
     std::vector< std::shared_ptr< system_models::VehicleExteriorPanel > > vehiclePanels_;
     
@@ -385,7 +248,8 @@ private:
     int angleOfAttackIndex_;
     
     int sideslipAngleIndex_;
-};
+}
+}
 
 
 } // namespace aerodynamics
