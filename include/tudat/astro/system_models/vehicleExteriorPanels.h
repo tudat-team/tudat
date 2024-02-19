@@ -34,28 +34,34 @@ public:
     VehicleExteriorPanel(
         const double panelArea,
         const Eigen::Vector3d& frameFixedSurfaceNormal,
+        const Eigen::Vector3d& frameFixedPositionVector,
         const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr ):
         frameFixedSurfaceNormal_( [=]( ){ return frameFixedSurfaceNormal; } ),
+        frameFixedPositionVector_( [=]( ){ return frameFixedPositionVector; } ),
         panelArea_( panelArea ),
         trackedBody_( "" ),
         reflectionLaw_( reflectionLaw ){ }
 
     VehicleExteriorPanel(
         const Eigen::Vector3d& frameFixedSurfaceNormal,
+        const Eigen::Vector3d& frameFixedPositionVector,
         const double panelArea,
         const std::string trackedBody = "",
         const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr ):
         frameFixedSurfaceNormal_( [=]( ){ return frameFixedSurfaceNormal; } ),
+        frameFixedPositionVector_( [=]( ){ return frameFixedPositionVector; } ),
         panelArea_( panelArea ),
         trackedBody_( trackedBody ),
         reflectionLaw_( reflectionLaw ){ }
 
     VehicleExteriorPanel(
         const std::function< Eigen::Vector3d( ) > frameFixedSurfaceNormal,
+        const std::function< Eigen::Vector3d( ) > frameFixedPositionVector,
         const double panelArea,
         const std::string trackedBody = "",
         const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr ):
         frameFixedSurfaceNormal_( frameFixedSurfaceNormal ),
+        frameFixedPositionVector_( frameFixedPositionVector ),
         panelArea_( panelArea ),
         trackedBody_( trackedBody ),
         reflectionLaw_( reflectionLaw ){ }
@@ -75,6 +81,16 @@ public:
         return frameFixedSurfaceNormal_;
     }
 
+    std::function< Eigen::Vector3d( ) > getFrameFixedSurfaceNormal( ) const
+    {
+        return frameFixedSurfaceNormal_;
+    }
+
+    std::function< Eigen::Vector3d( ) > getFrameFixedPositionVector( ) const
+    {
+        return frameFixedPositionVector_;
+    }
+
     double getPanelArea( ) const
     {
         return panelArea_;
@@ -87,6 +103,8 @@ public:
 protected:
 
     std::function< Eigen::Vector3d( ) > frameFixedSurfaceNormal_;
+
+    std::function< Eigen::Vector3d( ) > frameFixedPositionVector_;
 
     double panelArea_;
 
