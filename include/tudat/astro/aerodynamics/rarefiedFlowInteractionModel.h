@@ -12,11 +12,7 @@
 #ifndef TUDAT_RAREFIEDFLOWMODEL_H
 #define TUDAT_RAREFIEDFLOWMODEL_H
 
-#include <iostream>
-#include <memory>
-
 #include <Eigen/Core>
-
 
 namespace tudat
 {
@@ -29,7 +25,6 @@ public:
     RarefiedFlowInteractionModel() = default;
 
     virtual ~RarefiedFlowInteractionModel() = default;
-
 
     Eigen::Vector3d computePanelForceCoefficientVector( 
         double CosineOfNormalDragAngle, //gammai in Doornbos
@@ -49,10 +44,9 @@ public:
         double lref
         );
 
+    double get_Cd_ij(double Vinf, double Tinf, double mj, double gammai, double Ai, double Aref);
 
-    double get_Cd_ij(double Vinf, double Tinf, double mj, double gammai, double Ai, double Aref, double rhoO);
-
-    double get_Cl_ij(double Vinf, double Tinf, double mj, double gammai, double li, double Ai, double Aref, double rhoO);
+    double get_Cl_ij(double Vinf, double Tinf, double mj, double gammai, double li, double Ai, double Aref);
 
     double get_Sj(double Vinf, double Tinf, double mj);
 
@@ -62,7 +56,7 @@ public:
 
     double get_Zij(double Sj, double gammai);
 
-    double get_alpha(double rhoO, double Tinf);
+    double get_alpha(double Tinf);
 
     double get_Vre_Vinf(double alpha, double Ti, double Vinf);
 
