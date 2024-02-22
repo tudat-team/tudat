@@ -16,11 +16,10 @@
 
 namespace tudat
 {
-namespace aerodynamic
+namespace aerodynamics
 {
 
-class RarefiedFlowInteractionModel
-{
+class RarefiedFlowInteractionModel{
 public:
     RarefiedFlowInteractionModel() = default;
 
@@ -30,11 +29,12 @@ public:
         double CosineOfNormalDragAngle, //gammai in Doornbos
         double CosineOfNormalLiftAngle, //li in Doornbos
         double panelSurfaceArea,
-        Eigen::Vector3d u_lift,
-        Eigen::Vector3d u_drag,
+        double panelTemperature,
+        Eigen::Vector3d liftUnitVector,
+        Eigen::Vector3d dragUnitVecotr,
         double Vinf,
         double T_atm,
-        std::array number_densities,
+        std::vector<double> number_densities,
         double total_number_density,
         double Aref);
 
@@ -44,9 +44,9 @@ public:
         double lref
         );
 
-    double get_Cd_ij(double Vinf, double Tinf, double mj, double gammai, double Ai, double Aref);
+    double get_Cd_ij(double Vinf, double Tinf, double mj, double gammai, double Ai, double panelTemperature, double Aref);
 
-    double get_Cl_ij(double Vinf, double Tinf, double mj, double gammai, double li, double Ai, double Aref);
+    double get_Cl_ij(double Vinf, double Tinf, double mj, double gammai, double li, double Ai, double panelTemperature, double Aref);
 
     double get_Sj(double Vinf, double Tinf, double mj);
 
@@ -58,9 +58,9 @@ public:
 
     double get_alpha(double Tinf);
 
-    double get_Vre_Vinf(double alpha, double Ti, double Vinf);
+    double get_reboundVelocityFreestreamVelocityRatio(double alpha, double Ti, double Vinf);
 
-}
+};
 } // tudat
 } // aerodynamic
 

@@ -15,154 +15,166 @@
 #include "tudat/math/basic/linearAlgebra.h"
 #include "tudat/math/basic/mathematicalConstants.h"
 
-#include <array>
-
 namespace tudat
 {
 namespace aerodynamics
 {
 
-class RarefiedFlowInteractionModel{
+// RarefiedFlowInteractionModel::RarefiedFlowInteractionModel() = default;
 
-    /*! Computes aerodynamic force coefficients for a single panel
-    *  \param CosineOfNormalDragAngle Cosine of the angle between the freestream velocity and the panel normal
-    *  \param CosineOfNormalLiftAngle Cosine of the angle between the freestream velocity and the panel normal
-    *  \param panelSurfaceArea Area of the panel
-    *  \param u_lift Lift vector
-    *  \param u_drag Drag vector
-    *  \param Vinf Freestream velocity
-    *  \param T_atm Atmospheric temperature
-    *  \param number_densities Number densities of species
-    *  \param total_number_density Total number density
-    *  \param Aref Reference area
-    *  \return Force coefficient vector
-    */
-    Eigen::Vector3d computePanelForceCoefficientVector( 
-        double CosineOfNormalDragAngle, //gammai in Doornbos
-        double CosineOfNormalLiftAngle, //li in Doornbos
-        double panelSurfaceArea,
-        Eigen::Vector3d u_lift,
-        Eigen::Vector3d u_drag,
-        double Vinf,
-        double T_atm,
-        std::array number_densities,
-        double total_number_density,
-        double Aref)
-    {
-        
-        // To be moved to correct location (mathematicalConstants.h maybe?)
-        std::array<double, 8> nrl_msise00_species_m = {4.002602, 15.999, 28.0134, 31.9988, 39.948, 1.008, 14.0067, 15.999}; // [g/mol] atomic mass of species in NRLMSISE-00 model
+/*! Computes aerodynamic force coefficients for a single panel
+*  \param cosineOfNormalDragAngle Cosine of the angle between the freestream velocity and the panel normal
+*  \param cosineOfNormalLiftAngle Cosine of the angle between the freestream velocity and the panel normal
+*  \param panelSurfaceArea Area of the panel
+*  \param panelTemperature Temperature of the panel
+*  \param liftUnitVector Lift vector
+*  \param dragUnitVecotr Drag vector
+*  \param freestreamVelocity Freestream velocity
+*  \param atmosphericTemperature Atmospheric temperature
+*  \param numberDensities Number densities of species
+*  \param totalNumberDensity Total number density
+*  \param referenceArea Reference area
+*  \return Force coefficient vector
+*/
+Eigen::Vector3d RarefiedFlowInteractionModel::computePanelForceCoefficientVector( 
+    double cosineOfNormalDragAngle, //cosineOfNormalDragAngle in Doornbos
+    double cosineOfNormalLiftAngle, //cosineOfNormalLiftAngle in Doornbos
+    double panelSurfaceArea,
+    double panelTemperature,
+    Eigen::Vector3d liftUnitVector,
+    Eigen::Vector3d dragUnitVecotr,
+    double freestreamVelocity,
+    double atmosphericTemperature,
+    std::vector<double> numberDensities,
+    double totalNumberDensity,
+    double referenceArea)
+{
+    
+    // To be moved to correct location (mathematicalConstants.h maybe?)
+    std::vector<double> nrlmsise00SpeciesAtomicMasses{4.002602, 15.999, 28.0134, 31.9988, 39.948, 1.008, 14.0067, 15.999}; // [g/mol] atomic mass of species in NRLMSISE-00 model
 
-        // Initialize force coefficient vector
-        Eigen::Vector3d forceCoefficientVector = Eigen::Vector3d::Zero();
+    // Initialize force coefficient vector
+    Eigen::Vector3d panelForceCoefficientVector = Eigen::Vector3d::Zero();
 
-        if (currentCosineOfNormalDragAngle > 0){ // check if panel is pointing into the flow
-            for (int j_species = 0; j_species < nrl_msise00_species_m.size(); j_species++) {
-                Cdij = get_Cd_ij(Vinf, T_atm, species_m[j_species], CosineOfNormalDragAngle, panelSurfaceArea, Aref) * number_densities[j_species] / total_number_density;
-                Clij = get_Cl_ij(Vinf, T_atm, species_m[j_species], CosineOfNormalDragAngle, CosineOfNormalLiftAngle, panelSurfaceArea, Aref) * number_densities[j_species] / total_number_density;
+    if (cosineOfNormalDragAngle > 0){ // check if panel is pointing into the flow
+        for (int j_species = 0; j_species < nrlmsise00SpeciesAtomicMasses.size(); j_species++) {
+            double Cdij = get_Cd_ij(
+                freestreamVelocity, atmosphericTemperature, nrlmsise00SpeciesAtomicMasses[j_species], 
+                cosineOfNormalDragAngle, panelSurfaceArea, panelTemperature, referenceArea) * numberDensities[j_species] / totalNumberDensity;
+            
+            double Clij = get_Cl_ij(
+                freestreamVelocity, atmosphericTemperature, nrlmsise00SpeciesAtomicMasses[j_species], 
+                cosineOfNormalDragAngle, cosineOfNormalLiftAngle, panelSurfaceArea, panelTemperature, referenceArea) * numberDensities[j_species] / totalNumberDensity;
 
-                panelForceCoefficientVector += Cdij * u_drag + Clij * u_lift;
-            }
+            panelForceCoefficientVector += Cdij * dragUnitVecotr + Clij * liftUnitVector;
         }
-        
-        return panelForceCoefficientVector;
     }
-
-    Eigen::Vector3d computePanelMomentCoefficientVector( 
-        Eigen::Vector3d panelForceCoefficientVector,
-        Eigen::Vector3d panelPositionVector,
-        double lref,
-        )
-    {
-        return panelMomentCoefficientVector = panelPositionVector.cross(panelForceCoefficientVector) / lref;
-    }
-
-
-    double get_Cd_ij(double Vinf, double Tinf, double mj, double gammai, double Ai, double Aref)
-        {
-        // Function to calculate the drag coefficient for a single species j on a single panel i
-        // Vinf: freestream velocity
-        // Tinf: freestream temperature
-        // mj: molecular mass of species j
-        // gammai: cosine of the angle between the freestream velocity and the panel normal
-        // Ai: area of panel i
-        // Aref: reference area
-        // rhoO: atomic oxygen density
-
-        double Sj = get_Sj(Vinf, Tinf, mj);
-        double Pij = get_Pij(Sj, gammai);
-        double Gj = get_Gj(Sj);
-        double Qj = 1.0 + Gj;
-        double Zij = get_Zij(Sj, gammai);
-        double alpha = get_alpha(Tinf);
-        double Vre_Vinf = get_Vre_Vinf(alpha, Ti, Vinf);
-
-        double Cd_ij = Pij / pow(pi, 0.5);
-        Cd_ij += gammai * Qj * Zij;
-        Cd_ij += gammai / 2.0 * Vre_Vinf * (gammai * pow(pi, 0.5) * Zij + Pij);
-        Cd_ij *= Ai / Aref;
-
-        return Cd_ij;
-    }
-
-    double get_Cl_ij(double Vinf, double Tinf, double mj, double gammai, double li, double Ai, double Aref){
-        // Function to calculate the drag coefficient for a single species j on a single panel i
-        // Vinf: freestream velocity
-        // Tinf: freestream temperature
-        // mj: molecular mass of species j
-        // gammai: cosine of the angle between the freestream velocity and the panel normal
-        // li: sine of the angle between the freestream velocity and the panel normal
-        // Ai: area of panel i
-        // Aref: reference area
-        // rhoO: atomic oxygen density
-
-        double Sj = get_Sj(Vinf, Tinf, mj);
-        double Pij = get_Pij(Sj, gammai);
-        double Gj = get_Gj(Sj);
-        double Zij = get_Zij(Sj, gammai);
-        double alpha = get_alpha(Tinf);
-        double Vre_Vinf = get_Vre_Vinf(alpha, Ti, Vinf);
-
-        double Cl_ij = li * Gj * Zij;
-        Cl_ij += li / 2.0 * Vre_Vinf * (gammai * pow(pi, 0.5) * Zij + Pij);
-        Cl_ij *= Ai / Aref;
-
-        return Cl_ij;
-    }
-
-    double get_Sj(double Vinf, double Tinf, double mj){
-        return Vinf / pow(2.0 * k * Tinf/mj, 0.5);
-    }
-
-    double get_Gj(double Sj){
-        return 1.0 / (2.0*pow(Sj, 2.0));;
-    }
-
-    double get_Pij(double Sj, double gammai){
-        return (1.0/Sj) * exp(-pow(gammai, 2.0) * pow(Sj, 2.0));
-    }
-
-    double get_Zij(double Sj, double gammai){
-        return 1.0 + erf(gammai * Sj);
-    }
-
-    double get_alpha(double Tinf){
-        // Function to calculate the energy accomodation coefficient, Miyata et. al. 2018
-        // rhoO: atomic oxygen density
-        // Tinf: freestream temperature
-        // return (7.5e-17 * rhoO * Tinf) / (1 + 7.5e-17 * rhoO * Tinf);
-        return 1.0;
-    }
-
-    double get_Vre_Vinf(double alpha, double Ti, double Vinf){
-        // Function to calculate the ratio of rebound velocity to freestream velocity
-        // alpha: energy accomodation coefficient
-        // Ti: temperature of panel i
-        // Vinf: freestream velocity
-        return pow(0.5 * ( 1.0 + alpha * ( (4.0*R*Ti)/pow(Vinf, 2.0) - 1.0 ) ), 0.5);
-    }
-
+    
+    return panelForceCoefficientVector;
 }
+
+Eigen::Vector3d RarefiedFlowInteractionModel::computePanelMomentCoefficientVector( 
+    Eigen::Vector3d panelForceCoefficientVector,
+    Eigen::Vector3d panelPositionVector,
+    double referenceLength)
+{
+    return panelPositionVector.cross(panelForceCoefficientVector) / referenceLength;
+}
+
+// private:
+
+double RarefiedFlowInteractionModel::get_Cd_ij(double freestreamVelocity, double atmosphericTemperature, double speciesAtomicMass, double cosineOfNormalDragAngle, double panelSurfaceArea, double panelTemperature, double referenceArea)
+    {
+    // Function to calculate the drag coefficient for a single species j on a single panel i
+    // freestreamVelocity: freestream velocity
+    // atmosphericTemperature: freestream temperature
+    // speciesAtomicMass: molecular mass of species j
+    // cosineOfNormalDragAngle: cosine of the angle between the freestream velocity and the panel normal
+    // panelSurfaceArea: area of panel i
+    // referenceArea: reference area
+    // rhoO: atomic oxygen density
+
+    double Sj = get_Sj(freestreamVelocity, atmosphericTemperature, speciesAtomicMass);
+    double Pij = get_Pij(Sj, cosineOfNormalDragAngle);
+    double Gj = get_Gj(Sj);
+    double Qj = 1.0 + Gj;
+    double Zij = get_Zij(Sj, cosineOfNormalDragAngle);
+    double alpha = get_alpha(atmosphericTemperature);
+    double reboundVelocityFreestreamVelocityRatio = get_reboundVelocityFreestreamVelocityRatio(alpha, panelTemperature, freestreamVelocity);
+
+    double Cd_ij = Pij / pow(mathematical_constants::PI, 0.5);
+    Cd_ij += cosineOfNormalDragAngle * Qj * Zij;
+    Cd_ij += cosineOfNormalDragAngle / 2.0 * reboundVelocityFreestreamVelocityRatio * (cosineOfNormalDragAngle * pow(mathematical_constants::PI, 0.5) * Zij + Pij);
+    Cd_ij *= panelSurfaceArea / referenceArea;
+
+    return Cd_ij;
+}
+
+double RarefiedFlowInteractionModel::get_Cl_ij(double freestreamVelocity, double atmosphericTemperature, double speciesAtomicMass, double cosineOfNormalDragAngle, double cosineOfNormalLiftAngle, double panelSurfaceArea, double panelTemperature, double referenceArea){
+    // Function to calculate the drag coefficient for a single species j on a single panel i
+    // freestreamVelocity: freestream velocity
+    // atmosphericTemperature: freestream temperature
+    // speciesAtomicMass: molecular mass of species j
+    // cosineOfNormalDragAngle: cosine of the angle between the freestream velocity and the panel normal
+    // cosineOfNormalLiftAngle: sine of the angle between the freestream velocity and the panel normal
+    // panelSurfaceArea: area of panel i
+    // referenceArea: reference area
+    // rhoO: atomic oxygen density
+
+    double Sj = get_Sj(freestreamVelocity, atmosphericTemperature, speciesAtomicMass);
+    double Pij = get_Pij(Sj, cosineOfNormalDragAngle);
+    double Gj = get_Gj(Sj);
+    double Zij = get_Zij(Sj, cosineOfNormalDragAngle);
+    double alpha = get_alpha(atmosphericTemperature);
+    double reboundVelocityFreestreamVelocityRatio = get_reboundVelocityFreestreamVelocityRatio(alpha, panelTemperature, freestreamVelocity);
+
+    double Cl_ij = cosineOfNormalLiftAngle * Gj * Zij;
+    Cl_ij += cosineOfNormalLiftAngle / 2.0 * reboundVelocityFreestreamVelocityRatio * (cosineOfNormalDragAngle * pow(mathematical_constants::PI, 0.5) * Zij + Pij);
+    Cl_ij *= panelSurfaceArea / referenceArea;
+
+    return Cl_ij;
+}
+
+double RarefiedFlowInteractionModel::get_Sj(double freestreamVelocity, double atmosphericTemperature, double speciesAtomicMass){
+
+    // To be moved to correct location (mathematicalConstants.h maybe?)
+    double k = 1.38064852e-23; // [m^2 kg s^-2 K^-1] Boltzmann constant
+
+    return freestreamVelocity / pow(2.0 * k * atmosphericTemperature/speciesAtomicMass, 0.5);
+}
+
+double RarefiedFlowInteractionModel::get_Gj(double Sj){
+    return 1.0 / (2.0*pow(Sj, 2.0));;
+}
+
+double RarefiedFlowInteractionModel::get_Pij(double Sj, double cosineOfNormalDragAngle){
+    return (1.0/Sj) * exp(-pow(cosineOfNormalDragAngle, 2.0) * pow(Sj, 2.0));
+}
+
+double RarefiedFlowInteractionModel::get_Zij(double Sj, double cosineOfNormalDragAngle){
+    return 1.0 + erf(cosineOfNormalDragAngle * Sj);
+}
+
+double RarefiedFlowInteractionModel::get_alpha(double atmosphericTemperature){
+    // Function to calculate the energy accomodation coefficient, Miyata et. al. 2018
+    // rhoO: atomic oxygen density
+    // atmosphericTemperature: freestream temperature
+    // return (7.5e-17 * rhoO * atmosphericTemperature) / (1 + 7.5e-17 * rhoO * atmosphericTemperature);
+    return 1.0;
+}
+
+double RarefiedFlowInteractionModel::get_reboundVelocityFreestreamVelocityRatio(double alpha, double panelTemperature, double freestreamVelocity){
+    // Function to calculate the ratio of rebound velocity to freestream velocity
+    // alpha: energy accomodation coefficient
+    // panelTemperature: temperature of panel i
+    // freestreamVelocity: freestream velocity
+
+    // To be moved to correct location (mathematicalConstants.h maybe?)
+    double R = 8.314462618; // [J K^-1 mol^-1] ideal gas constant
+
+    return pow(0.5 * ( 1.0 + alpha * ( (4.0*R*panelTemperature)/pow(freestreamVelocity, 2.0) - 1.0 ) ), 0.5);
+}
+
 
 } // tudat
 } // electromagnetism

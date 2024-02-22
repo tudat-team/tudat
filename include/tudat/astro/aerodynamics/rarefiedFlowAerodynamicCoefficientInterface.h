@@ -35,8 +35,9 @@ namespace tudat
 namespace aerodynamics
 {
 
-template< unsigned int NumberOfIndependentVariables >
-class RarefiedFlowAerodynamicCoefficientInterface: public AerodynamicCoefficientInterface
+// template< unsigned int NumberOfIndependentVariables >
+// class RarefiedFlowAerodynamicCoefficientInterface: public AerodynamicCoefficientInterface
+class RarefiedFlowAerodynamicCoefficientInterface
 {
 public:
     /*!
@@ -53,64 +54,106 @@ public:
      * \param dataPointsOfInclinationsForShading Data points of inclinations for shading
      */
     RarefiedFlowAerodynamicCoefficientInterface(
-        const std::map< std::string, std::vector< std::shared_ptr< VehicleExteriorPanel > > > vehicleExteriorPanels,
-        const std::map< std::string, std::shared_ptr< ephemerides::RotationalEphemeris > > vehiclePartOrientation,
+        const std::map< std::string, std::vector< std::shared_ptr< tudat::system_models::VehicleExteriorPanel > > > vehicleExteriorPanels,
+        // const std::map< std::string, std::shared_ptr< tudat::ephemerides::RotationalEphemeris > > vehiclePartOrientation,
         const double referenceLength,
         const double referenceArea,
         const Eigen::Vector3d& momentReferencePoint,
-        const std::vector< AerodynamicCoefficientsIndependentVariables > independentVariableNames,
+        // const std::vector< AerodynamicCoefficientsIndependentVariables > independentVariableNames = {
+        //     angle_of_attack_dependent,
+        //     angle_of_sideslip_dependent,
+        //     temperature_dependent,
+        //     velocity_dependent,
+        //     he_number_density_dependent,
+        //     o_number_density_dependent,
+        //     n2_number_density_dependent,
+        //     o2_number_density_dependent,
+        //     ar_number_density_dependent,
+        //     h_number_density_dependent,
+        //     n_number_density_dependent,
+        //     anomalous_o_number_density_dependent},
         const AerodynamicCoefficientFrames forceCoefficientsFrame = negative_aerodynamic_frame_coefficients,
         const AerodynamicCoefficientFrames momentCoefficientsFrame = body_fixed_frame_coefficients,
-        const bool accountForShadedPanels = false,
-        const std::map< int, std::vector< double > > dataPointsOfInclinationsForShading = std::map< int, std::vector< double > >( ),
-        ) : 
-        AerodynamicCoefficientInterface(
-            referenceLength, referenceLength, momentReferencePoint, independentVariableNames, forceCoefficientsFrame, momentCoefficientsFrame
-            ),
-        //defining the member variables
-        vehicleExteriorPanels_( vehicleExteriorPanels ), vehiclePartOrientation_( vehiclePartOrientation ), referenceLength_( referenceLength ), referenceArea_( referenceArea ),
-        momentReferencePoint_( momentReferencePoint ), independentVariableNames_( independentVariableNames ), forceCoefficientsFrame_( forceCoefficientsFrame ),
-        momentCoefficientsFrame_( momentCoefficientsFrame ), accountForShadedPanels_( accountForShadedPanels ), dataPointsOfInclinationsForShading_( dataPointsOfInclinationsForShading )
+        const bool accountForShadedPanels = false
+        // const std::map< int, std::vector< double > > dataPointsOfInclinationsForShading = std::map< int, std::vector< double > >( ) 
+        ): 
+        // AerodynamicCoefficientInterface(
+        //     referenceLength, referenceLength, momentReferencePoint, independentVariableNames, forceCoefficientsFrame, momentCoefficientsFrame), 
+        vehicleExteriorPanels_( vehicleExteriorPanels ), 
+        // vehiclePartOrientation_( vehiclePartOrientation ), 
+        referenceLength_( referenceLength ), referenceArea_( referenceArea ),
+        momentReferencePoint_( momentReferencePoint ), 
+        // independentVariableNames_( independentVariableNames ), 
+        forceCoefficientsFrame_( forceCoefficientsFrame ),
+        momentCoefficientsFrame_( momentCoefficientsFrame ), accountForShadedPanels_( accountForShadedPanels )
+        // dataPointsOfInclinationsForShading_( dataPointsOfInclinationsForShading)
+        {
+            
+            // initializing total aerodynamic coefficient vector with nans
+            totalAerodynamicCoefficients_ = Eigen::Vector6d::Constant( TUDAT_NAN );
+
+        }
 
     //! Default destructor.
     /*!
      * Default destructor.
      */
-    ~RarefiedFlowAerodynamicCoefficientGenerator( ) { }   
+    ~RarefiedFlowAerodynamicCoefficientInterface( ) = default;
 
 
-    //! Compute the aerodynamic coefficients of the body itself (without control surfaces) at current flight condition.
-    /*!
-     *  Computes the current force and moment coefficients of the body itself (without control surfaces) and is to be
-     *  implemented in derived classes. Input is a set of independent variables
-     *  (doubles) which represent the variables from which the coefficients are calculated
-     *  \param independentVariables Independent variables of force and moment coefficient
-     *  determination implemented by derived class
-     *  \param currentTime Time to which coefficients are to be updated
-     */
-    virtual void updateCurrentCoefficients(
+
+    void updateCurrentCoefficients(
         const std::vector< double >& independentVariables,
-        const double currentTime = TUDAT_NAN ) = 0;
-            
-
-    private:
-    //! Determines variables to define the incinations required to calculate the aerodynamic force coefficients
-    
-    void determineIncinations(    )
-
+        const double currentTime);
     
 
+    Eigen::Vector6d getCurrentAerodynamicCoefficients( );
+
+private:
+
+
+    void determineIncinations(
+        double secondsSinceEpoch,
+        double angleOfAttack,
+        double angleOfSideslip
+    );
+    
+
+
+    void determinePanelForceCoefficientVectors(
+        double freestreamVelocity, double atmosphericTemperature, std::vector< double > numberDensities
+    );
 
 
 
+    void determinePanelMomentCoefficientVectors(double secondsSinceEpoch);
 
+    
     // Declaration of member variables
 
     //! Vehicle panels
-    std::vector< std::shared_ptr< system_models::VehicleExteriorPanel > > vehicleExteriorPanels_;
+    std::map< std::string, std::vector< std::shared_ptr< tudat::system_models::VehicleExteriorPanel > > > vehicleExteriorPanels_;
 
     //! Vehicle part orientation
-    std::map< std::string, std::shared_ptr< ephemerides::RotationalEphemeris > > vehiclePartOrientation_;
+    std::map< std::string, std::shared_ptr< tudat::ephemerides::RotationalEphemeris > > vehiclePartOrientation_;
+
+    //! Vehicle panel cosines of lift and drag angles
+    std::map< std::string, std::vector< std::pair< double, double > > > vehiclePanelCosinesOfLiftAndDragAngles_;
+
+    //! Vehicle panel lift unit vecotrs
+    std::map< std::string, std::vector< Eigen::Vector3d > > vehiclePanelLiftUnitVectors_;
+
+    //! drag unit vector
+    Eigen::Vector3d dragUnitVector_;
+
+    //! Vehicle panel force coefficient vectors
+    std::map< std::string, std::vector< Eigen::Vector3d > > vehiclePanelForceCoefficientVectors_;
+
+    //! Vehicle panel moment coefficient vectors
+    std::map< std::string, std::vector< Eigen::Vector3d > > vehiclePanelMomentCoefficientVectors_;
+
+    //! Total aerodynamic coefficient vector
+    Eigen::Vector6d totalAerodynamicCoefficients_;
 
     //! Reference length
     double referenceLength_;
@@ -133,12 +176,10 @@ public:
     //! Data points of inclinations for shading
     std::map< int, std::vector< double > > dataPointsOfInclinationsForShading_;
 
-
-
-}
+};
 
 
 } // namespace aerodynamics
 } // namespace tudat
 
-#endif // TUDAT_RAREFIEDFLOW_AERODYNAMIC_COEFFICIENT_GENERATOR_H
+#endif // TUDAT_RAREFIEDFLOW_AERODYNAMIC_COEFFICIENT_INTERFACE_H
