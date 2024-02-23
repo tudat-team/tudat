@@ -27,7 +27,8 @@
 
 #include "tudat/astro/aerodynamics/aerodynamicCoefficientInterface.h"
 #include "tudat/basics/basicTypedefs.h"
-#include "tudat/astro/system_models/vehicleExteriorPanels.h"
+// #include "tudat/astro/system_models/vehicleExteriorPanels.h"
+#include "tudat/astro/system_models/vehicleSystems.h"
 #include "tudat/astro/aerodynamics/rarefiedFlowInteractionModel.h"
 
 namespace tudat
@@ -54,36 +55,36 @@ public:
      * \param dataPointsOfInclinationsForShading Data points of inclinations for shading
      */
     RarefiedFlowAerodynamicCoefficientInterface(
-        const std::map< std::string, std::vector< std::shared_ptr< tudat::system_models::VehicleExteriorPanel > > > vehicleExteriorPanels,
-        // const std::map< std::string, std::shared_ptr< tudat::ephemerides::RotationalEphemeris > > vehiclePartOrientation,
+        const VehicleSystems vehicle,
         const double referenceLength,
         const double referenceArea,
         const Eigen::Vector3d& momentReferencePoint,
-        // const std::vector< AerodynamicCoefficientsIndependentVariables > independentVariableNames = {
-        //     angle_of_attack_dependent,
-        //     angle_of_sideslip_dependent,
-        //     temperature_dependent,
-        //     velocity_dependent,
-        //     he_number_density_dependent,
-        //     o_number_density_dependent,
-        //     n2_number_density_dependent,
-        //     o2_number_density_dependent,
-        //     ar_number_density_dependent,
-        //     h_number_density_dependent,
-        //     n_number_density_dependent,
-        //     anomalous_o_number_density_dependent},
+        const std::vector< AerodynamicCoefficientsIndependentVariables > independentVariableNames = {
+            angle_of_attack_dependent,
+            angle_of_sideslip_dependent,
+            temperature_dependent,
+            velocity_dependent,
+            he_number_density_dependent,
+            o_number_density_dependent,
+            n2_number_density_dependent,
+            o2_number_density_dependent,
+            ar_number_density_dependent,
+            h_number_density_dependent,
+            n_number_density_dependent,
+            anomalous_o_number_density_dependent},
         const AerodynamicCoefficientFrames forceCoefficientsFrame = negative_aerodynamic_frame_coefficients,
         const AerodynamicCoefficientFrames momentCoefficientsFrame = body_fixed_frame_coefficients,
         const bool accountForShadedPanels = false
         // const std::map< int, std::vector< double > > dataPointsOfInclinationsForShading = std::map< int, std::vector< double > >( ) 
         ): 
-        // AerodynamicCoefficientInterface(
-        //     referenceLength, referenceLength, momentReferencePoint, independentVariableNames, forceCoefficientsFrame, momentCoefficientsFrame), 
-        vehicleExteriorPanels_( vehicleExteriorPanels ), 
-        // vehiclePartOrientation_( vehiclePartOrientation ), 
+        AerodynamicCoefficientInterface(
+            referenceLength, referenceLength, momentReferencePoint, independentVariableNames, forceCoefficientsFrame, momentCoefficientsFrame), 
+        vehicle_( vehicle ),
+        vehicleExteriorPanels_( vehicle.getVehicleExteriorPanels() ), 
+        vehiclePartOrientation_( vehicle.getVehiclePartOrientation() ), 
         referenceLength_( referenceLength ), referenceArea_( referenceArea ),
         momentReferencePoint_( momentReferencePoint ), 
-        // independentVariableNames_( independentVariableNames ), 
+        independentVariableNames_( independentVariableNames ), 
         forceCoefficientsFrame_( forceCoefficientsFrame ),
         momentCoefficientsFrame_( momentCoefficientsFrame ), accountForShadedPanels_( accountForShadedPanels )
         // dataPointsOfInclinationsForShading_( dataPointsOfInclinationsForShading)
@@ -175,6 +176,9 @@ private:
 
     //! Data points of inclinations for shading
     std::map< int, std::vector< double > > dataPointsOfInclinationsForShading_;
+
+    //! Vehicle
+    VehicleSystems vehicle_;
 
 };
 

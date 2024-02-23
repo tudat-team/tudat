@@ -68,6 +68,16 @@ int main( )
     //     std::cout << mesh_panel_surface_areas[i] << std::endl;
     // }
 
+
+    // Initialize vehicle class
+
+
+    
+
+
+
+
+
     // initialize vehicleExteriorPanels
     std::map< std::string, std::vector< std::shared_ptr< tudat::system_models::VehicleExteriorPanel > > > vehicleExteriorPanels;
 

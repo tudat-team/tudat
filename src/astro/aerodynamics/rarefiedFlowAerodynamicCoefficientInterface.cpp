@@ -65,7 +65,10 @@ void RarefiedFlowAerodynamicCoefficientInterface::updateCurrentCoefficients(
     const std::vector< double >& independentVariables,
     const double currentTime = TUDAT_NAN )
 {
+    // Update vehicle part orientations
+    vehicle_.updatePartOrientations( currentTime );
 
+    // Determine inclinations
     determineIncinations( currentTime, independentVariables.at(0), independentVariables.at(1) );
 
     std::vector< double > numberDensities;
@@ -125,18 +128,24 @@ void RarefiedFlowAerodynamicCoefficientInterface::determineIncinations(
     dragUnitVector_ = freestreamVelocityDirection.normalized();
 
     // Loop over all vehicle part names in vehicleExteriorPanels_
+
+    // Initialize vehicle part rotation matrix to base frame
+    Eigen::Matrix3d rotationMatrixToBaseFrame = Eigen::Matrix3d::Zero();
     
     for (auto& vehiclePartEntry : vehicleExteriorPanels_) {
         const std::string& vehiclePartName = vehiclePartEntry.first;
         const std::vector<std::shared_ptr<tudat::system_models::VehicleExteriorPanel>>& exteriorPanels = vehiclePartEntry.second;
 
+        // get rotation matrix for this part
+        rotationMatrixToBaseFrame = vehicle_.getPartRotationToBaseFrame( vehiclePartName ).toRotationMatrix();
+
         // Loop over all vehicle panels in vehicleExteriorPanels_ for this vehicle part
-        for ( std::shared_ptr< tudat::system_models::VehicleExteriorPanel > vehiclePanel: vehicleExteriorPanels_.at( vehiclePartName ) )
+        for ( std::shared_ptr< tudat::system_models::VehicleExteriorPanel > vehiclePanel: exteriorPanels )
         {
             
             // Determine panel normal vector and rotate to base frame
 
-            // Eigen::Vector3d panelNormalVector =  vehiclePartOrientation_.at( vehiclePartName )->getRotationMatrixToBaseFrame(secondsSinceEpoch) * vehiclePanel->getFrameFixedSurfaceNormal()();
+            Eigen::Vector3d panelNormalVector =  rotationMatrixToBaseFrame * vehiclePanel->getFrameFixedSurfaceNormal()();
 
             Eigen::Vector3d panelNormalVector = vehiclePanel->getFrameFixedSurfaceNormal()();
 
@@ -144,8 +153,8 @@ void RarefiedFlowAerodynamicCoefficientInterface::determineIncinations(
             // gamma_i in Doornbos (2011)
             double panelCosineDragAngle = -dragUnitVector_.dot( panelNormalVector );
 
+            // Initialize variables to be defined in the following if-else statement
             double panelCosineLiftAngle = TUDAT_NAN;
-
             Eigen::Vector3d liftUnitVector = Eigen::Vector3d::Constant( TUDAT_NAN );
 
 
@@ -157,6 +166,8 @@ void RarefiedFlowAerodynamicCoefficientInterface::determineIncinations(
                 // lift unit vector is irrelevant in this case but has to be defined for the code to work
                 liftUnitVector = Eigen::Vector3d(1.0, 0.0, 0.0);
                 vehiclePanelLiftUnitVectors_[ vehiclePartName ].push_back( liftUnitVector );
+
+                panelCosineDragAngle = 1.0; 
 
             } else {
 
