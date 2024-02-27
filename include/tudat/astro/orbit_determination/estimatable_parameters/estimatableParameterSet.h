@@ -629,6 +629,19 @@ public:
                 currentConstraintRow += currentConstraintSize;
             }
         }
+
+        for( unsigned int i = 0; i < globalConstraints_.size( ); i++ )
+        {
+            constraintStateMultiplier.block( currentConstraintRow, 0, globalConstraints_.at( i ).rows( ), estimatedParameterSetSize_ ) =
+                globalConstraints_.at( i );
+            currentConstraintRow += globalConstraints_.at( i ).rows( );
+        }
+
+        if( currentConstraintRow != totalConstraintSize_ )
+        {
+            throw std::runtime_error( "Error when computing total constraint of paramaters, size of constraints (" + std::to_string( totalConstraintSize_ ) +
+                                      ") and total applied constraints (" +  std::to_string( currentConstraintRow ) + ") do not match." );
+        }
     }
 
     //! Total size of linear constraint that is to be applied during estimation
@@ -692,6 +705,24 @@ public:
          return utilities::createVectorFromMapKeys( bodiesToEstimatePerArc_ );
     }
 
+    void addGlobalConstraint( const Eigen::MatrixXd& globalConstraint )
+    {
+         if( globalConstraint.cols( ) != estimatedParameterSetSize_ )
+         {
+             throw std::runtime_error( "Error when adding global constraint to estimation, size of parameter vector (" + std::to_string( estimatedParameterSetSize_ ) +
+             ") and constraints (" +  std::to_string( globalConstraint.rows( ) ) + ") do not match." );
+         }
+
+         globalConstraints_.push_back( globalConstraint );
+         totalConstraintSize_ += globalConstraint.rows( );
+    }
+
+    std::vector< Eigen::MatrixXd > getGlobalConstraints( )
+    {
+        return globalConstraints_;
+    }
+
+
 protected:
 
     //! Total size of all initial dynamical states that are to be estimated.
@@ -746,6 +777,8 @@ protected:
     //! Map of initial dynamical states that are to be estimated, with start index in total parameter vector as key.
     std::map< int, std::shared_ptr<
     EstimatableParameter< Eigen::Matrix< InitialStateParameterType, Eigen::Dynamic, 1 > > > > initialStateParameters_;
+
+    std::vector< Eigen::MatrixXd > globalConstraints_;
 
     //! Size of linear constraint that is to be applied during estimation
     int totalConstraintSize_;

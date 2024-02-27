@@ -350,7 +350,8 @@ Eigen::VectorXd executeEarthOrbiterParameterEstimation(
         const TimeType startTime = TimeType( 1.0E7 ),
         const int numberOfDaysOfData = 3,
         const int numberOfIterations = 5,
-        const bool useFullParameterSet = true )
+        const bool useFullParameterSet = true,
+        const bool applyTestConstraint = false )
 {
 
     //Load spice kernels.
@@ -538,6 +539,19 @@ Eigen::VectorXd executeEarthOrbiterParameterEstimation(
     std::shared_ptr< estimatable_parameters::EstimatableParameterSet< StateScalarType > > parametersToEstimate =
             createParametersToEstimate< StateScalarType, TimeType >( parameterNames, bodies );
 
+    if( applyTestConstraint )
+    {
+        int numberOfParameters = parametersToEstimate->getEstimatedParameterSetSize( );
+        Eigen::MatrixXd constraintMatrix = Eigen::MatrixXd::Zero( 2, numberOfParameters );
+        constraintMatrix( 0, 0 ) = 1.0;
+        constraintMatrix( 0, 1 ) = 2.0;
+
+        constraintMatrix( 1, 6 ) = 1.0;
+        constraintMatrix( 1, 7 ) = -5.0;
+        parametersToEstimate->addGlobalConstraint( constraintMatrix );
+
+    }
+
     printEstimatableParameterEntries( parametersToEstimate );
 
     std::vector< std::shared_ptr< ObservationModelSettings > > observationSettingsList;
@@ -635,7 +649,8 @@ Eigen::VectorXd executeEarthOrbiterParameterEstimation(
     weightPerObservable[ one_way_doppler ] = 1.0 / ( 1.0E-11 * 1.0E-11 * SPEED_OF_LIGHT * SPEED_OF_LIGHT );
 
     estimationInput->setConstantPerObservableWeightsMatrix( weightPerObservable );
-    estimationInput->defineEstimationSettings( true, true, true, true, false );
+    estimationInput->defineEstimationSettings( true, true, true, true, applyTestConstraint );
+
     estimationInput->setConvergenceChecker(
                 std::make_shared< EstimationConvergenceChecker >( numberOfIterations ) );
 
@@ -646,6 +661,7 @@ Eigen::VectorXd executeEarthOrbiterParameterEstimation(
     Eigen::VectorXd estimationError = estimationOutput->parameterEstimate_ - truthParameters;
     std::cout <<"estimation error: "<< ( estimationError ).transpose( ) << std::endl;
 
+    std::cout<<"normalization "<<estimationOutput->getNormalizationTerms( ).transpose( )<<std::endl;
     podData = std::make_pair( estimationOutput, estimationInput );
 
     return estimationError;
