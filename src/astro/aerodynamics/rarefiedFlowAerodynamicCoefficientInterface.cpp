@@ -66,7 +66,7 @@ void RarefiedFlowAerodynamicCoefficientInterface::updateCurrentCoefficients(
     const double currentTime = TUDAT_NAN )
 {
     // Update vehicle part orientations
-    vehicle_.updatePartOrientations( currentTime );
+    // vehicle_.updatePartOrientations( currentTime );
 
     // Determine inclinations
     determineIncinations( currentTime, independentVariables.at(0), independentVariables.at(1) );
@@ -130,14 +130,14 @@ void RarefiedFlowAerodynamicCoefficientInterface::determineIncinations(
     // Loop over all vehicle part names in vehicleExteriorPanels_
 
     // Initialize vehicle part rotation matrix to base frame
-    Eigen::Matrix3d rotationMatrixToBaseFrame = Eigen::Matrix3d::Zero();
+    // Eigen::Matrix3d rotationMatrixToBaseFrame = Eigen::Matrix3d::Zero();
     
     for (auto& vehiclePartEntry : vehicleExteriorPanels_) {
         const std::string& vehiclePartName = vehiclePartEntry.first;
         const std::vector<std::shared_ptr<tudat::system_models::VehicleExteriorPanel>>& exteriorPanels = vehiclePartEntry.second;
 
         // get rotation matrix for this part
-        rotationMatrixToBaseFrame = vehicle_.getPartRotationToBaseFrame( vehiclePartName ).toRotationMatrix();
+        // rotationMatrixToBaseFrame = vehicle_.getPartRotationToBaseFrame( vehiclePartName ).toRotationMatrix();
 
         // Loop over all vehicle panels in vehicleExteriorPanels_ for this vehicle part
         for ( std::shared_ptr< tudat::system_models::VehicleExteriorPanel > vehiclePanel: exteriorPanels )
@@ -145,7 +145,7 @@ void RarefiedFlowAerodynamicCoefficientInterface::determineIncinations(
             
             // Determine panel normal vector and rotate to base frame
 
-            Eigen::Vector3d panelNormalVector =  rotationMatrixToBaseFrame * vehiclePanel->getFrameFixedSurfaceNormal()();
+            // Eigen::Vector3d panelNormalVector =  rotationMatrixToBaseFrame * vehiclePanel->getFrameFixedSurfaceNormal()();
 
             Eigen::Vector3d panelNormalVector = vehiclePanel->getFrameFixedSurfaceNormal()();
 

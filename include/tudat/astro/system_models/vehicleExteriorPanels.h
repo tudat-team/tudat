@@ -33,9 +33,9 @@ class VehicleExteriorPanel
 public:
 
     VehicleExteriorPanel(
-        const double panelArea,
         const Eigen::Vector3d& frameFixedSurfaceNormal,
         const Eigen::Vector3d& frameFixedPositionVector,
+        const double panelArea,
         const double panelTemperature = 273.0,
         const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr ):
         frameFixedSurfaceNormal_( [=]( ){ return frameFixedSurfaceNormal; } ),

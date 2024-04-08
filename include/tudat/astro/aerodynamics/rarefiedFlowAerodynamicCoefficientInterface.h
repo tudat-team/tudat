@@ -38,7 +38,7 @@ namespace aerodynamics
 
 // template< unsigned int NumberOfIndependentVariables >
 // class RarefiedFlowAerodynamicCoefficientInterface: public AerodynamicCoefficientInterface
-class RarefiedFlowAerodynamicCoefficientInterface
+class RarefiedFlowAerodynamicCoefficientInterface: public AerodynamicCoefficientInterface
 {
 public:
     /*!
@@ -55,7 +55,7 @@ public:
      * \param dataPointsOfInclinationsForShading Data points of inclinations for shading
      */
     RarefiedFlowAerodynamicCoefficientInterface(
-        const VehicleSystems vehicle,
+        tudat::system_models::VehicleSystems vehicle,
         const double referenceLength,
         const double referenceArea,
         const Eigen::Vector3d& momentReferencePoint,
@@ -81,7 +81,7 @@ public:
             referenceLength, referenceLength, momentReferencePoint, independentVariableNames, forceCoefficientsFrame, momentCoefficientsFrame), 
         vehicle_( vehicle ),
         vehicleExteriorPanels_( vehicle.getVehicleExteriorPanels() ), 
-        vehiclePartOrientation_( vehicle.getVehiclePartOrientation() ), 
+        // vehiclePartOrientations_( vehicle.getVehiclePartOrientations() ), 
         referenceLength_( referenceLength ), referenceArea_( referenceArea ),
         momentReferencePoint_( momentReferencePoint ), 
         independentVariableNames_( independentVariableNames ), 
@@ -136,7 +136,7 @@ private:
     std::map< std::string, std::vector< std::shared_ptr< tudat::system_models::VehicleExteriorPanel > > > vehicleExteriorPanels_;
 
     //! Vehicle part orientation
-    std::map< std::string, std::shared_ptr< tudat::ephemerides::RotationalEphemeris > > vehiclePartOrientation_;
+    // std::map< std::string, std::shared_ptr< tudat::ephemerides::RotationalEphemeris > > vehiclePartOrientations_;
 
     //! Vehicle panel cosines of lift and drag angles
     std::map< std::string, std::vector< std::pair< double, double > > > vehiclePanelCosinesOfLiftAndDragAngles_;
@@ -178,7 +178,7 @@ private:
     std::map< int, std::vector< double > > dataPointsOfInclinationsForShading_;
 
     //! Vehicle
-    VehicleSystems vehicle_;
+    tudat::system_models::VehicleSystems vehicle_;
 
 };
 
