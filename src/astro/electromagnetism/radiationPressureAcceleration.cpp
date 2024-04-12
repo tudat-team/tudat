@@ -61,16 +61,18 @@ void IsotropicPointSourceRadiationPressureAcceleration::computeAcceleration()
             targetRotationFromGlobalToLocalFrame_ = targetRotationFromLocalToGlobalFrame_.inverse( );
 
             // Calculate acceleration due to radiation pressure in global frame
+            targetModel_->updateRadiationPressureForcing(
+                receivedIrradiance, targetRotationFromGlobalToLocalFrame_ *
+                                    targetCenterPositionInSourceFrame_.normalized( ) );
             currentAcceleration_ = targetRotationFromLocalToGlobalFrame_ *
-                                   targetModel_->evaluateRadiationPressureForce(
-                                       receivedIrradiance, targetRotationFromGlobalToLocalFrame_ *
-                                                           targetCenterPositionInSourceFrame_.normalized( )) /
+                                   targetModel_->getCurrentRadiationPressureForce() /
                                    currentTargetMass_;
         }
         else
         {
-            currentAcceleration_ = targetModel_->evaluateRadiationPressureForce(
-                receivedIrradiance, targetCenterPositionInSourceFrame_.normalized( )) / currentTargetMass_;
+            targetModel_->updateRadiationPressureForcing(
+                receivedIrradiance, targetCenterPositionInSourceFrame_.normalized( ) );
+            currentAcceleration_ = targetModel_->getCurrentRadiationPressureForce( ) / currentTargetMass_;
 
         }
         currentRadiationPressure_ = targetModel_->getRadiationPressure( );
@@ -118,8 +120,8 @@ void PaneledSourceRadiationPressureAcceleration::computeAcceleration()
             // No body is occluding source as seen from target
             Eigen::Vector3d sourceToTargetDirectionInTargetFrame =
                     targetRotationFromGlobalToLocalFrame * (targetCenterPositionInGlobalFrame - sourcePositionInGlobalFrame).normalized();
-            totalForceInTargetFrame +=
-                    targetModel_->evaluateRadiationPressureForce(occultedSourceIrradiance, sourceToTargetDirectionInTargetFrame);
+            targetModel_->updateRadiationPressureForcing( occultedSourceIrradiance, sourceToTargetDirectionInTargetFrame );
+            totalForceInTargetFrame += targetModel_->getCurrentRadiationPressureForce( );
             totalReceivedIrradiance += occultedSourceIrradiance;
             visibleAndEmittingSourcePanelCounter += 1;
         }

@@ -75,6 +75,11 @@ public:
         return frameFixedSurfaceNormal_;
     }
 
+    Eigen::Vector3d getFrameFixedPanelLocation( ) const
+    {
+        return panelPosition_;
+    }
+
     double getPanelArea( ) const
     {
         return panelArea_;
@@ -87,6 +92,8 @@ public:
 protected:
 
     std::function< Eigen::Vector3d( ) > frameFixedSurfaceNormal_;
+
+    Eigen::Vector3d panelPosition_;
 
     double panelArea_;
 
