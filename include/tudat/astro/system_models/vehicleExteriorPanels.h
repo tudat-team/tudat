@@ -78,7 +78,9 @@ public:
         const Eigen::Vector3d& frameFixedSurfaceNormal,
         const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr ):
         frameFixedSurfaceNormal_( [=]( ){ return frameFixedSurfaceNormal; } ),
+        frameFixedPositionVector_( [=]( ){ return Eigen::Vector3d::Constant( TUDAT_NAN ); } ),
         panelArea_( panelArea ),
+        panelTemperature_( TUDAT_NAN ),
         trackedBody_( "" ),
         reflectionLaw_( reflectionLaw ){ }
 
@@ -86,9 +88,12 @@ public:
         const Eigen::Vector3d& frameFixedSurfaceNormal,
         const double panelArea,
         const std::string trackedBody = "",
-        const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr ):
+        const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr,
+        const Eigen::Vector3d& frameFixedPosition = Eigen::Vector3d::Constant( TUDAT_NAN ) ):
         frameFixedSurfaceNormal_( [=]( ){ return frameFixedSurfaceNormal; } ),
+        frameFixedPositionVector_( [=]( ){ return frameFixedPosition; } ),
         panelArea_( panelArea ),
+        panelTemperature_( TUDAT_NAN ),
         trackedBody_( trackedBody ),
         reflectionLaw_( reflectionLaw ){ }
 

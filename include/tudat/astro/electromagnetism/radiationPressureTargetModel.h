@@ -93,6 +93,13 @@ public:
         return currentRadiationPressureForce_;
     }
 
+    Eigen::Vector3d updateAndGetRadiationPressureTorque(
+        const double sourceIrradiance, const Eigen::Vector3d& sourceToTargetDirection)
+    {
+        updateRadiationPressureForcing( sourceIrradiance, sourceToTargetDirection );
+        return currentRadiationPressureTorque_;
+    }
+
 
 
 protected:
@@ -276,6 +283,7 @@ public:
         computeTorques_ = true;
         centerOfMassFunction_ = centerOfMassFunction;
         panelTorques_.resize( totalNumberOfPanels_ );
+        panelCentroidMomentArms_.resize( totalNumberOfPanels_ );
     }
 
     void updateRadiationPressureForcing(

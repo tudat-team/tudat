@@ -51,6 +51,7 @@ void PaneledRadiationPressureTargetModel::updateRadiationPressureForcing(
     Eigen::Vector3d currentCenterOfMass = Eigen::Vector3d::Constant( TUDAT_NAN );
     if( computeTorques_ )
     {
+        this->currentRadiationPressureTorque_  = Eigen::Vector3d::Zero();
         currentCenterOfMass = centerOfMassFunction_( );
     }
     for( unsigned int i = 0; i < segmentFixedPanels_.size( ) + 1; i++ )
@@ -83,12 +84,17 @@ void PaneledRadiationPressureTargetModel::updateRadiationPressureForcing(
                 if( computeTorques_ )
                 {
                     panelTorques_[ counter ] = panelCentroidMomentArms_[ counter ].cross( panelForces_[ counter ] );
+                    this->currentRadiationPressureTorque_ += panelTorques_[ counter ];
                 }
 
             }
             else
             {
                 panelForces_[ counter ].setZero( );
+                if( computeTorques_ )
+                {
+                    panelTorques_[ counter ].setZero( );
+                }
             }
             counter++;
         }
