@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "tudat/astro/electromagnetism/reflectionLaw.h"
+#include "tudat/astro/aerodynamics/rarefiedFlowInteractionModel.h"
 #include "tudat/astro/ephemerides/rotationalEphemeris.h"
 #include "tudat/astro/system_models/engineModel.h"
 
@@ -32,6 +33,47 @@ class VehicleExteriorPanel
 public:
 
     VehicleExteriorPanel(
+        const Eigen::Vector3d& frameFixedSurfaceNormal,
+        const Eigen::Vector3d& frameFixedPositionVector,
+        const double panelArea,
+        const double panelTemperature = 273.0,
+        const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr ):
+        frameFixedSurfaceNormal_( [=]( ){ return frameFixedSurfaceNormal; } ),
+        frameFixedPositionVector_( [=]( ){ return frameFixedPositionVector; } ),
+        panelArea_( panelArea ),
+        panelTemperature_( panelTemperature ),
+        trackedBody_( "" ),
+        reflectionLaw_( reflectionLaw ){ }
+
+    VehicleExteriorPanel(
+        const Eigen::Vector3d& frameFixedSurfaceNormal,
+        const Eigen::Vector3d& frameFixedPositionVector,
+        const double panelArea,
+        const double panelTemperature = 273.0,
+        const std::string trackedBody = "",
+        const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr ):
+        frameFixedSurfaceNormal_( [=]( ){ return frameFixedSurfaceNormal; } ),
+        frameFixedPositionVector_( [=]( ){ return frameFixedPositionVector; } ),
+        panelArea_( panelArea ),
+        panelTemperature_( panelTemperature ),
+        trackedBody_( trackedBody ),
+        reflectionLaw_( reflectionLaw ){ }
+
+    VehicleExteriorPanel(
+        const std::function< Eigen::Vector3d( ) > frameFixedSurfaceNormal,
+        const std::function< Eigen::Vector3d( ) > frameFixedPositionVector,
+        const double panelArea,
+        const double panelTemperature = 273.0,
+        const std::string trackedBody = "",
+        const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr ):
+        frameFixedSurfaceNormal_( frameFixedSurfaceNormal ),
+        frameFixedPositionVector_( frameFixedPositionVector ),
+        panelArea_( panelArea ),
+        panelTemperature_( panelTemperature ),
+        trackedBody_( trackedBody ),
+        reflectionLaw_( reflectionLaw ){ }
+
+        VehicleExteriorPanel(
         const double panelArea,
         const Eigen::Vector3d& frameFixedSurfaceNormal,
         const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = nullptr ):
@@ -70,14 +112,19 @@ public:
         return reflectionLaw_;
     }
 
+    std::shared_ptr< aerodynamics::RarefiedFlowInteractionModel > getRarefiedFlowInteractionModel( ) const
+    {
+        return rarefiedFlowInteractionModel_;
+    }
+
     std::function< Eigen::Vector3d( ) > getFrameFixedSurfaceNormal( ) const
     {
         return frameFixedSurfaceNormal_;
     }
 
-    Eigen::Vector3d getFrameFixedPanelLocation( ) const
+    std::function< Eigen::Vector3d( ) > getFrameFixedPositionVector( ) const
     {
-        return panelPosition_;
+        return frameFixedPositionVector_;
     }
 
     double getPanelArea( ) const
@@ -85,21 +132,32 @@ public:
         return panelArea_;
     }
 
+    double getPanelTemperature( ) const
+    {
+        return panelTemperature_;
+    }
+
     std::string getTrackedBody( )
     {
         return trackedBody_;
     }
+
 protected:
 
     std::function< Eigen::Vector3d( ) > frameFixedSurfaceNormal_;
 
-    Eigen::Vector3d panelPosition_;
+    std::function< Eigen::Vector3d( ) > frameFixedPositionVector_;
 
     double panelArea_;
+
+    double panelTemperature_;
 
     std::string trackedBody_;
 
     std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw_;
+
+    std::shared_ptr< aerodynamics::RarefiedFlowInteractionModel > rarefiedFlowInteractionModel_;
+
 };
 
 } // namespace system_models
