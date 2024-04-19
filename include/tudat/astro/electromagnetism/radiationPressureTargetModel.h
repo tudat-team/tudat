@@ -143,7 +143,6 @@ public:
         area_(area), coefficientFunction_( nullptr ),
         currentCoefficient_(coefficient)
         {
-            this->currentRadiationPressureTorque_ = Eigen::Vector3d::Zero( );
         }
 
     CannonballRadiationPressureTargetModel(
@@ -153,7 +152,6 @@ public:
         area_(area), coefficientFunction_( coefficientFunction),
         currentCoefficient_( TUDAT_NAN )
         {
-            this->currentRadiationPressureTorque_ = Eigen::Vector3d::Zero( );
         }
 
     void enableTorqueComputation(

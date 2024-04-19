@@ -185,7 +185,7 @@ std::shared_ptr< gravitation::SphericalHarmonicGravitationalTorqueModel > create
 
 
 //! Function to create a spherical harmonic gravitational torque
-std::shared_ptr< electromagnetism::RadiationPressureTorque > createRadiationPressureTorqueModel(
+std::shared_ptr< electromagnetism::IsotropicPointSourceRadiationPressureTorque > createRadiationPressureTorqueModel(
     const std::shared_ptr< simulation_setup::Body > bodyUndergoingTorque,
     const std::shared_ptr< simulation_setup::Body > bodyExertingTorque,
     const std::shared_ptr< TorqueSettings > torqueSettings,
@@ -197,11 +197,16 @@ std::shared_ptr< electromagnetism::RadiationPressureTorque > createRadiationPres
     std::shared_ptr< AccelerationSettings > sphericalHarmonicAccelerationSettings =
         std::make_shared< AccelerationSettings >( basic_astrodynamics::radiation_pressure );
 
-    std::shared_ptr< electromagnetism::RadiationPressureAcceleration > radiationPressureAcceleration =
-        std::dynamic_pointer_cast< electromagnetism::RadiationPressureAcceleration >(
+    std::shared_ptr< electromagnetism::IsotropicPointSourceRadiationPressureAcceleration > radiationPressureAcceleration =
+        std::dynamic_pointer_cast< electromagnetism::IsotropicPointSourceRadiationPressureAcceleration >(
             createRadiationPressureAccelerationModel(
                 bodyExertingTorque, bodyUndergoingTorque, nameOfBodyExertingTorque, nameOfBodyUndergoingTorque,
                 bodies ) );
+
+    if( radiationPressureAcceleration == nullptr )
+    {
+        throw std::runtime_error( "Error when creating radiation pressure torque, only isotropic source is supported" );
+    }
 
     std::function< Eigen::Vector3d( ) > centerOfMassFunction = nullptr;
     std::shared_ptr< RigidBodyProperties > massProperties = bodyUndergoingTorque->getMassProperties( );
@@ -214,7 +219,7 @@ std::shared_ptr< electromagnetism::RadiationPressureTorque > createRadiationPres
         centerOfMassFunction = std::bind( &RigidBodyProperties::getCurrentCenterOfMass, massProperties );
     }
 
-    return std::make_shared< electromagnetism::RadiationPressureTorque >(
+    return std::make_shared< electromagnetism::IsotropicPointSourceRadiationPressureTorque >(
         radiationPressureAcceleration, centerOfMassFunction );
 }
 

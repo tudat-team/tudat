@@ -27,15 +27,15 @@ namespace electromagnetism
 {
 
 /*!
- * Class modeling radiation pressure torque. Radiation pressure accelerates a target due to electromagnetic
+ * Class modeling radiation pressure torque. Radiation pressure torque a target due to electromagnetic
  * radiation from a source.
  */
-class RadiationPressureTorque: public basic_astrodynamics::TorqueModel
+class IsotropicPointSourceRadiationPressureTorque: public basic_astrodynamics::TorqueModel
 {
 public:
 
-    RadiationPressureTorque(
-        const std::shared_ptr< RadiationPressureAcceleration > radiationPressureAcceleration,
+    IsotropicPointSourceRadiationPressureTorque(
+        const std::shared_ptr< IsotropicPointSourceRadiationPressureAcceleration > radiationPressureAcceleration,
         const std::function< Eigen::Vector3d( ) > centerOfMassFunction ):
         radiationPressureAcceleration_( radiationPressureAcceleration ),
         centerOfMassFunction_( centerOfMassFunction )
@@ -43,16 +43,24 @@ public:
         radiationPressureAcceleration_->getTargetModel( )->enableTorqueComputation( centerOfMassFunction );
     }
 
-    ~RadiationPressureTorque( ){ }
+    ~IsotropicPointSourceRadiationPressureTorque( ){ }
 
     /*!
      * Update class members.
      *
      * @param currentTime Current simulation time
      */
-    void updateMembers(double currentTime) override;
+    void updateMembers(double currentTime) override
+    {
+        radiationPressureAcceleration_->updateMembers( currentTime );
+        currentTorque_ = radiationPressureAcceleration_->getTargetModel( )->getCurrentRadiationPressureTorque( );
+        if( !radiationPressureAcceleration_->getTargetModel( )->forceFunctionRequiresLocalFrameInputs( ) )
+        {
+            currentTorque_ = radiationPressureAcceleration_->getTargetRotationFromLocalToGlobalFrameFunction( )( ).inverse( ) * currentTorque_;
+        }
+    }
 
-    void resetAccelerationModel( const std::shared_ptr< RadiationPressureAcceleration > radiationPressureAcceleration )
+    void resetAccelerationModel( const std::shared_ptr< IsotropicPointSourceRadiationPressureAcceleration > radiationPressureAcceleration )
     {
         radiationPressureAcceleration_ = radiationPressureAcceleration;
     }
@@ -62,9 +70,16 @@ public:
         return currentTorque_;
     }
 
+
+    virtual void resetCurrentTime( ) override
+    {
+        currentTime_ = TUDAT_NAN;
+        radiationPressureAcceleration_->resetCurrentTime( );
+    }
+
 protected:
 
-    std::shared_ptr< RadiationPressureAcceleration > radiationPressureAcceleration_;
+    std::shared_ptr< IsotropicPointSourceRadiationPressureAcceleration > radiationPressureAcceleration_;
 
     const std::function< Eigen::Vector3d( ) > centerOfMassFunction_;
 

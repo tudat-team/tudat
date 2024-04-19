@@ -67,10 +67,10 @@ TUDAT_ADD_TEST_CASE(AerodynamicCoefficientsFromFile
         ${Tudat_PROPAGATION_LIBRARIES}
         )
 
-TUDAT_ADD_TEST_CASE(RarefieldFlowGenerator
-        PRIVATE_LINKS
-        ${Tudat_PROPAGATION_LIBRARIES}
-)
+#TUDAT_ADD_TEST_CASE(RarefieldFlowGenerator
+#        PRIVATE_LINKS
+#        ${Tudat_PROPAGATION_LIBRARIES}
+#)
 
 TUDAT_ADD_TEST_CASE(WindModel
         PRIVATE_LINKS

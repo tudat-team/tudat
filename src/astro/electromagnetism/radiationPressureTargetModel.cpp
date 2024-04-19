@@ -36,6 +36,10 @@ void CannonballRadiationPressureTargetModel::updateRadiationPressureForcing(
     // From Montenbruck (2000), Sec. 3.4
     radiationPressure_ = sourceIrradiance / physical_constants::SPEED_OF_LIGHT;
     this->currentRadiationPressureForce_ = currentCoefficient_ * area_ * radiationPressure_ * sourceToTargetDirection;
+    if( computeTorques_ )
+    {
+        this->currentRadiationPressureTorque_ = -centerOfMassFunction_( ).cross( this->currentRadiationPressureForce_ );
+    }
 }
 
 void PaneledRadiationPressureTargetModel::updateRadiationPressureForcing(

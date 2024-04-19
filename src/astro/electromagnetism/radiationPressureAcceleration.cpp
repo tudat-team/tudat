@@ -55,7 +55,7 @@ void IsotropicPointSourceRadiationPressureAcceleration::computeAcceleration()
     else
     {
 
-        if ( targetModel_->forceFunctionRequiresLocalFrameInputs( ))
+        if ( targetModel_->forceFunctionRequiresLocalFrameInputs( ) )
         {
             targetRotationFromLocalToGlobalFrame_ = targetRotationFromLocalToGlobalFrameFunction_( );
             targetRotationFromGlobalToLocalFrame_ = targetRotationFromLocalToGlobalFrame_.inverse( );

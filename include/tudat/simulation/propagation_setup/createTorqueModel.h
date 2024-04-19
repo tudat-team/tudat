@@ -84,7 +84,7 @@ std::shared_ptr< gravitation::SphericalHarmonicGravitationalTorqueModel > create
         const std::string& nameOfBodyUndergoingTorque,
         const std::string& nameOfBodyExertingTorque );
 
-std::shared_ptr< electromagnetism::RadiationPressureTorque > createRadiationPressureTorqueModel(
+std::shared_ptr< electromagnetism::IsotropicPointSourceRadiationPressureTorque > createRadiationPressureTorqueModel(
     const std::shared_ptr< simulation_setup::Body > bodyUndergoingTorque,
     const std::shared_ptr< simulation_setup::Body > bodyExertingTorque,
     const std::shared_ptr< TorqueSettings > torqueSettings,

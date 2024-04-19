@@ -42,7 +42,7 @@ AvailableTorque getTorqueModelType(
     {
         torqueType = spherical_harmonic_gravitational_torque;
     }
-    else if( std::dynamic_pointer_cast< electromagnetism::RadiationPressureTorque >( torqueModel ) != nullptr )
+    else if( std::dynamic_pointer_cast< electromagnetism::IsotropicPointSourceRadiationPressureTorque >( torqueModel ) != nullptr )
     {
         torqueType = radiation_pressure_torque;
     }

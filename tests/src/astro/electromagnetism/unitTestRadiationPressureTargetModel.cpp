@@ -228,6 +228,7 @@ BOOST_AUTO_TEST_CASE( testRadiationPressureTargetModel_EquivalentSphere )
     for( unsigned int i = 0; i < 3; i++ )
     {
         BOOST_CHECK_SMALL( std::fabs( paneledTorque( i ) - expectedPaneledTorque( i ) ), 1.0E-4 * paneledForce.norm( ) );
+        BOOST_CHECK_SMALL( std::fabs( cannonballTorque( i ) - expectedPaneledTorque( i ) ), 1.0E-4 * paneledForce.norm( ) );
     }
 }
 
