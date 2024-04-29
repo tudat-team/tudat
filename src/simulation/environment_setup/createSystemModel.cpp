@@ -137,6 +137,10 @@ std::pair< std::shared_ptr< system_models::VehicleExteriorPanel >, std::string >
             panelSettings->reflectionLawSettings_ );
         exteriorPanel->setReflectionLaw( reflectionLaw );
     }
+    if( panelSettings->panelTypeId_ != "" )
+    {
+        exteriorPanel->setPanelTypeId( panelSettings->panelTypeId_ );
+    }
 
     if( bodies.at( bodyName )->getRotationalEphemeris( ) == nullptr )
     {

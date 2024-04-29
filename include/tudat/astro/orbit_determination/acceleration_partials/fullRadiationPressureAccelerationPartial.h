@@ -182,11 +182,37 @@ public:
                                              this, std::placeholders::_1, std::dynamic_pointer_cast<electromagnetism::CannonballRadiationPressureTargetModel>(
                         radiationPressureAcceleration_->getTargetModel( ) ) );
             }
+
+            else if ( std::dynamic_pointer_cast<electromagnetism::PaneledRadiationPressureTargetModel>(
+                radiationPressureAcceleration_->getTargetModel( ) ) != nullptr )
+            {
+                partialFunction = std::bind( &RadiationPressureAccelerationPartial::wrtPanelledRadiationPressureCoefficient,
+                                             this, std::placeholders::_1, std::dynamic_pointer_cast<electromagnetism::PaneledRadiationPressureTargetModel>(
+                        radiationPressureAcceleration_->getTargetModel( ) ) );
+            }
+
             else
             {
-                throw std::runtime_error( "Error in radiation pressure partial for " + acceleratedBody_ + ", requested partial w.r.t. Cr, but no cannonball target found" );
+                throw std::runtime_error( "Error in radiation pressure partial for " + acceleratedBody_ + ", requested partial w.r.t. Cr, but no cannonball nor panelled target found" );
             }
             parameterSize = 1;
+        }
+        else if( parameter->getParameterName( ).first == estimatable_parameters::specular_reflectivity &&
+                 parameter->getParameterName( ).second.first == acceleratedBody_  &&
+                 std::dynamic_pointer_cast<electromagnetism::PaneledRadiationPressureTargetModel>(
+                         radiationPressureAcceleration_->getTargetModel( ) ) != nullptr)
+        {
+            if(parameter->getParameterName( ).second.second == ""){
+                throw std::runtime_error( "Error when creating specular reflectivity partial, panelTypeId not specified" ); }
+            else{
+                partialFunction = std::bind( &RadiationPressureAccelerationPartial::wrtSpecularReflectivity,
+                                             this,
+                                             std::placeholders::_1,
+                                             parameter->getParameterName( ).second.second, // (panelTypeID)
+                                             std::dynamic_pointer_cast<electromagnetism::PaneledRadiationPressureTargetModel>(
+                                                     radiationPressureAcceleration_->getTargetModel( ) ) );
+                parameterSize = 1;
+            };
         }
 
         return std::make_pair( partialFunction, parameterSize );
@@ -226,6 +252,15 @@ protected:
 
     void wrtRadiationPressureCoefficient(
         Eigen::MatrixXd& partial, std::shared_ptr< electromagnetism::CannonballRadiationPressureTargetModel > targetModel );
+
+    void wrtPanelledRadiationPressureCoefficient(
+        Eigen::MatrixXd& partial, std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > targetModel );
+
+    void wrtSpecularReflectivity(
+        Eigen::MatrixXd& partial,
+        std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > targetModel,
+        const std::string& panelTypeId);
+
 
     std::shared_ptr< electromagnetism::PaneledSourceRadiationPressureAcceleration > radiationPressureAcceleration_;
 

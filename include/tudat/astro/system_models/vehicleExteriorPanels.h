@@ -84,6 +84,16 @@ public:
     {
         return trackedBody_;
     }
+
+    std::string getPanelTypeId( ) const
+    {
+        return panelTypeId_;
+    }
+
+    void setPanelTypeId( const std::string panelTypeId )
+    {
+        panelTypeId_ = panelTypeId;
+    }
 protected:
 
     std::function< Eigen::Vector3d( ) > frameFixedSurfaceNormal_;
@@ -93,6 +103,8 @@ protected:
     std::string trackedBody_;
 
     std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw_;
+
+    std::string panelTypeId_;
 };
 
 } // namespace system_models

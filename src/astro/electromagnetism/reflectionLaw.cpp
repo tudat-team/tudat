@@ -88,6 +88,21 @@ Eigen::Vector3d SpecularDiffuseMixReflectionLaw::evaluateReactionVector(const Ei
     return reactionFromIncidence + reactionFromReflection + reactionFromInstantaneousReradiation;
 }
 
+Eigen::Vector3d SpecularDiffuseMixReflectionLaw::evaluateReactionVectorPartialWrtSpecularReflectivity(
+        const Eigen::Vector3d& surfaceNormal,
+        const Eigen::Vector3d& incomingDirection) const
+{
+    const double cosBetweenNormalAndIncoming = surfaceNormal.dot(-incomingDirection);
+    if (cosBetweenNormalAndIncoming <= 0)
+    {
+        // Radiation is incident on backside of surface
+        return Eigen::Vector3d::Zero();
+    }
+    Eigen::Vector3d partial = -(2. / 3 * diffuseReflectivity_ + 2 * cosBetweenNormalAndIncoming) * surfaceNormal;
+    return partial;
+
+};
+
 Eigen::Matrix3d SpecularDiffuseMixReflectionLaw::evaluateReactionVectorDerivativeWrtTargetPosition(
     const Eigen::Vector3d& surfaceNormal,
     const Eigen::Vector3d& incomingDirection,

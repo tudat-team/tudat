@@ -58,7 +58,7 @@ void PanelledRadiationPressurePartial::update( const double currentTime )
                             currentPanelNormal, -bodyFixedUnitVectorToSource, cosineOfPanelInclination, currentPanelReactionVector,
                             currentSourceUnitVectorPartial_, currentCosineAnglePartial_ );
 
-                    currentPanelPartialContribution *= currentRadiationPressure * currentPanelArea;
+                    currentPanelPartialContribution *= radiationPressureCoefficientFunction_() * currentRadiationPressure * currentPanelArea;
 
 
                 }
@@ -77,6 +77,82 @@ void PanelledRadiationPressurePartial::update( const double currentTime )
         currentTime_ = currentTime;
 
     }
+}
+
+
+//! Calculates partial derivative of panelled radiation pressure acceleration wrt radiation pressure coefficient.
+Eigen::Vector3d computePartialOfPaneledRadiationPressureAccelerationWrtRadiationPressureCoefficient(
+    Eigen::Vector3d currentAcceleration, double radiationPressureCoefficient )
+{
+    return currentAcceleration / radiationPressureCoefficient ;
+}
+
+void PanelledRadiationPressurePartial::wrtRadiationPressureCoefficient( Eigen::MatrixXd& partial )
+{
+    partial = computePartialOfPaneledRadiationPressureAccelerationWrtRadiationPressureCoefficient(
+        radiationPressureAcceleration_->getAcceleration( ), radiationPressureCoefficientFunction_());
+}
+
+//! Function for setting up and retrieving a function returning a partial w.r.t. a double parameter.
+std::pair< std::function< void( Eigen::MatrixXd& ) >, int > PanelledRadiationPressurePartial::getParameterPartialFunction(
+        std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > parameter )
+{
+    std::function< void( Eigen::MatrixXd& ) > partialFunction;
+    int numberOfRows = 0;
+
+    // Check if parameter dependency exists.
+    if( parameter->getParameterName( ).second.first == acceleratedBody_ )
+    {
+        switch( parameter->getParameterName( ).first )
+        {
+        // Set function returning partial w.r.t. radiation pressure coefficient.
+        case estimatable_parameters::radiation_pressure_coefficient:
+
+            partialFunction = std::bind( &PanelledRadiationPressurePartial::wrtRadiationPressureCoefficient,
+                                           this, std::placeholders::_1 );
+            numberOfRows = 1;
+
+            break;
+        default:
+            break;
+        }
+    }
+    return std::make_pair( partialFunction, numberOfRows );
+}
+
+//! Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.
+std::pair< std::function< void( Eigen::MatrixXd& ) >, int > PanelledRadiationPressurePartial::getParameterPartialFunction(
+        std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > parameter )
+{
+    std::function< void( Eigen::MatrixXd& ) > partialFunction;
+    int numberOfRows = 0;
+
+    // Check if parameter dependency exists.
+    if( parameter->getParameterName( ).second.first == acceleratedBody_ )
+    {
+        switch( parameter->getParameterName( ).first )
+        {
+        // Set function returning partial w.r.t. radiation pressure coefficient.
+        case estimatable_parameters::arc_wise_radiation_pressure_coefficient:
+
+            if( std::dynamic_pointer_cast< estimatable_parameters::ArcWisePanelledRadiationPressureCoefficient >( parameter ) != nullptr )
+            {
+                partialFunction = std::bind(
+                            &PanelledRadiationPressurePartial::wrtArcWiseRadiationPressureCoefficient, this, std::placeholders::_1,
+                            std::dynamic_pointer_cast< estimatable_parameters::ArcWisePanelledRadiationPressureCoefficient >( parameter ) );
+            }
+            else
+            {
+                throw std::runtime_error( "Error when making radiation pressure partial, arcwise radiation pressure parameter not consistent" );
+            }
+            numberOfRows = parameter->getParameterSize( );
+
+            break;
+        default:
+            break;
+        }
+    }
+    return std::make_pair( partialFunction, numberOfRows );
 }
 
 

@@ -76,6 +76,7 @@ enum EstimatebleParametersEnum
     arc_wise_time_observation_bias,
     inverse_tidal_quality_factor,
     yarkovsky_parameter,
+    specular_reflectivity,
     custom_estimated_parameter,
     reference_point_position
 };

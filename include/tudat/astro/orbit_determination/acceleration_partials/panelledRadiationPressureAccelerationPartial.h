@@ -31,7 +31,9 @@ public:
             const std::string& acceleratedBody, const std::string& acceleratingBody ):
         AccelerationPartial( acceleratedBody, acceleratingBody, basic_astrodynamics::radiation_pressure ),
         radiationPressureAcceleration_( radiationPressureAcceleration ), panelledTargetModel_( panelledTargetModel ),
-        numberOfBodyFixedPanels_( panelledTargetModel_->getBodyFixedPanels( ).size( ) )
+        numberOfBodyFixedPanels_( panelledTargetModel_->getBodyFixedPanels( ).size( ) ),
+        radiationPressureCoefficientFunction_(  std::bind( &electromagnetism::PaneledRadiationPressureTargetModel::getCoefficient,
+                                                           panelledTargetModel ) )
     {
         for( unsigned int i = 0; i < numberOfBodyFixedPanels_; i++ )
         {
@@ -153,10 +155,46 @@ public:
      *  \return Pair of parameter partial function and number of columns in partial (0 for no dependency, 1 otherwise).
      */
     std::pair< std::function< void( Eigen::MatrixXd& ) >, int >
-    getParameterPartialFunction( std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > parameter )
+    getParameterPartialFunction( 
+        std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > parameter );
+
+    //! Function to compute the partial derivative w.r.t. a constant radiation pressure coefficient
+    /*!wrtRadiationPressureCoefficient
+     * Function to compute the partial derivative w.r.t. a constant radiation pressure coefficient
+     * \param partial Partial derivative w.r.t. a constant radiation pressure coefficient (returned by reference)
+     */
+    void wrtRadiationPressureCoefficient( Eigen::MatrixXd& partial );
+
+    //! Function to compute the partial derivative w.r.t. an arcwise radiation pressure coefficient
+    /*!
+     * Function to compute the partial derivative w.r.t. an arcwise radiation pressure coefficient
+     * \param parameter Parameter of arcwise radiation pressure coefficient w.r.t. which partial is to be taken
+     * \param partial Partial derivative w.r.t. an arcwise radiation pressure coefficient (returned by reference)
+     */
+    void wrtArcWiseRadiationPressureCoefficient(Eigen::MatrixXd& partial,
+     const std::shared_ptr< estimatable_parameters::ArcWisePanelledRadiationPressureCoefficient > parameter )
     {
-        std::function< void( Eigen::MatrixXd& ) > partialFunction;
-        return std::make_pair( partialFunction, 0 );
+        // Get partial w.r.t. radiation pressure coefficient
+        Eigen::MatrixXd partialWrtSingleParameter = Eigen::Vector3d::Zero( );
+        this->wrtRadiationPressureCoefficient( partialWrtSingleParameter );
+
+        // Retrieve current arc
+        std::shared_ptr< interpolators::LookUpScheme< double > > currentArcIndexLookUp =
+                parameter->getArcTimeLookupScheme( );
+        partial.setZero( );
+        if( currentArcIndexLookUp->getMinimumValue( ) <= currentTime_ )
+        {
+            int currentArc = currentArcIndexLookUp->findNearestLowerNeighbour( currentTime_ );
+
+            if( currentArc >= partial.cols( ) )
+            {
+                throw std::runtime_error( "Error when getting arc-wise radiation pressure coefficient partials, data not consistent" );
+            }
+
+            // Set partial
+            partial.block( 0, currentArc, 3, 1 ) = partialWrtSingleParameter;
+        }
+
     }
 
     //! Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.
@@ -167,11 +205,11 @@ public:
      *  \return Pair of parameter partial function and number of columns in partial (0 for no dependency).
      */
     std::pair< std::function< void( Eigen::MatrixXd& ) >, int > getParameterPartialFunction(
-            std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > parameter )
-    {
-        std::function< void( Eigen::MatrixXd& ) > partialFunction;
-        return std::make_pair( partialFunction, 0 );
-    }
+            std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > parameter );
+    //{
+    //    std::function< void( Eigen::MatrixXd& ) > partialFunction;
+    //    return std::make_pair( partialFunction, 0 );
+    //}
 
     Eigen::Matrix< double, 1, 3 > getCurrentCosineAnglePartial( )
     {
@@ -185,6 +223,9 @@ private:
 
     //! Pointer to the panelled radiation pressure interface.
     std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > panelledTargetModel_;
+
+    //! Function returning current radiation pressure coefficient (usually denoted C_{r}).
+    std::function< double( ) > radiationPressureCoefficientFunction_;
 
     unsigned int numberOfBodyFixedPanels_;
 

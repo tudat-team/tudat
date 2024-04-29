@@ -64,9 +64,10 @@ Eigen::Vector3d PaneledRadiationPressureTargetModel::evaluateRadiationPressureFo
             surfacePanelCosines_[ counter ] = (-sourceToTargetDirectionLocalFrame).dot(surfaceNormals_[ counter ]);
             if (surfacePanelCosines_[ counter ] > 0)
             {
-                panelForces_[ counter ] = radiationPressure_ * currentPanels_.at( j )->getPanelArea() * surfacePanelCosines_[ counter ] *
+                panelForces_[ counter ] = currentCoefficient_ * radiationPressure_ * currentPanels_.at( j )->getPanelArea() * surfacePanelCosines_[ counter ] *
                     currentPanels_.at( j )->getReflectionLaw()->evaluateReactionVector(surfaceNormals_[ counter ], sourceToTargetDirectionLocalFrame );
                 force += panelForces_[ counter ];
+                panelIndexMap_[counter] = currentPanels_.at(j);
             }
             else
             {
@@ -82,10 +83,10 @@ Eigen::Vector3d PaneledRadiationPressureTargetModel::evaluateRadiationPressureFo
     return force;
 }
 
-void PaneledRadiationPressureTargetModel::updateMembers_(double currentTime)
-{
+//void PaneledRadiationPressureTargetModel::updateMembers_(double currentTime)
+//{
 
-}
+//}
 
 } // tudat
 } // electromagnetism

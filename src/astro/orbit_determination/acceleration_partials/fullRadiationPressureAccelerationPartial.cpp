@@ -76,6 +76,52 @@ void RadiationPressureAccelerationPartial::wrtRadiationPressureCoefficient(
 
 }
 
+void RadiationPressureAccelerationPartial::wrtPanelledRadiationPressureCoefficient(
+    Eigen::MatrixXd& partial, std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > targetModel )
+{
+    if( targetModel->getCoefficient( ) == 0.0 )
+    {
+        throw std::runtime_error( "Error in full radiation pressure partial w.r.t. Cr, partial is only implemented for non-zero coefficient" );
+    }
+    partial = radiationPressureAcceleration_->getAcceleration( ) / targetModel->getCoefficient( );
+
+}
+
+void RadiationPressureAccelerationPartial::wrtSpecularReflectivity(
+    Eigen::MatrixXd& partial,
+    std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > targetModel,
+    const std::string& panelTypeId)
+{
+        std::function<double()> targetMassFunction = radiationPressureAcceleration_->getTargetMassFunction();
+        double spacecraftMass = targetMassFunction();
+        std::map< int, std::shared_ptr<system_models::VehicleExteriorPanel>> panelIndexMap = targetModel->getPanelIndexMap();
+        std::vector< Eigen::Vector3d >& panelForces = targetModel->getPanelForces();
+        std::vector< Eigen::Vector3d >& surfaceNormals = targetModel->getSurfaceNormals();
+        std::vector< Eigen::Vector3d >& sourceToTargetDirectionLocalFrames = targetModel->getSourceToTargetDirectionLocalFrames();
+        for (auto it = panelIndexMap.begin(); it != panelIndexMap.end(); ++it)
+        {
+            // If panel is part of group, add the partial contribution
+            if (it->second->getPanelTypeId() == panelTypeId)
+            {
+                // To get panel force without the reaction vector, divide by it. Then multiply by partial contribution. Divide by Sc mass to get acceleration
+                Eigen::Vector3d panelForce = panelForces.at(it->first);
+                Eigen::Vector3d surfaceNormal = surfaceNormals.at(it->first);
+                Eigen::Vector3d sourceToTargetDirectionLocalFrame = sourceToTargetDirectionLocalFrames.at(it->first);
+                Eigen::Vector3d reactionVector = it->second->getReflectionLaw()->evaluateReactionVector(surfaceNormal, sourceToTargetDirectionLocalFrame );
+
+                Eigen::Vector3d reactionVectorPartialWrtSpecularReflectivity = it->second->getReflectionLaw()
+                        ->evaluateReactionVectorPartialWrtSpecularReflectivity(surfaceNormal, sourceToTargetDirectionLocalFrame);
+
+
+            if(reactionVectorPartialWrtSpecularReflectivity != Eigen::Vector3d::Zero())
+            {
+                partial += panelForce / reactionVector * reactionVectorPartialWrtSpecularReflectivity / spacecraftMass;
+            }
+
+            }
+        }
+}
+
 }
 
 }
