@@ -197,20 +197,21 @@ public:
             }
             parameterSize = 1;
         }
-        else if( parameter->getParameterName( ).first == estimatable_parameters::specular_reflectivity &&
-                 parameter->getParameterName( ).second.first == acceleratedBody_  &&
-                 std::dynamic_pointer_cast<electromagnetism::PaneledRadiationPressureTargetModel>(
-                         radiationPressureAcceleration_->getTargetModel( ) ) != nullptr)
+        else if( parameter->getParameterName( ).first == estimatable_parameters::specular_reflectivity)// &&
+                 //parameter->getParameterName( ).second.first == acceleratedBody_  &&
+                 //std::dynamic_pointer_cast<electromagnetism::PaneledRadiationPressureTargetModel>(
+                 //        radiationPressureAcceleration_->getTargetModel( ) ) != nullptr)
         {
+            std::cout<<" full getParameterPartialFunction specular_reflectivity "<<std::endl;
             if(parameter->getParameterName( ).second.second == ""){
-                throw std::runtime_error( "Error when creating specular reflectivity partial, panelTypeId not specified" ); }
+                throw std::runtime_error( "Error when creating specular reflectivity partial, panel group name not specified" ); }
             else{
                 partialFunction = std::bind( &RadiationPressureAccelerationPartial::wrtSpecularReflectivity,
                                              this,
                                              std::placeholders::_1,
-                                             parameter->getParameterName( ).second.second, // (panelTypeID)
                                              std::dynamic_pointer_cast<electromagnetism::PaneledRadiationPressureTargetModel>(
-                                                     radiationPressureAcceleration_->getTargetModel( ) ) );
+                                                     radiationPressureAcceleration_->getTargetModel( ) ),
+                                             parameter->getParameterName( ).second.second );
                 parameterSize = 1;
             };
         }

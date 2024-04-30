@@ -1439,6 +1439,12 @@ inline std::shared_ptr< EstimatableParameterSettings > yarkovskyParameter( const
     return std::make_shared< EstimatableParameterSettings >( bodyName, yarkovsky_parameter, centralBodyName );
 }
 
+inline std::shared_ptr< EstimatableParameterSettings > specularReflectivity( const std::string bodyName, const std::string panel_group_id )
+{
+    return std::make_shared< EstimatableParameterSettings >( bodyName, specular_reflectivity, panel_group_id );
+}
+
+
 inline std::shared_ptr< EstimatableParameterSettings > customParameterSettings(
     const std::string& customId,
     const int parameterSize,

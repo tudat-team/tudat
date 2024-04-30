@@ -25,6 +25,7 @@ set(estimatable_parameters_HEADERS
   "initialRotationalState.h"
   "initialMassState.h"
   "radiationPressureCoefficient.h"
+  "specularReflectivity.h"
   "sphericalHarmonicSineCoefficients.h"
   "sphericalHarmonicCosineCoefficients.h"
   "constantRotationRate.h"

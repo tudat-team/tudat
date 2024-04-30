@@ -145,7 +145,7 @@ public:
         return absorptivity_;
     }
 
-    double setAbsorptivity( const double absorptivity )
+    void setAbsorptivity( const double absorptivity )
     {
         absorptivity_ = absorptivity;
     }

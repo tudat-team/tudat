@@ -93,10 +93,47 @@ void PanelledRadiationPressurePartial::wrtRadiationPressureCoefficient( Eigen::M
         radiationPressureAcceleration_->getAcceleration( ), radiationPressureCoefficientFunction_());
 }
 
+void PanelledRadiationPressurePartial::wrtSpecularReflectivity(
+        Eigen::MatrixXd& partial,
+        const std::string& panelTypeId)
+{
+    std::function<double()> targetMassFunction = radiationPressureAcceleration_->getTargetMassFunction();
+    double spacecraftMass = targetMassFunction();
+    std::map< int, std::shared_ptr<system_models::VehicleExteriorPanel>> panelIndexMap = panelledTargetModel_->getPanelIndexMap();
+    std::vector< Eigen::Vector3d >& panelForces = panelledTargetModel_->getPanelForces();
+    std::vector< Eigen::Vector3d >& surfaceNormals = panelledTargetModel_->getSurfaceNormals();
+    std::vector< Eigen::Vector3d >& sourceToTargetDirectionLocalFrames = panelledTargetModel_->getSourceToTargetDirectionLocalFrames();
+    for (auto it = panelIndexMap.begin(); it != panelIndexMap.end(); ++it)
+    {
+        // If panel is part of group, add the partial contribution
+        if (it->second->getPanelTypeId() == panelTypeId)
+        {
+            // To get panel force without the reaction vector, divide by it. Then multiply by partial contribution. Divide by Sc mass to get acceleration
+            Eigen::Vector3d panelForce = panelForces.at(it->first);
+            Eigen::Vector3d surfaceNormal = surfaceNormals.at(it->first);
+            Eigen::Vector3d sourceToTargetDirectionLocalFrame = sourceToTargetDirectionLocalFrames.at(it->first);
+            Eigen::Vector3d reactionVector = it->second->getReflectionLaw()->evaluateReactionVector(surfaceNormal, sourceToTargetDirectionLocalFrame );
+
+            Eigen::Vector3d reactionVectorPartialWrtSpecularReflectivity = it->second->getReflectionLaw()
+                    ->evaluateReactionVectorPartialWrtSpecularReflectivity(surfaceNormal, sourceToTargetDirectionLocalFrame);
+
+            if (reactionVectorPartialWrtSpecularReflectivity != Eigen::Vector3d::Zero() && reactionVector.norm() > 0)
+            {
+                partial += panelForce.cwiseQuotient(reactionVector).cwiseProduct(reactionVectorPartialWrtSpecularReflectivity) / spacecraftMass;
+            }
+
+        }
+    }
+}
+
+
+
 //! Function for setting up and retrieving a function returning a partial w.r.t. a double parameter.
 std::pair< std::function< void( Eigen::MatrixXd& ) >, int > PanelledRadiationPressurePartial::getParameterPartialFunction(
         std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > parameter )
 {
+    std::cout<<"creating panelled radiation pressure partial"<<std::endl;
+
     std::function< void( Eigen::MatrixXd& ) > partialFunction;
     int numberOfRows = 0;
 
@@ -111,7 +148,13 @@ std::pair< std::function< void( Eigen::MatrixXd& ) >, int > PanelledRadiationPre
             partialFunction = std::bind( &PanelledRadiationPressurePartial::wrtRadiationPressureCoefficient,
                                            this, std::placeholders::_1 );
             numberOfRows = 1;
+            break;
 
+        case estimatable_parameters::specular_reflectivity:
+            std::cout<<"creating specular_reflectivity partial for panel group " + parameter->getParameterName( ).second.second << std::endl;
+            partialFunction = std::bind( &PanelledRadiationPressurePartial::wrtSpecularReflectivity,
+                                         this, std::placeholders::_1, parameter->getParameterName( ).second.second );
+            numberOfRows = 1;
             break;
         default:
             break;

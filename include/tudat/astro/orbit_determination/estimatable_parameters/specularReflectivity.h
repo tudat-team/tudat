@@ -29,7 +29,7 @@ namespace estimatable_parameters
 {
 
 //! Interface class for the estimation of a specular reflectivity coefficient per group of panels
-class specularReflectivity: public EstimatableParameter< double >
+class SpecularReflectivity: public EstimatableParameter< double >
 {
     public:
         //! Constructor.
@@ -39,7 +39,7 @@ class specularReflectivity: public EstimatableParameter< double >
         * \param associatedBody Name of body containing the radiationPressureInterface object
         * \param panelTypeID Name of panel group for which to estimate the coefficient
         */
-        specularReflectivity(
+        SpecularReflectivity(
                 const std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > radiationPressureInterface,
                 const std::string& associatedBody,
                 const std::string& panelTypeId):
@@ -50,12 +50,14 @@ class specularReflectivity: public EstimatableParameter< double >
             // check if the panelTypeID exists among the panels
             std::vector< std::shared_ptr< system_models::VehicleExteriorPanel > > panelsFromId =
             radiationPressureInterface_->getPanelsFromId( panelTypeId_);
-            throw std::runtime_error( "Error when creating estimated specular reflectivity for " +
-            panelTypeId + " of " + associatedBody + ", no corresponding panels defined" );
+            if(panelsFromId.size() < 1){
+                throw std::runtime_error( "Error when creating estimated specular reflectivity for " +
+                panelTypeId + " of " + associatedBody + ", no corresponding panels defined" );
+            }
 
         }
         //! Destructor.
-        ~specularReflectivity( ) { }
+        ~SpecularReflectivity( ) { }
 
         double getParameterValue( )
         {
@@ -73,7 +75,7 @@ class specularReflectivity: public EstimatableParameter< double >
                 std::cerr << "Warning: When updating reflectivity coefficients for panels ' "
                 << panelTypeId_ << "', sum is larger than 1." << std::endl;
             }
-            radiationPressureInterface_->
+            radiationPressureInterface_->setGroupSpecularReflectivity(panelTypeId_, parameterValue);
 
         }
 

@@ -98,7 +98,7 @@ Eigen::Vector3d SpecularDiffuseMixReflectionLaw::evaluateReactionVectorPartialWr
         // Radiation is incident on backside of surface
         return Eigen::Vector3d::Zero();
     }
-    Eigen::Vector3d partial = -(2. / 3 * diffuseReflectivity_ + 2 * cosBetweenNormalAndIncoming) * surfaceNormal;
+    Eigen::Vector3d partial = - 2 * cosBetweenNormalAndIncoming * surfaceNormal;
     return partial;
 
 };

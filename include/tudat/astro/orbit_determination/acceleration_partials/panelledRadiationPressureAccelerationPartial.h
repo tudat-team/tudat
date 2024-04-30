@@ -197,6 +197,8 @@ public:
 
     }
 
+    void wrtSpecularReflectivity( Eigen::MatrixXd& partial, const std::string& panelTypeId );
+
     //! Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.
     /*!
      *  Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.
@@ -224,10 +226,10 @@ private:
     //! Pointer to the panelled radiation pressure interface.
     std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > panelledTargetModel_;
 
+    unsigned int numberOfBodyFixedPanels_;
+
     //! Function returning current radiation pressure coefficient (usually denoted C_{r}).
     std::function< double( ) > radiationPressureCoefficientFunction_;
-
-    unsigned int numberOfBodyFixedPanels_;
 
     std::map< int, std::string > trackedTargetPerPanel_;
 

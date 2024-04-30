@@ -201,6 +201,9 @@ bool isDoubleParameter( const EstimatebleParametersEnum parameterType )
     case radiation_pressure_coefficient:
         isDoubleParameter = true;
         break;
+    case specular_reflectivity:
+        isDoubleParameter = true;
+        break;
     case arc_wise_radiation_pressure_coefficient:
         isDoubleParameter = false;
         break;
@@ -304,9 +307,6 @@ bool isDoubleParameter( const EstimatebleParametersEnum parameterType )
         isDoubleParameter = true;
         break;
     case yarkovsky_parameter:
-        isDoubleParameter = true;
-        break;
-    case specular_reflectivity:
         isDoubleParameter = true;
         break;
     case custom_estimated_parameter:
