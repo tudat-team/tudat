@@ -95,7 +95,7 @@ void PanelledRadiationPressurePartial::wrtRadiationPressureCoefficient( Eigen::M
 
 void PanelledRadiationPressurePartial::wrtSpecularReflectivity(
         Eigen::MatrixXd& partial,
-        const std::string& panelTypeId)
+        const std::string panelTypeId)
 {
     std::function<double()> targetMassFunction = radiationPressureAcceleration_->getTargetMassFunction();
     double spacecraftMass = targetMassFunction();
@@ -132,8 +132,6 @@ void PanelledRadiationPressurePartial::wrtSpecularReflectivity(
 std::pair< std::function< void( Eigen::MatrixXd& ) >, int > PanelledRadiationPressurePartial::getParameterPartialFunction(
         std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > parameter )
 {
-    std::cout<<"creating panelled radiation pressure partial"<<std::endl;
-
     std::function< void( Eigen::MatrixXd& ) > partialFunction;
     int numberOfRows = 0;
 
@@ -151,7 +149,8 @@ std::pair< std::function< void( Eigen::MatrixXd& ) >, int > PanelledRadiationPre
             break;
 
         case estimatable_parameters::specular_reflectivity:
-            std::cout<<"creating specular_reflectivity partial for panel group " + parameter->getParameterName( ).second.second << std::endl;
+            std::cout<<"creating specular_reflectivity partial for body " + std::string(parameter->getParameterName( ).second.first)
+            + " panel group " + std::string(parameter->getParameterName( ).second.second) << std::endl;
             partialFunction = std::bind( &PanelledRadiationPressurePartial::wrtSpecularReflectivity,
                                          this, std::placeholders::_1, parameter->getParameterName( ).second.second );
             numberOfRows = 1;

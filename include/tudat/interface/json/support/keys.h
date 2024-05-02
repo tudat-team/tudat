@@ -272,6 +272,7 @@ struct Keys
         static const std::string parameterType;
         static const std::string associatedBody;
         static const std::string secondaryIdentifier;
+        static const std::string panelTypeId;
 
         static const std::string initialStateValue;
         static const std::string centralBody;

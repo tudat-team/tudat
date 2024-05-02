@@ -751,6 +751,28 @@ public:
 
 };
 
+//! Class to define settings for estimating time-dependent (arcwise constant) empirical acceleration components
+class SpecularReflectivityEstimatableParameterSettings: public EstimatableParameterSettings
+{
+public:
+
+    //! Constructor
+    /*!
+     * Constructor
+     * \param associatedBody Name of body undergoing acceleration
+     * \param panelGroupID Name of panel group for which to estimate the specular reflectivity
+     */
+    SpecularReflectivityEstimatableParameterSettings(
+            const std::string associatedBody,
+            const std::string panelTypeId ):
+            EstimatableParameterSettings( associatedBody, specular_reflectivity, panelTypeId ),
+            panelTypeId_( panelTypeId ){ }
+
+    const std::string panelTypeId_;
+
+
+};
+
 //! Class to define settings for estimating time-dependent (arcwise constant) drag coefficients
 class ArcWiseDragCoefficientEstimatableParameterSettings: public EstimatableParameterSettings
 {
@@ -1077,6 +1099,15 @@ inline std::shared_ptr< EstimatableParameterSettings > arcwiseRadiationPressureC
     return std::make_shared< ArcWiseRadiationPressureCoefficientEstimatableParameterSettings >(
                 associatedBody, arcStartTimeList );
 }
+
+inline std::shared_ptr< EstimatableParameterSettings > specularReflectivity(
+        const std::string bodyName,
+        const std::string panel_group_id )
+{
+    return std::make_shared< SpecularReflectivityEstimatableParameterSettings >(
+            bodyName, panel_group_id );
+}
+
 
 inline std::shared_ptr< EstimatableParameterSettings > arcwiseDragCoefficient(
         std::string associatedBody,
@@ -1437,11 +1468,6 @@ inline std::shared_ptr< EstimatableParameterSettings > scaledLongitudeLibrationA
 inline std::shared_ptr< EstimatableParameterSettings > yarkovskyParameter( const std::string bodyName, const std::string centralBodyName )
 {
     return std::make_shared< EstimatableParameterSettings >( bodyName, yarkovsky_parameter, centralBodyName );
-}
-
-inline std::shared_ptr< EstimatableParameterSettings > specularReflectivity( const std::string bodyName, const std::string panel_group_id )
-{
-    return std::make_shared< EstimatableParameterSettings >( bodyName, specular_reflectivity, panel_group_id );
 }
 
 

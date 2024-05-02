@@ -897,6 +897,15 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > create
         }
         case specular_reflectivity:
         {
+            // Check input consistency
+            std::shared_ptr< SpecularReflectivityEstimatableParameterSettings > specularReflectivitySettings =
+                    std::dynamic_pointer_cast< SpecularReflectivityEstimatableParameterSettings >( doubleParameterName );
+            if( specularReflectivitySettings == nullptr )
+            {
+                throw std::runtime_error(
+                        "Error when trying to make specular reflectivity parameter, settings type inconsistent" );
+            }
+
             std::cout<< "Creating double parameter to estimate for panel group " + doubleParameterName->parameterType_.second.second<<std::endl;
             if( std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( currentBody->getRadiationPressureTargetModel( ) ) == nullptr)
             {
