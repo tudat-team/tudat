@@ -197,7 +197,7 @@ public:
 
     }
 
-    void wrtSpecularReflectivity( Eigen::MatrixXd& partial, const std::string panelTypeId );
+    void wrtSpecularReflectivity( Eigen::MatrixXd& partial, const std::string& panelTypeId );
 
     //! Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.
     /*!

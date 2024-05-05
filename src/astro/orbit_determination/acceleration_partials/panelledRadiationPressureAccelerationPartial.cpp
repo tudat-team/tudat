@@ -95,19 +95,22 @@ void PanelledRadiationPressurePartial::wrtRadiationPressureCoefficient( Eigen::M
 
 void PanelledRadiationPressurePartial::wrtSpecularReflectivity(
         Eigen::MatrixXd& partial,
-        const std::string panelTypeId)
+        const std::string& panelTypeId)
 {
     std::function<double()> targetMassFunction = radiationPressureAcceleration_->getTargetMassFunction();
     double spacecraftMass = targetMassFunction();
     std::map< int, std::shared_ptr<system_models::VehicleExteriorPanel>> panelIndexMap = panelledTargetModel_->getPanelIndexMap();
     std::vector< Eigen::Vector3d >& panelForces = panelledTargetModel_->getPanelForces();
     std::vector< Eigen::Vector3d >& surfaceNormals = panelledTargetModel_->getSurfaceNormals();
+    std::cout<<"wrtSpecularReflectivity partial"<<std::endl;
     std::vector< Eigen::Vector3d >& sourceToTargetDirectionLocalFrames = panelledTargetModel_->getSourceToTargetDirectionLocalFrames();
     for (auto it = panelIndexMap.begin(); it != panelIndexMap.end(); ++it)
     {
+        std::cout<<"wrtSpecularReflectivity map iteration"<<std::endl;
         // If panel is part of group, add the partial contribution
         if (it->second->getPanelTypeId() == panelTypeId)
         {
+            std::cout<<"wrtSpecularReflectivity panel found"<<std::endl;
             // To get panel force without the reaction vector, divide by it. Then multiply by partial contribution. Divide by Sc mass to get acceleration
             Eigen::Vector3d panelForce = panelForces.at(it->first);
             Eigen::Vector3d surfaceNormal = surfaceNormals.at(it->first);
