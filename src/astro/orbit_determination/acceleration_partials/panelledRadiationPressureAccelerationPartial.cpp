@@ -102,15 +102,12 @@ void PanelledRadiationPressurePartial::wrtSpecularReflectivity(
     std::map< int, std::shared_ptr<system_models::VehicleExteriorPanel>> panelIndexMap = panelledTargetModel_->getPanelIndexMap();
     std::vector< Eigen::Vector3d >& panelForces = panelledTargetModel_->getPanelForces();
     std::vector< Eigen::Vector3d >& surfaceNormals = panelledTargetModel_->getSurfaceNormals();
-    std::cout<<"wrtSpecularReflectivity partial"<<std::endl;
     std::vector< Eigen::Vector3d >& sourceToTargetDirectionLocalFrames = panelledTargetModel_->getSourceToTargetDirectionLocalFrames();
     for (auto it = panelIndexMap.begin(); it != panelIndexMap.end(); ++it)
     {
-        std::cout<<"wrtSpecularReflectivity map iteration"<<std::endl;
         // If panel is part of group, add the partial contribution
         if (it->second->getPanelTypeId() == panelTypeId)
         {
-            std::cout<<"wrtSpecularReflectivity panel found"<<std::endl;
             // To get panel force without the reaction vector, divide by it. Then multiply by partial contribution. Divide by Sc mass to get acceleration
             Eigen::Vector3d panelForce = panelForces.at(it->first);
             Eigen::Vector3d surfaceNormal = surfaceNormals.at(it->first);
@@ -156,6 +153,8 @@ std::pair< std::function< void( Eigen::MatrixXd& ) >, int > PanelledRadiationPre
             + " panel group " + std::string(parameter->getParameterName( ).second.second) << std::endl;
             partialFunction = std::bind( &PanelledRadiationPressurePartial::wrtSpecularReflectivity,
                                          this, std::placeholders::_1, parameter->getParameterName( ).second.second );
+            std::cout<<"created specular_reflectivity partial for body " + std::string(parameter->getParameterName( ).second.first)
+                       + " panel group " + std::string(parameter->getParameterName( ).second.second) << std::endl;
             numberOfRows = 1;
             break;
         default:
