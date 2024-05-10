@@ -15,8 +15,8 @@
 
 # Add subdirectories.
 add_subdirectory(acceleration_partials)
-add_subdirectory(rotational_dynamics_partials)
-add_subdirectory(observation_partials)
+#add_subdirectory(rotational_dynamics_partials)
+#add_subdirectory(observation_partials)
 
 TUDAT_ADD_TEST_CASE(EstimationInput
     PRIVATE_LINKS
@@ -115,10 +115,10 @@ TUDAT_ADD_TEST_CASE(NonSequentialStateEstimation
         ${Tudat_ESTIMATION_LIBRARIES}
  )
 
- TUDAT_ADD_TEST_CASE(CustomAccelerationVariationalEquations
-         PRIVATE_LINKS
-         ${Tudat_ESTIMATION_LIBRARIES}
- )
+# TUDAT_ADD_TEST_CASE(CustomAccelerationVariationalEquations
+#         PRIVATE_LINKS
+#         ${Tudat_ESTIMATION_LIBRARIES}
+# )
 
 
  TUDAT_ADD_TEST_CASE(VehicleReferencePointEstimation

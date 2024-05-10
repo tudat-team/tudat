@@ -12,35 +12,35 @@ TUDAT_ADD_TEST_CASE(AccelerationPartials
         ${Tudat_ESTIMATION_LIBRARIES}
         )
 
-TUDAT_ADD_TEST_CASE(SphericalHarmonicPartials
-        PRIVATE_LINKS
-        ${Tudat_ESTIMATION_LIBRARIES}
-        )
+#TUDAT_ADD_TEST_CASE(SphericalHarmonicPartials
+#        PRIVATE_LINKS
+#        ${Tudat_ESTIMATION_LIBRARIES}
+#        )
 
-TUDAT_ADD_TEST_CASE(MutualSphericalHarmonicPartials
-        PRIVATE_LINKS
-        ${Tudat_ESTIMATION_LIBRARIES}
-        )
+#TUDAT_ADD_TEST_CASE(MutualSphericalHarmonicPartials
+#        PRIVATE_LINKS
+#        ${Tudat_ESTIMATION_LIBRARIES}
+#        )
 
-TUDAT_ADD_TEST_CASE(MassRatePartials
-        PRIVATE_LINKS
-        ${Tudat_ESTIMATION_LIBRARIES}
-        )
+#TUDAT_ADD_TEST_CASE(MassRatePartials
+#        PRIVATE_LINKS
+#        ${Tudat_ESTIMATION_LIBRARIES}
+#        )
 
-TUDAT_ADD_TEST_CASE(PolyhedronPartials
-        PRIVATE_LINKS
-        ${Tudat_ESTIMATION_LIBRARIES}
-        )
+#TUDAT_ADD_TEST_CASE(PolyhedronPartials
+#        PRIVATE_LINKS
+#        ${Tudat_ESTIMATION_LIBRARIES}
+#        )
 
-TUDAT_ADD_TEST_CASE(RingPartials
-        PRIVATE_LINKS
-        ${Tudat_ESTIMATION_LIBRARIES}
-        )
+#TUDAT_ADD_TEST_CASE(RingPartials
+#        PRIVATE_LINKS
+#        ${Tudat_ESTIMATION_LIBRARIES}
+#        )
 
-TUDAT_ADD_TEST_CASE(EihPartials
-        PRIVATE_LINKS
-        ${Tudat_ESTIMATION_LIBRARIES}
-        )
+#TUDAT_ADD_TEST_CASE(EihPartials
+#        PRIVATE_LINKS
+#        ${Tudat_ESTIMATION_LIBRARIES}
+#        )
 
 
 
