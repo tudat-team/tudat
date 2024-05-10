@@ -273,7 +273,7 @@ public:
     }
 
     std::vector< std::shared_ptr< system_models::VehicleExteriorPanel > > getPanelsFromId(
-            const std::string panelTypeId)
+            const std::string& panelTypeId)
     {
         std::vector< std::shared_ptr< system_models::VehicleExteriorPanel > > panels;
         for( unsigned int i = 0; i < static_cast<unsigned int>(totalNumberOfPanels_); i++ )

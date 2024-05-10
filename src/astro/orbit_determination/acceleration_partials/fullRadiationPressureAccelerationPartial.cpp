@@ -92,6 +92,7 @@ void RadiationPressureAccelerationPartial::wrtSpecularReflectivity(
         std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > targetModel,
         const std::string& panelTypeId)
 {
+    std::cout<<"crashed here"<<std::endl;
     std::function<double()> targetMassFunction = radiationPressureAcceleration_->getTargetMassFunction();
     double spacecraftMass = targetMassFunction();
     std::map< int, std::shared_ptr<system_models::VehicleExteriorPanel>> panelIndexMap = targetModel->getPanelIndexMap();

@@ -375,6 +375,7 @@ inline std::shared_ptr<RadiationPressureTargetModelSettings>
 inline std::shared_ptr< RadiationPressureTargetModelSettings >
         paneledRadiationPressureTargetModelSettingsWithOccultationMap(
 //            std::initializer_list<PaneledRadiationPressureTargetModelSettings::Panel> panels,
+
             const std::map<std::string, std::vector<std::string>>& sourceToTargetOccultingBodies)
 {
     return std::make_shared<RadiationPressureTargetModelSettings>(

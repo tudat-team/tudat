@@ -34,7 +34,7 @@ class SpecularReflectivity: public EstimatableParameter< double >
     public:
         //! Constructor.
         /*!
-        * Constructor
+        * ConstructorSpecularReflectivity
         * \param radiationPressureInterface Object containing the radiation pressure coefficient to be estimated.
         * \param associatedBody Name of body containing the radiationPressureInterface object
         * \param panelTypeID Name of panel group for which to estimate the coefficient
