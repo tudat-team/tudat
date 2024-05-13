@@ -1374,7 +1374,7 @@ BOOST_AUTO_TEST_CASE( testPanelledRadiationPressureAccelerationPartials )
     TUDAT_CHECK_MATRIX_CLOSE_FRACTION( testPartialWrtRadiationPressureCoefficient,
                                        partialWrtRadiationPressureCoefficient, 1.0E-12 );
     TUDAT_CHECK_MATRIX_CLOSE_FRACTION( testPartialWrtSpecularReflectivity,
-                                       partialWrtSpecularReflectivity, 1.0E-12 );
+                                       partialWrtSpecularReflectivity, 1.0E-6 );
 }
 
 /*

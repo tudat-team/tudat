@@ -92,13 +92,18 @@ void RadiationPressureAccelerationPartial::wrtSpecularReflectivity(
         std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > targetModel,
         const std::string& panelTypeId)
 {
-    std::cout<<"crashed here"<<std::endl;
     std::function<double()> targetMassFunction = radiationPressureAcceleration_->getTargetMassFunction();
     double spacecraftMass = targetMassFunction();
+    std::function<Eigen::Quaterniond()> targetRotationFromLocalToGlobalFrameFunction = radiationPressureAcceleration_->getTargetRotationFromLocalToGlobalFrameFunction();
+    Eigen::Quaterniond targetRotationFromGlobalToLocalFrame = targetRotationFromLocalToGlobalFrameFunction().inverse( );
+    std::function<Eigen::Vector3d()> sourceCenterPositionInGlobalFrameFunction = radiationPressureAcceleration_->getSourcePositionFunction();
+    std::function<Eigen::Vector3d()> targetCenterPositionInGlobalFrameFunction = radiationPressureAcceleration_->getTargetPositionFunction();
+    Eigen::Vector3d targetCenterPositionInGlobalFrame = targetCenterPositionInGlobalFrameFunction() - sourceCenterPositionInGlobalFrameFunction();
+    Eigen::Vector3d sourceToTargetDirectionLocalFrame = targetRotationFromGlobalToLocalFrame * targetCenterPositionInGlobalFrame.normalized( );
+
     std::map< int, std::shared_ptr<system_models::VehicleExteriorPanel>> panelIndexMap = targetModel->getPanelIndexMap();
     std::vector< Eigen::Vector3d >& panelForces = targetModel->getPanelForces();
     std::vector< Eigen::Vector3d >& surfaceNormals = targetModel->getSurfaceNormals();
-    std::vector< Eigen::Vector3d >& sourceToTargetDirectionLocalFrames = targetModel->getSourceToTargetDirectionLocalFrames();
     for (auto it = panelIndexMap.begin(); it != panelIndexMap.end(); ++it)
     {
         // If panel is part of group, add the partial contribution
@@ -107,7 +112,6 @@ void RadiationPressureAccelerationPartial::wrtSpecularReflectivity(
             // To get panel force without the reaction vector, divide by it. Then multiply by partial contribution. Divide by Sc mass to get acceleration
             Eigen::Vector3d panelForce = panelForces.at(it->first);
             Eigen::Vector3d surfaceNormal = surfaceNormals.at(it->first);
-            Eigen::Vector3d sourceToTargetDirectionLocalFrame = sourceToTargetDirectionLocalFrames.at(it->first);
             Eigen::Vector3d reactionVector = it->second->getReflectionLaw()->evaluateReactionVector(surfaceNormal, sourceToTargetDirectionLocalFrame );
 
             Eigen::Vector3d reactionVectorPartialWrtSpecularReflectivity = it->second->getReflectionLaw()

@@ -199,7 +199,6 @@ public:
         panelForces_.resize( totalNumberOfPanels_ );
         surfacePanelCosines_.resize( totalNumberOfPanels_ );
         surfaceNormals_.resize( totalNumberOfPanels_ );
-        sourceToTargetDirectionLocalFrames_.resize( totalNumberOfPanels_ );
     }
 
     Eigen::Vector3d evaluateRadiationPressureForce(
@@ -226,10 +225,6 @@ public:
         return surfaceNormals_;
     }
 
-    std::vector< Eigen::Vector3d >& getSourceToTargetDirectionLocalFrames( )
-    {
-        return sourceToTargetDirectionLocalFrames_;
-    }
 
     std::vector< double >& getSurfacePanelCosines( )
     {
@@ -406,8 +401,6 @@ private:
     int totalNumberOfPanels_;
     
     std::vector< Eigen::Vector3d > surfaceNormals_;
-
-    std::vector< Eigen::Vector3d > sourceToTargetDirectionLocalFrames_;
 
     std::vector< double > surfacePanelCosines_;
 

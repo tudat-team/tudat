@@ -1080,8 +1080,8 @@ inline std::shared_ptr< EstimatableParameterSettings > arcwiseRadiationPressureC
 }
 
 inline std::shared_ptr< EstimatableParameterSettings > specularReflectivity(
-        const std::string& bodyName,
-        const std::string& panel_group_id )
+        const std::string bodyName,
+        const std::string panel_group_id )
 {
     return std::make_shared< EstimatableParameterSettings >( bodyName, specular_reflectivity, panel_group_id );
 }

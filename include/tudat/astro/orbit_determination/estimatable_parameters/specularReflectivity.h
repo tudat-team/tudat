@@ -42,7 +42,7 @@ class SpecularReflectivity: public EstimatableParameter< double >
         SpecularReflectivity(
                 const std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > radiationPressureInterface,
                 const std::string& associatedBody,
-                const std::string& panelTypeId):
+                const std::string panelTypeId):
             EstimatableParameter< double >( specular_reflectivity, associatedBody, panelTypeId ),
             radiationPressureInterface_( radiationPressureInterface ),
             panelTypeId_( panelTypeId )

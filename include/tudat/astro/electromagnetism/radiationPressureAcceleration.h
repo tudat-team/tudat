@@ -74,6 +74,11 @@ public:
         return targetPositionFunction_;
     }
 
+   std::function<Eigen::Quaterniond()> getTargetRotationFromLocalToGlobalFrameFunction( )
+    {
+        return targetRotationFromLocalToGlobalFrameFunction_;
+    }
+
     double getCurrentRadiationPressure( )
     {
         return currentRadiationPressure_;
