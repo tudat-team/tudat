@@ -1079,6 +1079,13 @@ inline std::shared_ptr< EstimatableParameterSettings > arcwiseRadiationPressureC
                 associatedBody, arcStartTimeList );
 }
 
+inline std::shared_ptr< EstimatableParameterSettings > diffuseReflectivity(
+        const std::string bodyName,
+        const std::string panel_group_id )
+{
+    return std::make_shared< EstimatableParameterSettings >( bodyName, diffuse_reflectivity, panel_group_id );
+}
+
 inline std::shared_ptr< EstimatableParameterSettings > specularReflectivity(
         const std::string bodyName,
         const std::string panel_group_id )

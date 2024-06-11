@@ -33,6 +33,7 @@ static std::map< EstimatebleParametersEnum, std::string > estimatedParameterType
     { constant_drag_coefficient, "constantDragCoefficient" },
     { radiation_pressure_coefficient, "radiationPressureCoefficient" },
     { specular_reflectivity, "specularReflectivity" },
+    { diffuse_reflectivity, "diffuseReflectivity" },
     { arc_wise_radiation_pressure_coefficient, "arcWiseRadiationPressureCoefficient" },
     { spherical_harmonics_cosine_coefficient_block, "sphericalHarmonicsCosineCoefficientBlock" },
     { spherical_harmonics_sine_coefficient_block, "sphericalHarmonicsSineCoefficientBlock" },

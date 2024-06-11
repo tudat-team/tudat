@@ -28,6 +28,7 @@
 #include "tudat/astro/orbit_determination/estimatable_parameters/sphericalHarmonicSineCoefficients.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/radiationPressureCoefficient.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/specularReflectivity.h"
+#include "tudat/astro/orbit_determination/estimatable_parameters/diffuseReflectivity.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/ppnParameters.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/equivalencePrincipleViolationParameter.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/tidalLoveNumber.h"
@@ -897,16 +898,31 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > create
         }
         case specular_reflectivity:
         {
-            std::cout<< "Creating double parameter to estimate for panel group " + doubleParameterName->parameterType_.second.second<<std::endl;
             if( std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( currentBody->getRadiationPressureTargetModel( ) ) == nullptr)
             {
                 std::string errorMessage = "Error, no panelled radiation pressure target model found in body " +
-                        currentBodyName + " when estimating specular reflectivity parameter.";
+                        currentBodyName + " when making specular reflectivity parameter.";
                 throw std::runtime_error( errorMessage ); 
             }
             else
             {
                 doubleParameterToEstimate = std::make_shared< SpecularReflectivity >(
+                    std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( currentBody->getRadiationPressureTargetModel( ) ),
+                    currentBodyName, doubleParameterName->parameterType_.second.second);
+            }
+            break;
+        }
+        case diffuse_reflectivity:
+        {
+            if( std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( currentBody->getRadiationPressureTargetModel( ) ) == nullptr)
+            {
+                std::string errorMessage = "Error, no panelled radiation pressure target model found in body " +
+                        currentBodyName + " when making diffuse reflectivity parameter.";
+                throw std::runtime_error( errorMessage ); 
+            }
+            else
+            {
+                doubleParameterToEstimate = std::make_shared< DiffuseReflectivity >(
                     std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( currentBody->getRadiationPressureTargetModel( ) ),
                     currentBodyName, doubleParameterName->parameterType_.second.second);
             }

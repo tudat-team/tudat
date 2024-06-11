@@ -48,6 +48,7 @@
 #include "orbit_determination/estimatable_parameters/ppnParameters.h"
 #include "orbit_determination/estimatable_parameters/radiationPressureCoefficient.h"
 #include "orbit_determination/estimatable_parameters/specularReflectivity.h"
+#include "orbit_determination/estimatable_parameters/diffuseReflectivity.h"
 #include "orbit_determination/estimatable_parameters/sphericalHarmonicCosineCoefficients.h"
 #include "orbit_determination/estimatable_parameters/sphericalHarmonicSineCoefficients.h"
 #include "orbit_determination/estimatable_parameters/tidalLoveNumber.h"

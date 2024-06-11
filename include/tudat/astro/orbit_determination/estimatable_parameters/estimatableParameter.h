@@ -77,6 +77,7 @@ enum EstimatebleParametersEnum
     inverse_tidal_quality_factor,
     yarkovsky_parameter,
     specular_reflectivity,
+    diffuse_reflectivity,
     custom_estimated_parameter,
     reference_point_position
 };

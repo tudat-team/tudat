@@ -148,7 +148,10 @@ std::string getParameterTypeString( const EstimatebleParametersEnum parameterTyp
         parameterDescription = " Yarkovsky parameter A2 ";
         break;
     case specular_reflectivity:
-        parameterDescription = " specular reflectivity of panel group ";
+        parameterDescription = " specular reflectivity for panel group ";
+        break;
+    case diffuse_reflectivity:
+        parameterDescription = " diffuse reflectivity for panel group ";
         break;
     case custom_estimated_parameter:
         parameterDescription = " Custom parameter ";
@@ -202,6 +205,9 @@ bool isDoubleParameter( const EstimatebleParametersEnum parameterType )
         isDoubleParameter = true;
         break;
     case specular_reflectivity:
+        isDoubleParameter = true;
+        break;
+    case diffuse_reflectivity:
         isDoubleParameter = true;
         break;
     case arc_wise_radiation_pressure_coefficient:

@@ -197,17 +197,7 @@ void to_json( nlohmann::json& jsonObject,
 
         return;
     }
-    case specular_reflectivity:
-//    {
-//       std::shared_ptr< SpecularReflectivityEstimatableParameterSettings > specularReflectivitySettings =
-//                std::dynamic_pointer_cast<
-//                        SpecularReflectivityEstimatableParameterSettings >(
-//                        parameterSettings );
-//        assertNonnullptrPointer( specularReflectivitySettings );
-//        jsonObject[ K::panelTypeId ] = specularReflectivitySettings->parameterType_.second.second;
-//
-//        return;
-    }
+
     case arc_wise_empirical_acceleration_coefficients:
     {
         std::shared_ptr< ArcWiseEmpiricalAccelerationEstimatableParameterSettings > empiricalAccelerationSettings =

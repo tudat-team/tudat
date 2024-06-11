@@ -93,10 +93,13 @@ void PanelledRadiationPressurePartial::wrtRadiationPressureCoefficient( Eigen::M
         radiationPressureAcceleration_->getAcceleration( ), radiationPressureCoefficientFunction_());
 }
 
-void PanelledRadiationPressurePartial::wrtSpecularReflectivity(
+void PanelledRadiationPressurePartial::wrtDiffuseReflectivity(
         Eigen::MatrixXd& partial,
         const std::string& panelTypeId)
 {
+    Eigen::Vector3d partial_temp = Eigen::Vector3d::Zero();
+    partial = partial_temp;
+
     std::function<double()> targetMassFunction = radiationPressureAcceleration_->getTargetMassFunction();
     double spacecraftMass = targetMassFunction();
 
@@ -106,30 +109,42 @@ void PanelledRadiationPressurePartial::wrtSpecularReflectivity(
     std::function<Eigen::Vector3d()> targetCenterPositionInGlobalFrameFunction = radiationPressureAcceleration_->getTargetPositionFunction();
     Eigen::Vector3d targetCenterPositionInGlobalFrame = targetCenterPositionInGlobalFrameFunction() - sourceCenterPositionInGlobalFrameFunction();
     Eigen::Vector3d sourceToTargetDirectionLocalFrame = targetRotationFromGlobalToLocalFrame * targetCenterPositionInGlobalFrame.normalized( );
-
-    std::map< int, std::shared_ptr<system_models::VehicleExteriorPanel>> panelIndexMap = panelledTargetModel_->getPanelIndexMap();
-    std::vector< Eigen::Vector3d >& panelForces = panelledTargetModel_->getPanelForces();
-    std::vector< Eigen::Vector3d >& surfaceNormals = panelledTargetModel_->getSurfaceNormals();
-    for (auto it = panelIndexMap.begin(); it != panelIndexMap.end(); ++it)
+    double receivedIrradiance = radiationPressureAcceleration_->getReceivedIrradiance();
+    if (receivedIrradiance >= 0)
     {
-        // If panel is part of group, add the partial contribution
-        if (it->second->getPanelTypeId() == panelTypeId)
-        {
-            // To get panel force without the reaction vector, divide by it. Then multiply by partial contribution. Divide by Sc mass to get acceleration
-            Eigen::Vector3d panelForce = panelForces.at(it->first);
-            Eigen::Vector3d surfaceNormal = surfaceNormals.at(it->first);
-            Eigen::Vector3d reactionVector = it->second->getReflectionLaw()->evaluateReactionVector(surfaceNormal, sourceToTargetDirectionLocalFrame );
-            Eigen::Vector3d reactionVectorPartialWrtSpecularReflectivity = it->second->getReflectionLaw()
-                    ->evaluateReactionVectorPartialWrtSpecularReflectivity(surfaceNormal, sourceToTargetDirectionLocalFrame);
-
-            if (reactionVectorPartialWrtSpecularReflectivity != Eigen::Vector3d::Zero() && reactionVector.norm() > 0)
-            {
-                partial += panelForce.cwiseQuotient(reactionVector).cwiseProduct(reactionVectorPartialWrtSpecularReflectivity) / spacecraftMass;
-            }
-
-        }
+        Eigen::Vector3d forcePartialWrtDiffuseReflectivity = targetRotationFromLocalToGlobalFrameFunction() *
+                panelledTargetModel_->evaluateRadiationPressureForcePartialWrtDiffuseReflectivity(receivedIrradiance, sourceToTargetDirectionLocalFrame);
+        partial += forcePartialWrtDiffuseReflectivity/spacecraftMass;
     }
+
 }
+
+void PanelledRadiationPressurePartial::wrtSpecularReflectivity(
+        Eigen::MatrixXd& partial,
+        const std::string& panelTypeId)
+{
+    Eigen::Vector3d partial_temp = Eigen::Vector3d::Zero();
+    partial = partial_temp;
+
+    std::function<double()> targetMassFunction = radiationPressureAcceleration_->getTargetMassFunction();
+    double spacecraftMass = targetMassFunction();
+
+    std::function<Eigen::Quaterniond()> targetRotationFromLocalToGlobalFrameFunction = radiationPressureAcceleration_->getTargetRotationFromLocalToGlobalFrameFunction();
+    Eigen::Quaterniond targetRotationFromGlobalToLocalFrame = targetRotationFromLocalToGlobalFrameFunction().inverse( );
+    std::function<Eigen::Vector3d()> sourceCenterPositionInGlobalFrameFunction = radiationPressureAcceleration_->getSourcePositionFunction();
+    std::function<Eigen::Vector3d()> targetCenterPositionInGlobalFrameFunction = radiationPressureAcceleration_->getTargetPositionFunction();
+    Eigen::Vector3d targetCenterPositionInGlobalFrame = targetCenterPositionInGlobalFrameFunction() - sourceCenterPositionInGlobalFrameFunction();
+    Eigen::Vector3d sourceToTargetDirectionLocalFrame = targetRotationFromGlobalToLocalFrame * targetCenterPositionInGlobalFrame.normalized( );
+    double receivedIrradiance = radiationPressureAcceleration_->getReceivedIrradiance();
+    if (receivedIrradiance >= 0)
+    {
+        Eigen::Vector3d forcePartialWrtSpecularReflectivity = targetRotationFromLocalToGlobalFrameFunction() *
+                panelledTargetModel_->evaluateRadiationPressureForcePartialWrtSpecularReflectivity(receivedIrradiance, sourceToTargetDirectionLocalFrame);
+        partial += forcePartialWrtSpecularReflectivity/spacecraftMass;
+    }
+
+}
+
 
 
 
@@ -154,14 +169,17 @@ std::pair< std::function< void( Eigen::MatrixXd& ) >, int > PanelledRadiationPre
             break;
 
         case estimatable_parameters::specular_reflectivity:
-            std::cout<<"creating specular_reflectivity partial for body " + std::string(parameter->getParameterName( ).second.first)
-            + " panel group " + std::string(parameter->getParameterName( ).second.second) << std::endl;
             partialFunction = std::bind( &PanelledRadiationPressurePartial::wrtSpecularReflectivity,
                                          this, std::placeholders::_1, parameter->getParameterName( ).second.second );
-            std::cout<<"created specular_reflectivity partial for body " + std::string(parameter->getParameterName( ).second.first)
-                       + " panel group " + std::string(parameter->getParameterName( ).second.second) << std::endl;
             numberOfRows = 1;
             break;
+
+        case estimatable_parameters::diffuse_reflectivity:
+            partialFunction = std::bind( &PanelledRadiationPressurePartial::wrtDiffuseReflectivity,
+                                         this, std::placeholders::_1, parameter->getParameterName( ).second.second );
+            numberOfRows = 1;
+            break;
+
         default:
             break;
         }
