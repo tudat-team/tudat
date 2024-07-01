@@ -307,6 +307,9 @@ std::string getDependentVariableName(
     case visible_source_area:
         variableName = "Visible area";
         break;
+    case solar_longitude:
+        variableName = "Solar longitude";
+        break;
     default:
         std::string errorMessage = "Error, dependent variable " +
                 std::to_string( propagationDependentVariables ) +
