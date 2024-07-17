@@ -41,8 +41,12 @@ if(NOT TARGET CSPICE::cspice)
 
     # Aggregate found components
     include(FindPackageHandleStandardArgs)
+    message(STATUS "CSPICE_LIBRARY: ${CSPICE_LIBRARY}")
+    message(STATUS "CSPICE_SUPPORT_LIBRARY: ${CSPICE_SUPPORT_LIBRARY}")
+    message(STATUS "CSPICE_INCLUDE_DIRS: ${CSPICE_INCLUDE_DIRS}")
+    message(STATUS "CSPICE_VERSION: ${CSPICE_VERSION}")
     find_package_handle_standard_args(CSPICE
-            REQUIRED_VARS CSPICE_LIBRARY CSPICE_SUPPORT_LIBRARY CSPICE_INCLUDE_DIRS
+            REQUIRED_VARS CSPICE_LIBRARY CSPICE_INCLUDE_DIRS
             VERSION_VAR CSPICE_VERSION
     )
 
