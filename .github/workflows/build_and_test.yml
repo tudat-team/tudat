@@ -133,6 +133,7 @@ jobs:
       run: >
         cmake -B "${{ github.workspace }}/build"
         -S "${{ github.workspace }}"
+        -DCMAKE_PREFIX_PATH="${{ matrix.path_conda_env }}"
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
