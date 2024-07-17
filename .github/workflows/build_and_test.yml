@@ -82,19 +82,24 @@ jobs:
       run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
       shell: bash
 
-    - name: 'Setup jq'
-      uses: dcarbone/install-jq-action@v2
-
-    - name: Output Conda Environment Prefix
-      run: echo "CONDA_PREFIX=$(mamba info --json | jq -r '.active_prefix')" >> $GITHUB_ENV
-
     - name: Cache conda environment
       # Cache the conda environment to avoid re-installing the same packages every time the workflow runs. The cache key is based on the environment.yml file, the operating system, and the date. The cache is restored if the cache key matches the cache key of the previous run.
       uses: actions/cache@v4
       with:
-          path: ${{ env.CONDA_PREFIX }}
+          path: "${{ env.CONDA }}/envs/tudat"
           key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}-${{steps.get-date.outputs.today}}
       id: cache
+
+    - name: Export the environment to a YAML file
+      run: |
+        conda env export --from-history -f environment-locked.yml
+
+    - name: Upload the locked environment file
+      # This step uploads the locked conda environment to the artifacts. This is useful for debugging and reproducing the environment locally.
+      uses: actions/upload-artifact@v2
+      with:
+        name: locked-conda-environment
+        path: environment-locked.yml
 
     - name: Create conda environment from environment.yml
       # Update the tudat conda environment created using the environment.yml file if the cache is not restored
