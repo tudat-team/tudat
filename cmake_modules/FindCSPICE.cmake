@@ -1,5 +1,6 @@
 # FindCSPICE.cmake - Attempt to find CSPICE libraries and include paths
 
+set(CONDA_PREFIX $ENV{CONDA_PREFIX})
 # This module defines:
 #   CSPICE_FOUND - True if headers and requested libraries were found
 #   CSPICE_INCLUDE_DIRS - Where to find the headers
@@ -13,7 +14,7 @@ if(NOT TARGET CSPICE::cspice)
     # Search for the include directory containing cspice/SpiceUsr.h
     find_path(CSPICE_INCLUDE_DIR_PARENT
             NAMES cspice/SpiceUsr.h
-            PATHS ${CMAKE_PREFIX_PATH} ${CMAKE_INSTALL_PREFIX}
+            PATHS ${CMAKE_PREFIX_PATH} ${CMAKE_INSTALL_PREFIX} ${CONDA_PREFIX}
             PATH_SUFFIXES include
             DOC "Parent directory where cspice/SpiceUsr.h can be found"
     )
@@ -26,7 +27,7 @@ if(NOT TARGET CSPICE::cspice)
     # Search for the main CSPICE library
     find_library(CSPICE_LIBRARY
             NAMES cspice
-            PATHS ${CMAKE_PREFIX_PATH} ${CMAKE_INSTALL_PREFIX}
+            PATHS ${CMAKE_PREFIX_PATH} ${CMAKE_INSTALL_PREFIX} ${CONDA_PREFIX}
             PATH_SUFFIXES lib
             DOC "Main CSPICE library"
     )
@@ -34,7 +35,7 @@ if(NOT TARGET CSPICE::cspice)
     # Search for the CSPICE support library
     find_library(CSPICE_SUPPORT_LIBRARY
             NAMES csupport.66 csupport.67 csupport csupport.a
-            PATHS ${CMAKE_PREFIX_PATH} ${CMAKE_INSTALL_PREFIX}
+            PATHS ${CMAKE_PREFIX_PATH} ${CMAKE_INSTALL_PREFIX} ${CONDA_PREFIX}
             PATH_SUFFIXES lib
             DOC "CSPICE support library"
     )
@@ -47,6 +48,7 @@ if(NOT TARGET CSPICE::cspice)
     message(STATUS "CSPICE_VERSION: ${CSPICE_VERSION}")
     # Print general CMake search paths
     message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+    message(STATUS "CONDA_PREFIX: ${CONDA_PREFIX}")
     message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
     message(STATUS "CMAKE_SYSTEM_PREFIX_PATH: ${CMAKE_SYSTEM_PREFIX_PATH}")
     message(STATUS "CMAKE_SYSTEM_FRAMEWORK_PATH: ${CMAKE_SYSTEM_FRAMEWORK_PATH}")
