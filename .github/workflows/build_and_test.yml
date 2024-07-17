@@ -82,14 +82,6 @@ jobs:
       run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
       shell: bash
 
-    - name: Cache conda environment
-      # Cache the conda environment to avoid re-installing the same packages every time the workflow runs. The cache key is based on the environment.yml file, the operating system, and the date. The cache is restored if the cache key matches the cache key of the previous run.
-      uses: actions/cache@v4
-      with:
-          path: ${{ env.CONDA }}/envs/tudat
-          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}-${{steps.get-date.outputs.today}}
-      id: cache-environment
-
     - name: Set platform-specific data path
       run: |
         if [ "${{ runner.os }}" = "Windows" ]; then
@@ -97,13 +89,17 @@ jobs:
         else
           echo "TUDAT_DATA_PATH=${{ env.HOME }}/.tudat" >> $GITHUB_ENV
         fi
+      shell: bash
 
-    - name: Cache tudat data files
-      # Cache the tudat data files to avoid re-downloading the same files every time the workflow runs. The cache key is based on the operating system and the date. The cache is restored if the cache key matches the cache key of the previous run.
+    - name: Cache conda environment
+      # Cache the conda environment to avoid re-installing the same packages every time the workflow runs. The cache key is based on the environment.yml file, the operating system, and the date. The cache is restored if the cache key matches the cache key of the previous run.
       uses: actions/cache@v4
       with:
-        path: ${{ env.TUDAT_DATA_PATH }}
-        key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}-${{steps.get-date.outputs.today}}
+          path: |
+            ${{ env.CONDA }}/envs/tudat
+            ${{ env.TUDAT_DATA_PATH }}
+          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}-${{steps.get-date.outputs.today}}
+      id: cache-environment
 
     - name: Create conda environment from environment.yml
       # Update the tudat conda environment created using the environment.yml file if the cache is not restored
