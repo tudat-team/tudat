@@ -100,6 +100,9 @@ jobs:
       run: mamba env update -n tudat -f environment.yml
       if: steps.cache.outputs.cache-hit != 'true'
 
+    - name: List conda environment
+      # List the packages installed in the conda environment, useful for debugging and verifying the environment setup
+      run: conda list -n tudat
 
     - name: Download tudat resources data files for Linux and MacOS
       # The data files in tudat-resources are downloaded upon the installation of
