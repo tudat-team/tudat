@@ -16,7 +16,7 @@ jobs:
   build-and-test:
 
     env:
-        CACHE_NUMBER: 0
+        CACHE_NUMBER: 1
 
     runs-on: ${{ matrix.os }}
 
@@ -89,6 +89,8 @@ jobs:
         else
           echo "TUDAT_DATA_PATH=${{ env.HOME }}/.tudat" >> $GITHUB_ENV
         fi
+        echo "TUDAT_DATA_PATH=${{ env.TUDAT_DATA_PATH }}"
+        echo "TUDAT_DATA_PATH=$TUDAT_DATA_PATH"
       shell: bash
 
     - name: Cache conda environment
