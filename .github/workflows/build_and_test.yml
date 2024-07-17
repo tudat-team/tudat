@@ -82,18 +82,11 @@ jobs:
       run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
       shell: bash
 
-    - name: Get conda prefix
-      # Get the current date and time in UTC format. This step is used to create a unique cache key for the conda environment cache by appending the date to the cache key.
-      # GitHub cache action doucmentation recommends refreshing the cache every 24 hours to avoid inconsistencies of package versions between the CI pipeline and local installations. This is ensured by appending the date to the cache key.See https://github.com/marketplace/actions/setup-miniconda#caching-environments for more detail.
-      id: get-conda-prefix
-      run: echo "conda_prefix=$CONDA_PREFIX" >> $GITHUB_OUTPUT
-      shell: bash
-
     - name: Cache conda environment
       # Cache the conda environment to avoid re-installing the same packages every time the workflow runs. The cache key is based on the environment.yml file, the operating system, and the date. The cache is restored if the cache key matches the cache key of the previous run.
       uses: actions/cache@v4
       with:
-          path: ${{ steps.get-conda-prefix.outputs.conda_prefix }}
+          path: ${{ env.CONDA }}/envs/tudat
           key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}-${{steps.get-date.outputs.today}}
       id: cache-environment
 
@@ -112,21 +105,21 @@ jobs:
         path: ${{ env.TUDAT_DATA_PATH }}
         key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}-${{steps.get-date.outputs.today}}
 
+    - name: Create conda environment from environment.yml
+      # Update the tudat conda environment created using the environment.yml file if the cache is not restored
+      run: mamba env update -n tudat -f environment.yml
+      if: steps.cache-environment.outputs.cache-hit != 'true'
+
     - name: Export the environment to a YAML file
       run: |
         conda env export --from-history -f environment-locked.yml
 
     - name: Upload the locked environment file
       # This step uploads the locked conda environment to the artifacts. This is useful for debugging and reproducing the environment locally.
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: locked-conda-environment
+        name: locked-conda-environment-${{ runner.os }}
         path: environment-locked.yml
-
-    - name: Create conda environment from environment.yml
-      # Update the tudat conda environment created using the environment.yml file if the cache is not restored
-      run: mamba env update -n tudat -f environment.yml
-      if: steps.cache-environment.outputs.cache-hit != 'true'
 
     - name: Restore cached compilation results
       # This third party action will setup ccache on the runner and restore any previously saved cache. Caches are saved automatically by the action after a build.
