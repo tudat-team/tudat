@@ -1,11 +1,17 @@
 # FindCSPICE.cmake - Attempt to find CSPICE libraries and include paths
-
-set(CONDA_PREFIX $ENV{CONDA_PREFIX})
 # This module defines:
 #   CSPICE_FOUND - True if headers and requested libraries were found
 #   CSPICE_INCLUDE_DIRS - Where to find the headers
 #   CSPICE_LIBRARIES - List of libraries when using CSPICE
 #   CSPICE_VERSION - The version of the found CSPICE
+set(SEARCH_PATHS ${CMAKE_PREFIX_PATH} ${CMAKE_INSTALL_PREFIX} $ENV{CONDA_PREFIX})
+# Create a new list for suffixed paths
+set(SUFFIXED_PATHS)
+
+# Duplicate paths with 'library' suffix and add both original and suffixed to SEARCH_PATHS
+foreach(PATH IN LISTS SEARCH_PATHS)
+    list(APPEND SUFFIXED_PATHS "${PATH}/Library")
+endforeach()
 
 if(NOT TARGET CSPICE::cspice)
     # Define the version of CSPICE you are looking for
@@ -14,7 +20,7 @@ if(NOT TARGET CSPICE::cspice)
     # Search for the include directory containing cspice/SpiceUsr.h
     find_path(CSPICE_INCLUDE_DIR_PARENT
             NAMES cspice/SpiceUsr.h
-            PATHS ${CMAKE_PREFIX_PATH} ${CMAKE_INSTALL_PREFIX} ${CONDA_PREFIX}
+            PATHS ${SEARCH_PATHS} ${SUFFIXED_PATHS}
             PATH_SUFFIXES include
             DOC "Parent directory where cspice/SpiceUsr.h can be found"
     )
@@ -27,7 +33,7 @@ if(NOT TARGET CSPICE::cspice)
     # Search for the main CSPICE library
     find_library(CSPICE_LIBRARY
             NAMES cspice
-            PATHS ${CMAKE_PREFIX_PATH} ${CMAKE_INSTALL_PREFIX} ${CONDA_PREFIX}
+            PATHS ${SEARCH_PATHS} ${SUFFIXED_PATHS}
             PATH_SUFFIXES lib
             DOC "Main CSPICE library"
     )
@@ -35,30 +41,13 @@ if(NOT TARGET CSPICE::cspice)
     # Search for the CSPICE support library
     find_library(CSPICE_SUPPORT_LIBRARY
             NAMES csupport.66 csupport.67 csupport csupport.a
-            PATHS ${CMAKE_PREFIX_PATH} ${CMAKE_INSTALL_PREFIX} ${CONDA_PREFIX}
+            PATHS ${SEARCH_PATHS} ${SUFFIXED_PATHS}
             PATH_SUFFIXES lib
             DOC "CSPICE support library"
     )
 
     # Aggregate found components
     include(FindPackageHandleStandardArgs)
-    message(STATUS "CSPICE_LIBRARY: ${CSPICE_LIBRARY}")
-    message(STATUS "CSPICE_SUPPORT_LIBRARY: ${CSPICE_SUPPORT_LIBRARY}")
-    message(STATUS "CSPICE_INCLUDE_DIRS: ${CSPICE_INCLUDE_DIRS}")
-    message(STATUS "CSPICE_VERSION: ${CSPICE_VERSION}")
-    # Print general CMake search paths
-    message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
-    message(STATUS "CONDA_PREFIX: ${CONDA_PREFIX}")
-    message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
-    message(STATUS "CMAKE_SYSTEM_PREFIX_PATH: ${CMAKE_SYSTEM_PREFIX_PATH}")
-    message(STATUS "CMAKE_SYSTEM_FRAMEWORK_PATH: ${CMAKE_SYSTEM_FRAMEWORK_PATH}")
-    message(STATUS "CMAKE_SYSTEM_APPBUNDLE_PATH: ${CMAKE_SYSTEM_APPBUNDLE_PATH}")
-    message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
-    message(STATUS "CMAKE_LIBRARY_PATH: ${CMAKE_LIBRARY_PATH}")
-    message(STATUS "CMAKE_INCLUDE_PATH: ${CMAKE_INCLUDE_PATH}")
-    message(STATUS "CMAKE_PROGRAM_PATH: ${CMAKE_PROGRAM_PATH}")
-    message(STATUS "PKG_CONFIG_PATH: $ENV{PKG_CONFIG_PATH}")
-    message(STATUS "CMAKE_FIND_ROOT_PATH: ${CMAKE_FIND_ROOT_PATH}")
     find_package_handle_standard_args(CSPICE
             REQUIRED_VARS CSPICE_LIBRARY CSPICE_INCLUDE_DIRS
             VERSION_VAR CSPICE_VERSION
