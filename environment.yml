@@ -8,4 +8,4 @@ dependencies:
   - tudat-resources
   - sofa-cmake
   - nrlmsise-00
-  - cspice-cmake
+  - cspice
