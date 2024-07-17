@@ -74,7 +74,7 @@ function("TUDAT_ADD_TEST_CASE" arg1)
                 SYSTEM PRIVATE
                 "${EIGEN3_INCLUDE_DIRS}"
                 "${Boost_INCLUDE_DIRS}"
-                "${CSPICE_INCLUDE_DIRS}"
+                "${CSpice_INCLUDE_DIRS}"
                 "${Sofa_INCLUDE_DIRS}"
                 "${TudatResources_INCLUDE_DIRS}"
                 )

@@ -314,7 +314,7 @@ if (UNIX OR (WIN32 AND CLANG))
 endif ()
 
 # CSpice dependency
-find_package(CSPICE REQUIRED 1.0.0)
+find_package(CSpice REQUIRED 1.0.0)
 
 if (TUDAT_BUILD_WITH_SOFA_INTERFACE)
     find_package(Sofa REQUIRED 1.0.0)
