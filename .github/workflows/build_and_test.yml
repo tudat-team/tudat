@@ -123,7 +123,7 @@ jobs:
       # This third party action will setup ccache on the runner and restore any previously saved cache. Caches are saved automatically by the action after a build.
       uses: hendrikmuhs/ccache-action@v1.2.12
       with:
-        key: ${{ matrix.os }}-${{ matrix.build_type }}
+        key: ${{ matrix.os }}-${{ matrix.build_type }}-${{ hashFiles('**/*.cmake', '**/CMakeLists.txt') }}
 
 
     - name: Configure CMake
