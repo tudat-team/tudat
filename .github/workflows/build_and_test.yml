@@ -39,17 +39,14 @@ jobs:
             c_compiler: cl
             cpp_compiler: cl
             label: win-64
-            path_conda_env: C:\Miniconda3\envs\tudat
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
             label: linux-64
-            path_conda_env: /usr/share/miniconda3/envs/tudat
           - os: macos-latest
             c_compiler: clang
             cpp_compiler: clang++
             label: osx-64
-            path_conda_env: /Users/runner/miniconda3/envs/tudat
         exclude:
           - os: windows-latest
             c_compiler: gcc
@@ -85,15 +82,19 @@ jobs:
       run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
       shell: bash
 
+    - name: 'Setup jq'
+      uses: dcarbone/install-jq-action@v2
+
+    - name: Output Conda Environment Prefix
+      run: echo "CONDA_PREFIX=$(mamba info --json | jq -r '.active_prefix')" >> $GITHUB_ENV
 
     - name: Cache conda environment
       # Cache the conda environment to avoid re-installing the same packages every time the workflow runs. The cache key is based on the environment.yml file, the operating system, and the date. The cache is restored if the cache key matches the cache key of the previous run.
       uses: actions/cache@v4
       with:
-          path: ${{ matrix.path_conda_env }}
+          path: ${{ env.CONDA_PREFIX }}
           key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}-${{steps.get-date.outputs.today}}
       id: cache
-
 
     - name: Create conda environment from environment.yml
       # Update the tudat conda environment created using the environment.yml file if the cache is not restored
