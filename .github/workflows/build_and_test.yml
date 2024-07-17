@@ -84,11 +84,6 @@ jobs:
 
     - name: Set platform-specific data path
       run: |
-#        if [ "${{ runner.os }}" = "Windows" ]; then
-#          echo "TUDAT_DATA_PATH=${{ env.HOMEDRIVE }}${{ env.HOMEPATH }}\.tudat" >> $GITHUB_ENV
-#        else
-#          echo "TUDAT_DATA_PATH=${{ env.HOME }}/.tudat" >> $GITHUB_ENV
-#        fi
         echo "TUDAT_DATA_PATH=$(python -c "import tudatpy.data; print(tudatpy.data.get_resource_path())")" >> $GITHUB_ENV
         echo "TUDAT_DATA_PATH=${{ env.TUDAT_DATA_PATH }}"
         echo "TUDAT_DATA_PATH=$TUDAT_DATA_PATH"
