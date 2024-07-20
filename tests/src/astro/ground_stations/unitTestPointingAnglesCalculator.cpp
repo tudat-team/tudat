@@ -133,7 +133,9 @@ BOOST_AUTO_TEST_CASE( test_PointingAnglesCalculator )
 
 BOOST_AUTO_TEST_CASE( test_PointingAnglesCalculatorHorizons )
 {
+    std::cout<<"Run A"<<std::endl;
     loadStandardSpiceKernels( );
+    std::cout<<"Run B"<<std::endl;
 
     // Set observation time
     DateTime observationDateTime = DateTime(
@@ -141,10 +143,12 @@ BOOST_AUTO_TEST_CASE( test_PointingAnglesCalculatorHorizons )
     std::shared_ptr< earth_orientation::TerrestrialTimeScaleConverter > timeConverter =
         earth_orientation::createDefaultTimeConverter( );
     double observationTime = timeConverter->getCurrentTime( utc_scale, tdb_scale, observationDateTime.epoch< double >( ) );
+    std::cout<<"Run C"<<std::endl;
 
 
     std::string globalFrameOrientation = "J2000";
     std::string globalFrameOrigin = "Earth";
+    std::cout<<"Run D"<<std::endl;
 
 
     // Create bodies
@@ -152,27 +156,32 @@ BOOST_AUTO_TEST_CASE( test_PointingAnglesCalculatorHorizons )
     BodyListSettings bodySettings = getDefaultBodySettings( bodiesToCreate, globalFrameOrigin, globalFrameOrientation );
     bodySettings.at( "Earth" )->rotationModelSettings = gcrsToItrsRotationModelSettings( basic_astrodynamics::iau_2006, "J2000" );
     SystemOfBodies bodies = createSystemOfBodies( bodySettings );
+    std::cout<<"Run E"<<std::endl;
 
 
     // Create ground station
     double stationAltitude = 6378.0E3;
     double stationLatitude = convertDegreesToRadians( 60.0 ); //lat;
     double stationLongitude = convertDegreesToRadians( 0.0 ); //lon;
+    std::cout<<"Run F"<<std::endl;
 
     std::pair< std::string, std::string > station = std::pair< std::string, std::string >( "Earth", "Station" );
     createGroundStation( bodies.at( "Earth" ), "Station", ( Eigen::Vector3d( ) << stationAltitude, stationLatitude, stationLongitude ).finished( ),
                          coordinate_conversions::spherical_position );
+    std::cout<<"Run G"<<std::endl;
 
     // Retrieve pointing angle calculator
     std::shared_ptr< PointingAnglesCalculator > pointingAngleCalculator =
         bodies.at( "Earth" )->getGroundStation( "Station" )->getPointingAnglesCalculator( );
 
+    std::cout<<"Run H"<<std::endl;
 
     // Get inertial ground station state function
     std::function< Eigen::Vector6d( const double ) > groundStationStateFunction =
         getLinkEndCompleteEphemerisFunction( std::make_pair< std::string, std::string >( "Earth", "Station" ), bodies );
     std::function< Eigen::Vector6d( const double ) > targetFunction =
         getLinkEndCompleteEphemerisFunction( std::make_pair< std::string, std::string >( "Jupiter", "" ), bodies );
+    std::cout<<"Run I"<<std::endl;
 
     Eigen::Vector6d jupiterState = targetFunction( observationTime );
     Eigen::Vector6d groundStationState = groundStationStateFunction( observationTime );
@@ -180,12 +189,18 @@ BOOST_AUTO_TEST_CASE( test_PointingAnglesCalculatorHorizons )
 
 
     double horizonsElevationInDegrees = 17.443175;
+    std::cout<<"Run J "<<horizonsElevationInDegrees - convertRadiansToDegrees(
+        pointingAngleCalculator->calculateElevationAngleFromInertialVector( relativeState.segment(0, 3), observationTime ) )<<std::endl;
+
     BOOST_CHECK_SMALL( horizonsElevationInDegrees - convertRadiansToDegrees(
         pointingAngleCalculator->calculateElevationAngleFromInertialVector( relativeState.segment(0, 3), observationTime ) ), 5.0E-3 );
 
     double horizonsAzimuthInDegrees = 264.303204;
+    std::cout<<"Run K "<<horizonsAzimuthInDegrees - ( convertRadiansToDegrees(
+        pointingAngleCalculator->calculateAzimuthAngleFromInertialVector( relativeState.segment(0, 3), observationTime ) ) +360.0 )<<std::endl;
     BOOST_CHECK_SMALL( horizonsAzimuthInDegrees - ( convertRadiansToDegrees(
         pointingAngleCalculator->calculateAzimuthAngleFromInertialVector( relativeState.segment(0, 3), observationTime ) ) +360.0 ), 5.0E-3 );
+    std::cout<<"Run L"<<std::endl;
 
 
 }
