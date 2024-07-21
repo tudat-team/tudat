@@ -73,11 +73,15 @@ Eigen::Vector3d PrecessionNutationCalculator::getPositionOfCipInGcrs(
         const double terrestrialTime,
         const double utc )
 {
+    std::cout<<"PN 1"<<std::endl;
     // Calculate nominal precession-nutation values.
     Eigen::Vector3d nominalCipPosition = nominalCipPositionFunction_( terrestrialTime );
+    std::cout<<"PN 2"<<std::endl;
 
     // Retrieve measured corrections to model.
     nominalCipPosition.segment( 0, 2 ) += dailyCorrectionInterpolator_->interpolate( utc );
+    std::cout<<"PN 3"<<std::endl;
+
     // Add nominal values and corrections and return.
     return nominalCipPosition;
 }

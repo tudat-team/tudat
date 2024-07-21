@@ -224,19 +224,27 @@ public:
         // Compute required time values
         TimeType terrestrialTime = terrestrialTimeScaleConverter_->getCurrentTime< TimeType >(
                     timeScale, basic_astrodynamics::tt_scale, timeValue, Eigen::Vector3d::Zero( ) );
+        std::cout<<"Test 1"<<std::endl;
+
         TimeType utc = terrestrialTimeScaleConverter_->getCurrentTime< TimeType >(
                     timeScale, basic_astrodynamics::utc_scale, timeValue, Eigen::Vector3d::Zero( ) );
+        std::cout<<"Test 2"<<std::endl;
+
         TimeType ut1 = terrestrialTimeScaleConverter_->getCurrentTime< TimeType >(
                     timeScale, basic_astrodynamics::ut1_scale, timeValue, Eigen::Vector3d::Zero( ) );
+        std::cout<<"Test 3"<<std::endl;
 
         // Compute nutation/precession parameters
         Eigen::Vector3d positionOfCipInGcrs =
                 precessionNutationCalculator_->getPositionOfCipInGcrs(
                     terrestrialTime, utc );
+        std::cout<<"Test 4"<<std::endl;
+
 
         // Compute polar motion values
         Eigen::Vector2d positionOfCipInItrs = polarMotionCalculator_->getPositionOfCipInItrs(
                     terrestrialTime, utc );
+        std::cout<<"Test 5"<<std::endl;
 
         // Return vector of angles.
         Eigen::Vector5d rotationAngles;

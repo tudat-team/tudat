@@ -144,6 +144,7 @@ public:
             const basic_astrodynamics::TimeScales inputScale, const basic_astrodynamics::TimeScales outputScale,
             const TimeType& inputTimeValue, const Eigen::Vector3d& earthFixedPosition = Eigen::Vector3d::Zero( ) )
     {
+        std::cout<<"Getting time "<<inputScale<<" "<<outputScale<<std::endl;
         TimeType convertedTime;
 
         // Check whether desired conversion is possible (conversion to/from UT1 requires interpolator)
@@ -172,6 +173,7 @@ public:
             }
             convertedTime = getCurrentTimeList< TimeType >( ).getTimeValue( outputScale );
         }
+        std::cout<<"Gotten time "<<inputScale<<" "<<outputScale<<std::endl;
         return convertedTime;
     }
 
