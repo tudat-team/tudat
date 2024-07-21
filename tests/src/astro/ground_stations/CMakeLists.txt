@@ -12,7 +12,7 @@ TUDAT_ADD_TEST_CASE(GroundStationState
     PRIVATE_LINKS
     ${Tudat_PROPAGATION_LIBRARIES})
 
-TUDAT_ADD_TEST_CASE(PointingAnglesCalculator
+TUDAT_ADD_TEST_CASE2(PointingAnglesCalculator
     PRIVATE_LINKS
     ${Tudat_ESTIMATION_LIBRARIES})
 

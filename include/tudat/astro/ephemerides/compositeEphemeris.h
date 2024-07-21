@@ -254,7 +254,7 @@ public:
     Eigen::Matrix< OutputStateScalarType, 6, 1 > getTemplatedCartesianStateFromCompositeEphemeris(
             const OutputTimeType& currentTime )
     {
-
+        std::cout<<"Retrieving composite ephemeris "<<std::endl;
         // Initialize state to zero;
         Eigen::Matrix< StateScalarType, 6, 1 > state = Eigen::Matrix< StateScalarType, 6, 1 >::Zero( );
 
@@ -265,20 +265,29 @@ public:
         // Loop over all ephemerides
         for( unsigned int i = 0; i < isCurrentEphemerisTranslational_.size( ); i++ )
         {
+            std::cout<<"Iteration pre"<<i<<std::endl;
             // If current ephemeris is translational, add it and increment currentTranslationIndex
             if( isCurrentEphemerisTranslational_[ i ] == true )
             {
+                std::cout<<"Iteration trans pre"<<i<<std::endl;
+
                 state += translationalEphemerides_[ currentTranslationIndex ].first( static_cast< TimeType >( currentTime ) )*
                         static_cast< double >( translationalEphemerides_[ currentTranslationIndex ].second );
+                std::cout<<"Iteration trans post"<<i<<std::endl;
+
                 currentTranslationIndex++;
             }
             // If current ephemeris is rotational, multiply position and state by rotation.
             else
             {
+                std::cout<<"Iteration rot pre"<<i<<std::endl;
                 state = rotationalEphemerides_[ currentRotationIndex ]( static_cast< TimeType >( currentTime ), state );
+                std::cout<<"Iteration rot post"<<i<<std::endl;
                 currentRotationIndex++;
             }
+            std::cout<<"Iteration post"<<i<<std::endl;
         }
+        std::cout<<"Retrieved composite ephemeris "<<std::endl;
 
         return state.template cast< OutputStateScalarType >( );
     }

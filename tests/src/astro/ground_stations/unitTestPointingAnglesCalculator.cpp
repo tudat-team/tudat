@@ -184,7 +184,9 @@ BOOST_AUTO_TEST_CASE( test_PointingAnglesCalculatorHorizons )
     std::cout<<"Run I"<<std::endl;
 
     Eigen::Vector6d jupiterState = targetFunction( observationTime );
+    std::cout<<"Run I2"<<std::endl;
     Eigen::Vector6d groundStationState = groundStationStateFunction( observationTime );
+    std::cout<<"Run I3"<<std::endl;
     Eigen::Vector6d relativeState = jupiterState - groundStationState;
 
 

@@ -704,9 +704,13 @@ public:
     template<typename StateScalarType = double, typename TimeType = double>
     Eigen::Matrix<StateScalarType, 6, 1> getStateInBaseFrameFromEphemeris(const TimeType time)
     {
+        std::cout<<"Getting state in base frame "<<bodyName_<<std::endl;
         setStateFromEphemeris<StateScalarType, TimeType>(time);
+        std::cout<<"Set state in base frame "<<bodyName_<<std::endl;
+
         if (sizeof(StateScalarType) == 8)
         {
+            std::cout<<"Return state in base frame "<<bodyName_<<std::endl;
             return currentState_.template cast<StateScalarType>();
         }
         else
