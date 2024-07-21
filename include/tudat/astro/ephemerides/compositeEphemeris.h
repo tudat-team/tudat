@@ -280,7 +280,7 @@ public:
             // If current ephemeris is rotational, multiply position and state by rotation.
             else
             {
-                std::cout<<"Iteration rot pre"<<i<<std::endl;
+                std::cout<<"Iteration rot pre"<<i<<" "<<currentRotationIndex<<" "<<rotationalEphemerides_.size( )<<std::endl;
                 state = rotationalEphemerides_[ currentRotationIndex ]( static_cast< TimeType >( currentTime ), state );
                 std::cout<<"Iteration rot post"<<i<<std::endl;
                 currentRotationIndex++;

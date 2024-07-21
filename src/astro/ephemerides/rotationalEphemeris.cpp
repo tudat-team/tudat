@@ -43,6 +43,7 @@ template< >
 Eigen::Quaterniond RotationalEphemeris::getRotationToBaseFrameTemplated< double >(
             const double timeSinceEpoch )
 {
+    std::cout<<"Rotation to base frame (template double)"<<std::endl;
     return getRotationToBaseFrame( timeSinceEpoch );
 }
 
@@ -75,6 +76,7 @@ template< >
 Eigen::Matrix3d RotationalEphemeris::getDerivativeOfRotationToBaseFrameTemplated< double >(
             const double timeSinceEpoch )
 {
+    std::cout<<"Derivative of rotation to base frame (template double)"<<std::endl;
     return getDerivativeOfRotationToBaseFrame( timeSinceEpoch );
 }
 

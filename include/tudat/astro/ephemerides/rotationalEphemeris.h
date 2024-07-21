@@ -78,12 +78,15 @@ Eigen::Matrix< StateScalarType, 6, 1 > transformStateToFrameFromRotations(
         const Eigen::Quaterniond& rotationToFrame,
         const Eigen::Matrix3d& rotationMatrixToFrameDerivative )
 {
+    std::cout<<"Transform to global"<<std::endl;
     Eigen::Matrix< StateScalarType, 6, 1 >stateInTargetFrame;
     stateInTargetFrame.segment( 0, 3 ) =
             rotationToFrame.template cast< StateScalarType >( ) * stateInBaseFrame.segment( 0, 3 );
     stateInTargetFrame.segment( 3, 3 ) =
             rotationMatrixToFrameDerivative.template cast< StateScalarType >( ) * stateInBaseFrame.segment( 0, 3 ) +
             rotationToFrame.template cast< StateScalarType >( ) * stateInBaseFrame.segment( 3, 3 );
+    std::cout<<"Transformed to global"<<std::endl;
+
     return stateInTargetFrame;
 }
 
@@ -513,6 +516,7 @@ Eigen::Matrix< StateScalarType, 6, 1 > transformStateToInertialOrientation(
         const TimeType currentTime,
         const std::shared_ptr< RotationalEphemeris > rotationalEphemeris )
 {
+    std::cout<<"Rotational "<<rotationalEphemeris<<std::endl;
     return transformStateToFrameFromRotations< StateScalarType >(
                 stateInLocalFrame,
                 rotationalEphemeris->getRotationToBaseFrameTemplated< TimeType >( currentTime ),

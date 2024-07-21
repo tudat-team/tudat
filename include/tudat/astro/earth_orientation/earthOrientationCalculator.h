@@ -175,6 +175,7 @@ template< typename TimeType >
 Eigen::Quaterniond calculateRotationFromItrsToGcrs(
         const std::pair< Eigen::Vector5d, TimeType > rotationAnglesAndUt1, const double secondsSinceJ2000 )
 {
+    std::cout<<"ITRS calculateRotationFromItrsToGcrs"<<std::endl;
     return calculateRotationFromItrsToGcrs(
                 rotationAnglesAndUt1.first[ 0 ], rotationAnglesAndUt1.first[ 1 ], rotationAnglesAndUt1.first[ 2 ],
             rotationAnglesAndUt1.second, rotationAnglesAndUt1.first[ 3 ], rotationAnglesAndUt1.first[ 4 ],
@@ -219,6 +220,7 @@ public:
             const TimeType timeValue,
             basic_astrodynamics::TimeScales timeScale = basic_astrodynamics::tt_scale )
     {
+        std::cout<<"ITRS getRotationAnglesFromItrsToGcrs"<<std::endl;
         // Compute required time values
         TimeType terrestrialTime = terrestrialTimeScaleConverter_->getCurrentTime< TimeType >(
                     timeScale, basic_astrodynamics::tt_scale, timeValue, Eigen::Vector3d::Zero( ) );
@@ -243,6 +245,8 @@ public:
         rotationAngles[ 2 ] = positionOfCipInGcrs( 2 );
         rotationAngles[ 3 ] = positionOfCipInItrs.x( );
         rotationAngles[ 4 ] = positionOfCipInItrs.y( );
+        std::cout<<"ITRS getRotationAnglesFromItrsToGcrs post"<<std::endl;
+
         return std::make_pair( rotationAngles, ut1 );
     }
 

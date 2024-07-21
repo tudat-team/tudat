@@ -96,6 +96,7 @@ public:
      */
     Eigen::Quaterniond getRotationToBaseFrame( const double ephemerisTime )
     {
+        std::cout<<"ITRS getRotationToBaseFrame"<<std::endl;
         return Eigen::Quaterniond( frameBias_ ) * earth_orientation::calculateRotationFromItrsToGcrs< double >(
                     anglesCalculator_->getRotationAnglesFromItrsToGcrs< double >( ephemerisTime, inputTimeScale_ ),
                     ephemerisTime );
