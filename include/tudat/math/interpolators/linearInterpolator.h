@@ -81,6 +81,7 @@ public:
         OneDimensionalInterpolator< IndependentVariableType, DependentVariableType >( boundaryHandling,
                                                                                       defaultExtrapolationValue )
     {
+        std::cout<<"Create interpolator "<<dataMap.size( )<<std::endl;
         // Verify that the initialization variables are not empty.
         if ( dataMap.size( ) == 0 )
         {
@@ -96,8 +97,8 @@ public:
         for ( typename std::map< IndependentVariableType, DependentVariableType >::const_iterator
               mapIterator = dataMap.begin( ); mapIterator != dataMap.end( ); mapIterator++ )
         {
-            independentValues_[ counter ] = std::move( mapIterator->first );
-            dependentValues_[ counter ] = std::move( mapIterator->second );
+            independentValues_[ counter ] = mapIterator->first;
+            dependentValues_[ counter ] = mapIterator->second;
             counter++;
         }
 
@@ -218,17 +219,26 @@ public:
      */
     DependentVariableType interpolate( const IndependentVariableType independentVariableValue )
     {
+        std::cout<<"Interpolating "<<independentVariableValue<<" "<<independentValues_[ 0 ]<<" "<<
+                                                                                                independentValues_[ independentValues_.size( ) - 1 ]<<std::endl;
         // Check whether boundary handling needs to be applied, if independent variable is beyond its defined range.
         DependentVariableType interpolatedValue;
         bool useValue = false;
+        std::cout<<"Interpolating B"<<std::endl;
+
         this->checkBoundaryCase( interpolatedValue, useValue, independentVariableValue );
+        std::cout<<"Interpolating C"<<useValue<<std::endl;
+
         if( useValue )
         {
             return interpolatedValue;
         }
+        std::cout<<"Interpolating D"<<std::endl;
 
         // Lookup nearest lower index.
         unsigned int newNearestLowerIndex = lookUpScheme_->findNearestLowerNeighbour( independentVariableValue );
+        std::cout<<"Interpolating E "<<newNearestLowerIndex<<std::endl;
+
 
         // If newNearestLowerIndex is the last element of independentValues_, execute extrapolation with
         // the last and second to last elements of independentValues_.
@@ -236,7 +246,7 @@ public:
         {
             newNearestLowerIndex -= 1;
         }
-
+        std::cout<<"Interpolating F "<<std::endl;
         // Perform linear interpolation.
         interpolatedValue = dependentValues_[ newNearestLowerIndex ] +
                 ( independentVariableValue - independentValues_[ newNearestLowerIndex ] ) /
@@ -244,7 +254,7 @@ public:
                 independentValues_[ newNearestLowerIndex ] ) *
                 ( dependentValues_[ newNearestLowerIndex + 1 ] -
                 dependentValues_[ newNearestLowerIndex ] );
-
+        std::cout<<"Interpolating G "<<std::endl;
         return interpolatedValue;
     }
 
