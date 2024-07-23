@@ -21,9 +21,11 @@ namespace aerodynamics
         // Compute the hash key??
         basic_astrodynamics::DateTime currentDateTime_ = basic_astrodynamics::getCalendarDateFromTime( time );
         currentF107_ =  f107Function_( time );
+        //std::cout << "F107: " << currentF107_ << std::endl;
         currentDensity_ = getTotalDensity(
-                altitude, longitude, latitude,
+                altitude, latitude, longitude,
                 currentDateTime_.getMinute(), currentDateTime_.getHour(), currentDateTime_.getDay(), currentDateTime_.getMonth(), currentDateTime_.getYear() );
+        //std::cout << "current Density: " << currentDensity_ << std::endl;
         currentGeopotentialAltitude_ = computeGeopotentialAltitude( altitude );
         currentTemperature_138 = computeCurrentTemperature(
                 latitude, longitude, currentDateTime_.getMinute(), currentDateTime_.getHour(), currentDateTime_.getDay(), currentDateTime_.getMonth(), currentDateTime_.getYear(), 3 );
@@ -136,6 +138,7 @@ namespace aerodynamics
     alpha_( {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.38, -0.40, 0.0}), // thermal diffusion coefficients
     mmass_( {44.01, 16.00, 28.0, 40.0, 28.0, 32.0, 4.0, 1.0, 2.0} )// molar mass of the species
     {
+        //std::cout<<"MarsDtmAtmosphereModel constructor"<<std::endl;
         coefficients_ = loadCoefficients( filename );
         currentLegendrePolynomials_.resize( 7 );
         currentLegendrePolynomials_[ 0 ] = 0.0;
@@ -152,7 +155,7 @@ namespace aerodynamics
         auto outResults = computeSolarLongitude(longitude, day, month, year, hours, minutes);
         double EoC = std::get<1>(outResults);
         Ls_ = std::get<0>(outResults);
-        //std::cout << "Ls: " << Ls << std::endl;
+        //std::cout << "Ls: " << Ls_ << std::endl;
         //Equation of Time
         double EoT = 2.861 * sin( unit_conversions::convertDegreesToRadians(2*Ls_))
                      - 0.071 * sin( unit_conversions::convertDegreesToRadians(4*Ls_))
@@ -251,8 +254,8 @@ namespace aerodynamics
         double doy = date2.marsDayofYear(date2); //day of year
         //std::cout << "doy: " << doy << std::endl;
         double t = computeLocalSolarTime(longitude, day_, month_, year_, hours_, minutes_); //seconds
+        //std::cout<<"F107: "<<currentF107_<<std::endl;
         double F = currentF107_ - 65.0;
-        //std::cout<<"coefficients_[14][indexg]" << coefficients_[14][indexg] << std::endl;
         // Non-periodic term
         double NP = (coefficients_[1][indexg] * F) + coefficients_[30][indexg] * currentLegendrePolynomials_[1]
                 + coefficients_[31][indexg] * currentLegendrePolynomials_[ 2 ]
@@ -297,7 +300,8 @@ namespace aerodynamics
         double sin2h = 2.0*sin(hl0)*cos(hl0);
         //flux terms:
         double ff0 = 0.0;
-        double F = 65.0-65.0;//currentF107_ - 65.0;
+        double F = currentF107_ - 65.0;
+        //std::cout<<"currentF107 "<<currentF107_<<std::endl;
         double F2 = F*F;
         //std::cout << "F: " << F << std::endl;
         double f0 = coefficients_[4][indexg]*F + coefficients_[39][indexg] * F2;
@@ -402,23 +406,19 @@ namespace aerodynamics
     double MarsDtmAtmosphereModel::getTotalDensity( const double altitude, const double latitude,
                                                     const double longitude, const int minutes_, const int hours_, const int day_ ,const int month_,const int year_)
     {
+        //std::cout<<"getting total density"<<std::endl;
+        //std::cout<<"F107: "<<currentF107_<<std::endl;
         double avogadroConstant_ = 6.022E23;//physical_constants::AVOGADRO_CONSTANT;
         double rho0;
         double rho = 0;
         int indexm = 0;
         for (int col = 7; col < 25; col += 2) {
             rho0 = coefficients_[0][col]*mmass_[indexm]/avogadroConstant_; //g/cm3
-            //std::cout << "coefficients_[0][col]: " << coefficients_[0][col] << std::endl;
             double fi = heightDistributionFunction(altitude, latitude, longitude, minutes_, hours_, day_ , month_, year_, indexm);
-            //if (col == 7)
-            //    std::cout << "fi CO2: " << fi << std::endl;
-
             double gl = computeGl_Subr(latitude, longitude, minutes_, hours_, day_ , month_, year_, col);
 
             rho += rho0*fi*exp(gl);
             indexm +=1;
-          //  std::cout << "fi: " << indexm << " " << fi << std::endl;
-          //  std::cout << "rho: " << indexm << " " << rho << std::endl;
         }
         return rho*1000;
     }
