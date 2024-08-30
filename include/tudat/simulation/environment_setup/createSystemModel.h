@@ -205,49 +205,6 @@ inline std::shared_ptr< FullPanelledBodySettings > bodyWingPanelledGeometry(
 }
 
 
-inline std::shared_ptr< FullPanelledBodySettings > bodyWingAntennaPanelledGeometry(
-    const double length,
-    const double width,
-    const double height,
-    const double diameter,
-    const double totalSolarArrayArea,
-    const double busSpecularReflectivity,
-    const double busDiffuseReflectivity,
-    const double solarArraySpecularReflectivity,
-    const double solarArrayDiffuseReflectivity,
-    const bool busInstantaneousReradiation = true,
-    const bool solarArrayInstantaneousReradiation = true )
-{
-    std::vector< std::shared_ptr< BodyPanelGeometrySettings > > panelGeometrySettingsList =
-        std::vector< std::shared_ptr< BodyPanelGeometrySettings > >(
-            { frameFixedPanelGeometry( Eigen::Vector3d::UnitX( ), width * height ),
-              frameFixedPanelGeometry( -Eigen::Vector3d::UnitX( ), width * height ),
-              frameFixedPanelGeometry( Eigen::Vector3d::UnitY( ), length * height ),
-              frameFixedPanelGeometry( -Eigen::Vector3d::UnitY( ), length * height ),
-              frameFixedPanelGeometry( Eigen::Vector3d::UnitZ( ), length * width  ),
-              frameFixedPanelGeometry( -Eigen::Vector3d::UnitZ( ), length * width ),
-              frameFixedPanelGeometry( Eigen::Vector3d::UnitX( ), 3.14 * (0.5 * diameter) * (0.5 * diameter) ),
-              bodyTrackingPanelGeometry( "Sun", true, totalSolarArrayArea ),
-              bodyTrackingPanelGeometry( "Sun", false, totalSolarArrayArea )
-              } );
-    std::vector< std::shared_ptr< BodyPanelSettings > > panelSettings;
-    for( unsigned int i = 0; i < 7; i++ )
-    {
-        panelSettings.push_back(
-            bodyPanelSettings( panelGeometrySettingsList.at( i ), specularDiffuseBodyPanelReflectionLawSettings(
-                busSpecularReflectivity, busDiffuseReflectivity, busInstantaneousReradiation ), "Bus" ) );
-    }
-
-    for( unsigned int i = 0; i < 2; i++ )
-    {
-        panelSettings.push_back(
-            bodyPanelSettings( panelGeometrySettingsList.at( i + 6 ), specularDiffuseBodyPanelReflectionLawSettings(
-                solarArraySpecularReflectivity, solarArrayDiffuseReflectivity, solarArrayInstantaneousReradiation ), "SolarPanel" ) );
-    }
-
-    return fullPanelledBodySettings( panelSettings );
-}
-
 
 
 void addEngineModel(

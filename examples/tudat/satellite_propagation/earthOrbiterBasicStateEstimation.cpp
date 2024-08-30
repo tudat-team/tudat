@@ -202,9 +202,8 @@ int main( )
     parameterNames = getInitialStateParameterSettings< double >( propagatorSettings, bodies );
     parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Vehicle", radiation_pressure_coefficient ) );
     const std::string dummy = "SolarPanel";
-    std::shared_ptr<EstimatableParameterSettings> parameterSettings =
-            std::make_shared<EstimatableParameterSettings>("Vehicle", specular_reflectivity, dummy);
-    parameterNames.push_back(parameterSettings);
+    parameterNames.push_back(std::make_shared<EstimatableParameterSettings>("Vehicle", specular_reflectivity, dummy));
+    parameterNames.push_back(std::make_shared<EstimatableParameterSettings>("Vehicle", diffuse_reflectivity, dummy));
 
     // Create parameters
     std::shared_ptr< estimatable_parameters::EstimatableParameterSet< double > > parametersToEstimate =
@@ -282,7 +281,9 @@ int main( )
     // Perturbe initial state estimate.
     parameterPerturbation.segment( 0, 3 ) = Eigen::Vector3d::Constant( 1.0 );
     parameterPerturbation.segment( 3, 3 ) = Eigen::Vector3d::Constant( 1.E-3 );
-    parameterPerturbation.segment( 6, 1 ) = Eigen::Vector1d::Constant( 1.E-1 );
+    parameterPerturbation.segment( 6, 1 ) = Eigen::Vector1d::Constant( 0.1 );
+    parameterPerturbation.segment( 7, 1 ) = Eigen::Vector1d::Constant( 0.05 );
+    parameterPerturbation.segment( 8, 1 ) = Eigen::Vector1d::Constant( 0.05 );
 
     initialParameterEstimate += parameterPerturbation;
     parametersToEstimate->resetParameterValues( initialParameterEstimate );
@@ -297,7 +298,7 @@ int main( )
     weightPerObservable[ one_way_doppler ] = 1.0 / ( 1.0E-11 * 1.0E-11 * physical_constants::SPEED_OF_LIGHT * physical_constants::SPEED_OF_LIGHT  );
 
     estimationInput->setConstantPerObservableWeightsMatrix( weightPerObservable );
-    estimationInput->defineEstimationSettings( true, true, true, true, false );
+    estimationInput->defineEstimationSettings( true, true, true, true, true );
     estimationInput->setConvergenceChecker(
             std::make_shared< EstimationConvergenceChecker >( 4 ) );
 
@@ -305,7 +306,14 @@ int main( )
     std::shared_ptr< EstimationOutput< double > > estimationOutput = orbitDeterminationManager.estimateParameters(
             estimationInput );
 
-    Eigen::VectorXd estimationError = estimationOutput->parameterEstimate_ - truthParameters;
+    input_output::writeMatrixToFile( estimationOutput->getParameterHistoryMatrix( ),
+                                     "MichaelearthOrbitParameterHistory.dat", 16,
+                                     tudat_applications::getOutputPath( )  );
+
+    Eigen::VectorXd parameterEstimate = estimationOutput->parameterEstimate_;
+    std::cout <<"parameter estimate: "<< ( parameterEstimate ).transpose( ) << std::endl;
+
+    Eigen::VectorXd estimationError = parameterEstimate - truthParameters;
     std::cout <<"estimation error: "<< ( estimationError ).transpose( ) << std::endl;
 
 

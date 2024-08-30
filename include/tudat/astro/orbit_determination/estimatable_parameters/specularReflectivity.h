@@ -73,20 +73,20 @@ class SpecularReflectivity: public EstimatableParameter< double >
             radiationPressureInterface_->setGroupSpecularReflectivity(panelTypeId_, parameterValue );
 
             // update the absorptivity 
-//            double diffuseReflectivity = radiationPressureInterface_->getAverageDiffuseReflectivity( panelTypeId_ );
-//            if(parameterValue + diffuseReflectivity >= 1.0)
-//            {
-//                std::cerr << "Warning: When updating reflectivity coefficients for panel group "
-//                << panelTypeId_ << ", sum of specular and diffuse is larger than 1. Setting absorptivity to zero" << std::endl;
-//                double absorptivity = 0;
-//                radiationPressureInterface_->setGroupAbsorptivity(panelTypeId_, absorptivity);
-//
-//            }
-//            else
-//            {
-//                double absorptivity = 1.0 - parameterValue - diffuseReflectivity;
-//                radiationPressureInterface_->setGroupAbsorptivity(panelTypeId_, absorptivity);
-//            }
+            double diffuseReflectivity = radiationPressureInterface_->getAverageDiffuseReflectivity( panelTypeId_ );
+            if(parameterValue + diffuseReflectivity >= 1.0)
+            {
+                std::cerr << "Warning: When updating reflectivity coefficients for panel group "
+                << panelTypeId_ << ", sum of specular and diffuse is larger than 1. Setting absorptivity to zero" << std::endl;
+                double absorptivity = 0;
+                radiationPressureInterface_->setGroupAbsorptivity(panelTypeId_, absorptivity);
+
+            }
+            else
+            {
+                double absorptivity = 1.0 - parameterValue - diffuseReflectivity;
+                radiationPressureInterface_->setGroupAbsorptivity(panelTypeId_, absorptivity);
+            }
 
         }
 

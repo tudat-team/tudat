@@ -73,21 +73,21 @@ class DiffuseReflectivity: public EstimatableParameter< double >
             radiationPressureInterface_->setGroupDiffuseReflectivity(panelTypeId_, parameterValue );
 
             // update the absorptivity 
-//            double specularReflectivity = radiationPressureInterface_->getAverageSpecularReflectivity( panelTypeId_ );
-//            if(parameterValue + specularReflectivity >= 1.0)
-//            {
-//                std::cerr << "Warning: When updating reflectivity coefficients for panel group "
-//                << panelTypeId_ << ", sum of specular and diffuse is larger than 1. Setting absorptivity to zero" << std::endl;
-//                double absorptivity = 0;
-//                radiationPressureInterface_->setGroupAbsorptivity(panelTypeId_, absorptivity);
-//
-//            }
-//            else
-//            {
-//                double absorptivity = 1.0 - parameterValue - specularReflectivity;
-//                //std::cout<<"Set absorptivity to " << absorptivity <<std::endl;
-//                radiationPressureInterface_->setGroupAbsorptivity(panelTypeId_, absorptivity);
-//            }
+            double specularReflectivity = radiationPressureInterface_->getAverageSpecularReflectivity( panelTypeId_ );
+            if(parameterValue + specularReflectivity >= 1.0)
+            {
+                std::cerr << "Warning: When updating reflectivity coefficients for panel group "
+                << panelTypeId_ << ", sum of specular and diffuse is larger than 1. Setting absorptivity to zero" << std::endl;
+                double absorptivity = 0;
+                radiationPressureInterface_->setGroupAbsorptivity(panelTypeId_, absorptivity);
+
+            }
+            else
+            {
+                double absorptivity = 1.0 - parameterValue - specularReflectivity;
+                //std::cout<<"Set absorptivity to " << absorptivity <<std::endl;
+                radiationPressureInterface_->setGroupAbsorptivity(panelTypeId_, absorptivity);
+            }
 
         }
 

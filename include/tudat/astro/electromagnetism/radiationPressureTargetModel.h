@@ -392,7 +392,7 @@ public:
             }
         }
     };
-    
+
 
 private:
     //void updateMembers_( double currentTime ) override;
