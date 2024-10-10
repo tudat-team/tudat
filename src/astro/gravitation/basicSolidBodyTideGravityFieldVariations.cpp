@@ -26,11 +26,30 @@ std::complex< double > calculateSolidBodyTideSingleCoefficientSetCorrectionFromA
         const double amplitude, const std::complex< double > tideArgument,
         const int degree, const int order )
 {
+    static std::map< int, std::complex< double > > degreeTwoMeanValues =
+        { { 0, { 0.2, 0.0 } }, // { mean(Delta C20), 0 ) }
+          { 1, { 0.2, -0.2 } }, // { mean(Delta C21), -mean(Delta S21) ) }
+          { 2, { 0.2, -0.2 } } };  // { mean(Delta C21), -mean(Delta S22) ) }
+
+    static std::map< int, std::complex< double > > degreeThreeMeanValues =
+        { { 0, { 0.2, -0.2 } }, {
+            1, { 0.2, -0.2 } },
+          { 2, { 0.2, -0.2 } },
+          { 3, { 0.2, -0.2 } } };
+    static std::map< int, std::complex< double > > degreeFourMeanValues =
+        { { 0, { 0.2, -0.2 } },
+          { 1, { 0.2, -0.2 } },
+          { 2, { 0.2, -0.2 } },
+          { 3, { 0.2, -0.2 } }, {
+            4, { 0.2, -0.2 } }  };
+
+    static std::map< int, std::map< int, std::complex< double > > > meanValues =
+        { { 2, degreeTwoMeanValues }, {3, degreeThreeMeanValues }, { 4, degreeFourMeanValues } };
     // Calculate and return corrections.
-    return loveNumber / ( 2.0 * static_cast< double >( degree ) + 1.0 ) *
+    return loveNumber * ( 1.0 / ( 2.0 * static_cast< double >( degree ) + 1.0 ) *
             massRatio * radiusRatioPowerN *
             amplitude * basic_mathematics::calculateLegendreGeodesyNormalizationFactor(
-                degree, order ) * std::exp( -tideArgument );
+                degree, order ) * std::exp( -tideArgument ) - meanValues.at( degree ).at( order ) );
 }
 
 //! Function to calculate solid body tide gravity field variations due to single body at single degree and order directly
