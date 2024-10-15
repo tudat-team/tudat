@@ -8,15 +8,15 @@ name: Build and Test
 
 on:
   push:
-    branches: [ "master", "develop"]
+    branches: [ "master", "develop", "feature/**" ]
   pull_request:
-    branches: [ "master", "develop"]
+    branches: [ "master", "develop", "feature/**" ]
 
 jobs:
   build-and-test:
 
     env:
-        CACHE_NUMBER: 0
+        CACHE_NUMBER: 1
 
     runs-on: ${{ matrix.os }}
 
@@ -39,17 +39,14 @@ jobs:
             c_compiler: cl
             cpp_compiler: cl
             label: win-64
-            path_conda_env: C:\Miniconda3\envs\tudat
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
             label: linux-64
-            path_conda_env: /usr/share/miniconda3/envs/tudat
           - os: macos-latest
             c_compiler: clang
             cpp_compiler: clang++
             label: osx-64
-            path_conda_env: /Users/runner/miniconda3/envs/tudat
         exclude:
           - os: windows-latest
             c_compiler: gcc
@@ -85,45 +82,44 @@ jobs:
       run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
       shell: bash
 
+    - name: Set platform-specific data path
+      run: |
+        echo "TUDAT_DATA_PATH=$(python -c "import tudatpy.data; print(tudatpy.data.get_resource_path())")" >> $GITHUB_ENV
+        echo "TUDAT_DATA_PATH=${{ env.TUDAT_DATA_PATH }}"
+        echo "TUDAT_DATA_PATH=$TUDAT_DATA_PATH"
+      shell: bash
 
     - name: Cache conda environment
       # Cache the conda environment to avoid re-installing the same packages every time the workflow runs. The cache key is based on the environment.yml file, the operating system, and the date. The cache is restored if the cache key matches the cache key of the previous run.
       uses: actions/cache@v4
       with:
-          path: ${{ matrix.path_conda_env }}
+          path: |
+            ${{ env.CONDA }}/envs/tudat
+            ${{ env.TUDAT_DATA_PATH }}
           key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}-${{steps.get-date.outputs.today}}
-      id: cache
-
+      id: cache-environment
 
     - name: Create conda environment from environment.yml
       # Update the tudat conda environment created using the environment.yml file if the cache is not restored
       run: mamba env update -n tudat -f environment.yml
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.cache-environment.outputs.cache-hit != 'true'
 
+    - name: Export the environment to a YAML file
+      run: |
+        conda env export --from-history -f environment-locked.yml
 
-    - name: Download tudat resources data files for Linux and MacOS
-      # The data files in tudat-resources are downloaded upon the installation of
-      # the tudat-resources conda package in the previous step, but the data files are
-      # not cached by the cache action. When the cache is hit, the update environment
-      # step is skipped, skipping the installation of the tudat-resources package,
-      # thereby skipping the download of the data files. Therefore, the data files must
-      # be downloaded manually when the cache is hit.
-      # This step downloads the data files in the tudat-resources package by running
-      # the post-link scripts in https://github.com/tudat-team/tudat-resources-feedstock/blob/master/recipe/
-      if: (runner.os == 'Linux' || runner.os == 'MacOS') && steps.cache.outputs.cache-hit == 'true'
-      run: bash -c "$(curl -fsSL https://raw.githubusercontent.com/tudat-team/tudat-resources-feedstock/master/recipe/post-link.sh)"
-
-
-    - name: Download tudat-resources data files for Windows
-      if: runner.os == 'Windows' && steps.cache.outputs.cache-hit == 'true'
-      run: cmd /c "curl -fsSL https://raw.githubusercontent.com/tudat-team/tudat-resources-feedstock/master/recipe/post-link.bat | cmd"
-
+    - name: Upload the locked environment file
+      # This step uploads the locked conda environment to the artifacts. This is useful for debugging and reproducing the environment locally.
+      uses: actions/upload-artifact@v4
+      with:
+        name: locked-conda-environment-${{ runner.os }}
+        path: environment-locked.yml
 
     - name: Restore cached compilation results
       # This third party action will setup ccache on the runner and restore any previously saved cache. Caches are saved automatically by the action after a build.
       uses: hendrikmuhs/ccache-action@v1.2.12
       with:
-        key: ${{ matrix.os }}-${{ matrix.build_type }}
+        key: ${{ matrix.os }}-${{ matrix.build_type }}-${{ hashFiles('**/*.cmake', '**/CMakeLists.txt') }}
 
 
     - name: Configure CMake
