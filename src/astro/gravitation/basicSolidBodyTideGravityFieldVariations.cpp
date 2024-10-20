@@ -27,21 +27,21 @@ std::complex< double > calculateSolidBodyTideSingleCoefficientSetCorrectionFromA
         const int degree, const int order )
 {
     static std::map< int, std::complex< double > > degreeTwoMeanValues =
-        { { 0, { 0.2, 0.0 } }, // { mean(Delta C20), 0 ) }
-          { 1, { 0.2, -0.2 } }, // { mean(Delta C21), -mean(Delta S21) ) }
-          { 2, { 0.2, -0.2 } } };  // { mean(Delta C21), -mean(Delta S22) ) }
+        { { 0, { -4.259344121984691E-05, 0.0 } }, // { mean(Delta C20), 0 ) }
+          { 1, { 0.0, 0.0 } }, // { mean(Delta C21), -mean(Delta S21) ) }
+          { 2, {  7.37732934240854e-05, 6.868871654467135e-10 } } };  // { mean(Delta C21), -mean(Delta S22) ) }
 
     static std::map< int, std::complex< double > > degreeThreeMeanValues =
-        { { 0, { 0.2, -0.2 } }, {
-            1, { 0.2, -0.2 } },
-          { 2, { 0.2, -0.2 } },
-          { 3, { 0.2, -0.2 } } };
+        { { 0, { 0.0, 0.0 } }, {
+            1, { 1.0837266760701193e-07, 5.053437412252534e-13 } },
+          { 2, { 0.0, 0.0 } },
+          { 3, { -1.3990581615177383e-07, -1.9572015447066425e-12 } } };
     static std::map< int, std::complex< double > > degreeFourMeanValues =
-        { { 0, { 0.2, -0.2 } },
-          { 1, { 0.2, -0.2 } },
-          { 2, { 0.2, -0.2 } },
-          { 3, { 0.2, -0.2 } }, {
-            4, { 0.2, -0.2 } }  };
+        { { 0, { 0.0, 0.0 } },
+          { 1, { 0.0, 0.0 } },
+          { 2, { 0.0, 0.0 } },
+          { 3, { 0.0, 0.0 } }, {
+            4, { 0.0, 0.0 } }  };
 
     static std::map< int, std::map< int, std::complex< double > > > meanValues =
         { { 2, degreeTwoMeanValues }, {3, degreeThreeMeanValues }, { 4, degreeFourMeanValues } };
