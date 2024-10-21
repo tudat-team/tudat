@@ -49,6 +49,8 @@
 #include "tudat/simulation/estimation_setup/estimatableParameterSettings.h"
 #include "tudat/simulation/propagation_setup/dynamicsSimulator.h"
 #include "tudat/simulation/environment_setup/body.h"
+#include "tudat/astro/orbit_determination/estimatable_parameters/specularReflectivity.h"
+#include "tudat/astro/orbit_determination/estimatable_parameters/diffuseReflectivity.h"
 
 namespace tudat
 {
@@ -1310,6 +1312,38 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > create
                 currentBodyName, doubleParameterName->parameterType_.second.second );
             break;
         }
+        case specular_reflectivity:
+        {
+            if( std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( currentBody->getRadiationPressureTargetModel( ) ) == nullptr)
+            {
+                std::string errorMessage = "Error, no panelled radiation pressure target model found in body " +
+                        currentBodyName + " when making specular reflectivity parameter.";
+                throw std::runtime_error( errorMessage );
+            }
+            else
+            {
+                doubleParameterToEstimate = std::make_shared< SpecularReflectivity >(
+                    std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( currentBody->getRadiationPressureTargetModel( ) ),
+                    currentBodyName, doubleParameterName->parameterType_.second.second);
+            }
+            break;
+        }
+        case diffuse_reflectivity:
+        {
+            if( std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( currentBody->getRadiationPressureTargetModel( ) ) == nullptr)
+            {
+                std::string errorMessage = "Error, no panelled radiation pressure target model found in body " +
+                        currentBodyName + " when making diffuse reflectivity parameter.";
+                throw std::runtime_error( errorMessage );
+            }
+            else
+            {
+                doubleParameterToEstimate = std::make_shared< DiffuseReflectivity >(
+                    std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( currentBody->getRadiationPressureTargetModel( ) ),
+                    currentBodyName, doubleParameterName->parameterType_.second.second);
+            }
+            break;
+        }
         default:
             throw std::runtime_error( "Warning, this double parameter has not yet been implemented when making parameters" );
             break;
@@ -1788,6 +1822,7 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd >
             }
             break;
         }
+
         case arc_wise_constant_drag_coefficient:
         {
             // Check input consistency
