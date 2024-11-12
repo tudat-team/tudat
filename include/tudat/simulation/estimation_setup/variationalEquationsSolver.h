@@ -152,14 +152,15 @@ protected:
      */
     MatrixType createInitialConditions( const VectorType initialStateEstimate )
     {
-        if( stateTransitionMatrixSize_ != initialStateEstimate.rows( ) )
+        if( stateTransitionMatrixSize_ > initialStateEstimate.rows( ) )
         {
             throw std::runtime_error( "Error when getting initial condition for variational equations, sizes are incompatible: " +
             std::to_string( stateTransitionMatrixSize_ ) + ", " + std::to_string( initialStateEstimate.rows( ) ) );
         }
 
+        std::cout<<initialStateEstimate.rows( )<<" "<<parameterVectorSize_<<" "<<stateTransitionMatrixSize_<<std::endl;
         // Initialize initial conditions to zeros.
-        MatrixType varSystemInitialState = MatrixType( stateTransitionMatrixSize_,
+        MatrixType varSystemInitialState = MatrixType( initialStateEstimate.rows( ),
                                                        parameterVectorSize_ + 1 ).setZero( );
 
         // Set initial state transition matrix to identity
@@ -167,7 +168,7 @@ protected:
 
         // Set initial body states to current estimate of initial body states.
         varSystemInitialState.block( 0, parameterVectorSize_,
-                                     stateTransitionMatrixSize_, 1 ) = initialStateEstimate;
+                                     initialStateEstimate.rows( ), 1 ) = initialStateEstimate;
 
         return varSystemInitialState;
     }
@@ -318,11 +319,23 @@ bool checkPropagatorSettingsAndParameterEstimationConsistency(
 
         if( propagatedBodies.size( ) != estimatedBodies.size( ) )
         {
-            std::string errorMessage = "Error, propagated and estimated body vector sizes are inconsistent " +
+            std::string warningMessage = "Warning, propagated and estimated body vector sizes are inconsistent " +
                     std::to_string( propagatedBodies.size( ) ) + " " +
                     std::to_string( estimatedBodies.size( ) );
-            throw std::runtime_error( errorMessage );
-            isInputConsistent = 0;
+            std::cerr<<warningMessage<<std::endl;
+
+            for( unsigned int i = 0; i < estimatedBodies.size( ); i++ )
+            {
+                std::vector< std::string >::iterator findIterator =
+                    std::find( propagatedBodies.begin( ), propagatedBodies.end( ), estimatedBodies.at( i ) );
+                if( findIterator == propagatedBodies.end( ) )
+                {
+                    std::string errorMessage = "Error, propagated and estimated body vectors inconsistent, body " +
+                                               std::string( estimatedBodies.at( i ) + " is not propagated" );
+                    throw std::runtime_error( errorMessage );
+                    isInputConsistent = 0;
+                }
+            }
         }
         else
         {
