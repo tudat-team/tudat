@@ -1961,12 +1961,6 @@ public:
 
         case one_way_differenced_range:
         {
-//            std::shared_ptr< OneWayDifferencedRangeRateObservationSettings > rangeRateObservationSettings =
-//                    std::dynamic_pointer_cast< OneWayDifferencedRangeRateObservationSettings >( observationSettings );
-//            if( rangeRateObservationSettings == nullptr )
-//            {
-//                throw std::runtime_error( "Error when making differenced one-way range rate, input type is inconsistent" );
-//            }
             // Check consistency input.
             if( linkEnds.size( ) != 2 )
             {
@@ -2005,6 +1999,53 @@ public:
                             bodies, topLevelObservableType, observationSettings->lightTimeCorrectionsList_,
                             observationSettings->lightTimeConvergenceCriteria_ ),
                         observationBias );
+
+            break;
+        }
+        case time_difference_of_arrival:
+        {
+            // Check consistency input.
+            if( linkEnds.size( ) != 3 )
+            {
+                std::string errorMessage =
+                    "Error when making TOA observation model, " +
+                    std::to_string( linkEnds.size( ) ) + " link ends found";
+                throw std::runtime_error( errorMessage );
+            }
+            if( linkEnds.count( receiver1 ) == 0 )
+            {
+                throw std::runtime_error( "Error when making TOA observation model, no receiver1 found" );
+            }
+            if( linkEnds.count( receiver2 ) == 0 )
+            {
+                throw std::runtime_error( "Error when making TOA observation model, no receiver2 found" );
+            }
+            if( linkEnds.count( transmitter ) == 0 )
+            {
+                throw std::runtime_error( "Error when making TOA observation model, no transmitter found" );
+            }
+
+            std::shared_ptr< ObservationBias< 1 > > observationBias;
+            if( observationSettings->biasSettings_ != nullptr )
+            {
+                observationBias =
+                    createObservationBiasCalculator(
+                        linkEnds, observationSettings->observableType_, observationSettings->biasSettings_,bodies );
+            }
+
+            // Create observation model
+            observationModel = std::make_shared< OneWayDifferencedRangeObservationModel<
+                ObservationScalarType, TimeType > >(
+                linkEnds,
+                createLightTimeCalculator< ObservationScalarType, TimeType >(
+                    linkEnds, transmitter, receiver1,
+                    bodies, topLevelObservableType, observationSettings->lightTimeCorrectionsList_,
+                    observationSettings->lightTimeConvergenceCriteria_ ),
+                createLightTimeCalculator< ObservationScalarType, TimeType >(
+                    linkEnds, transmitter, receiver2,
+                    bodies, topLevelObservableType, observationSettings->lightTimeCorrectionsList_,
+                    observationSettings->lightTimeConvergenceCriteria_ ),
+                observationBias );
 
             break;
         }
