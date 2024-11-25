@@ -98,6 +98,12 @@ public:
             totalDynamicalStateSize_ +=
                     getSingleIntegrationSize( partialTypeIterator->first ) * partialTypeIterator->second.size( );
         }
+        // TOCHECK
+        if( totalDynamicalStateSize_ != parametersToEstimate->getInitialDynamicalStateParameterSize( ) )
+        {
+            std::cerr<<"Warning, inconsistency found in variational equations state sizes: "<<totalDynamicalStateSize_<<" "<<parametersToEstimate->getInitialDynamicalStateParameterSize( )<<std::endl;
+            totalDynamicalStateSize_ = parametersToEstimate->getInitialDynamicalStateParameterSize( );
+        }
 
         // Initialize matrices.
         variationalMatrix_ = Eigen::MatrixXd::Zero( totalDynamicalStateSize_, totalDynamicalStateSize_ );
@@ -141,9 +147,11 @@ public:
     {
         setBodyStatePartialMatrix( );
 
+
         // Add partials of body positions and velocities.
         currentMatrixDerivative.block( 0, 0, totalDynamicalStateSize_, numberOfParameterValues_ ) =
                 ( variationalMatrix_.template cast< StateScalarType >( ) * stateTransitionAndSensitivityMatrices );
+
 
         if( couplingEntriesToSuppress_ > 0 )
         {
@@ -308,10 +316,17 @@ public:
      *  Returns the number of parameter values (i.e. number of columns in state transition matrix).
      *  \return Number of parameter values.
      */
-    double getNumberOfParameterValues( )
+    int getNumberOfParameterValues( )
     {
         return numberOfParameterValues_;
     }
+
+    int getDynamicalStateSize( )
+    {
+        return totalDynamicalStateSize_;
+    }
+
+
 
     std::vector< std::pair< int, int > > getStatePartialAdditionIndices( )
     {
@@ -629,7 +644,9 @@ private:
     
     //! Number of parameter values in estimation (i.e. number of columns in sensitivity matrix)
     int numberOfParameterValues_;
-    
+
+    int stateTransitionMatrixSize_;
+
     //! Total size of (single-arc) state vector of dynamics that is to be estimated.
     int totalDynamicalStateSize_;
 

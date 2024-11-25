@@ -167,6 +167,7 @@ public:
         {
             stateDerivative_.resize( state.rows( ), state.cols( ) );
         }
+        stateDerivative_.setZero( );
 
         // If dynamical equations are integrated, update the environment with the current state.
         if( evaluateDynamicsEquations_ )
@@ -238,8 +239,8 @@ public:
             variationalEquations_->updatePartials( time, currentStatesPerTypeInConventionalRepresentation_ );
 
             variationalEquations_->evaluateVariationalEquations< StateScalarType >(
-                        time, state.block( 0, 0, totalConventionalStateSize_, variationalEquations_->getNumberOfParameterValues( ) ),
-                        stateDerivative_.block( 0, 0, totalConventionalStateSize_, variationalEquations_->getNumberOfParameterValues( ) ) );
+                        time, state.block( 0, 0, variationalEquations_->getDynamicalStateSize( ), variationalEquations_->getNumberOfParameterValues( ) ),
+                        stateDerivative_.block( 0, 0, variationalEquations_->getDynamicalStateSize( ), variationalEquations_->getNumberOfParameterValues( ) ) );
         }
 
         // Update counters

@@ -505,7 +505,7 @@ namespace tudat
                 {
                     stateTransitionSolution_[ static_cast< double >( it.first ) ] = it.second.block( 0, 0, stateTransitionMatrixSize_, stateTransitionMatrixSize_ ).template cast< double >( );
                     sensitivitySolution_[ static_cast< double >( it.first ) ] = it.second.block( 0, stateTransitionMatrixSize_, stateTransitionMatrixSize_, sensitivityMatrixSize_ ).template cast< double >( );
-                    equationsOfMotionNumericalSolutionRaw[ static_cast< double >( it.first ) ] = it.second.block( 0, stateTransitionMatrixSize_ + sensitivityMatrixSize_, stateTransitionMatrixSize_, 1 );
+                    equationsOfMotionNumericalSolutionRaw[ static_cast< double >( it.first ) ] = it.second.block( 0, stateTransitionMatrixSize_ + sensitivityMatrixSize_, it.second.rows( ), 1 );
                 }
             }
 
