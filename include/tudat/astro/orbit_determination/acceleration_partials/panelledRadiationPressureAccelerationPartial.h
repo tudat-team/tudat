@@ -150,6 +150,56 @@ public:
         return 0;
     }
 
+
+    //! Function to compute partial derivative w.r.t. arc-wise source direction scaling factors.
+    void wrtArcWiseSourceDirectionScaling(
+        Eigen::MatrixXd& partial,
+        const std::shared_ptr< estimatable_parameters::ArcWiseRadiationPressureScalingFactor > parameter )
+    {
+        Eigen::MatrixXd partialWrtSingleParameter = Eigen::Vector3d::Zero();
+        computeRadiationPressureAccelerationWrtSourceDirectionScaling(radiationPressureAcceleration_, partialWrtSingleParameter );
+
+        // Retrieve current arc
+        std::shared_ptr< interpolators::LookUpScheme< double > > currentArcIndexLookUp =
+            parameter->getArcTimeLookupScheme();
+        partial.setZero();
+        if (currentArcIndexLookUp->getMinimumValue() <= currentTime_)
+        {
+            int currentArc = currentArcIndexLookUp->findNearestLowerNeighbour(currentTime_);
+            if (currentArc >= partial.cols())
+            {
+                throw std::runtime_error("Error when getting arc-wise radiation pressure scaling partials, data not consistent");
+            }
+
+            // Set partial
+            partial.block(0, currentArc, 3, 1) = partialWrtSingleParameter;
+        }
+    }
+
+    void wrtArcWisePerpendicularDirectionScaling(
+            Eigen::MatrixXd& partial,
+            const std::shared_ptr< estimatable_parameters::ArcWiseRadiationPressureScalingFactor > parameter )
+    {
+        Eigen::MatrixXd partialWrtSingleParameter = Eigen::Vector3d::Zero();
+        computeRadiationPressureAccelerationWrtSourcePerpendicularDirectionScaling( radiationPressureAcceleration_, partialWrtSingleParameter );
+
+        // Retrieve current arc
+        std::shared_ptr< interpolators::LookUpScheme< double > > currentArcIndexLookUp =
+                parameter->getArcTimeLookupScheme();
+        partial.setZero();
+        if (currentArcIndexLookUp->getMinimumValue() <= currentTime_)
+        {
+            int currentArc = currentArcIndexLookUp->findNearestLowerNeighbour(currentTime_);
+            if (currentArc >= partial.cols())
+            {
+                throw std::runtime_error("Error when getting arc-wise radiation pressure scaling partials, data not consistent");
+            }
+
+            // Set partial
+            partial.block(0, currentArc, 3, 1) = partialWrtSingleParameter;
+        }
+    }
+
     //! Function for setting up and retrieving a function returning a partial w.r.t. a double parameter.
     /*!
      *  Function for setting up and retrieving a function returning a partial w.r.t. a double parameter.
@@ -223,9 +273,62 @@ public:
             std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > parameter )
     {
         std::function< void( Eigen::MatrixXd& ) > partialFunction;
-        return std::make_pair( partialFunction, 0 );
-    }
+        int numberOfRows = 0;
 
+        // Check if parameter dependency exists.
+        if( parameter->getParameterName( ).second.first == acceleratedBody_ )
+        {
+            switch( parameter->getParameterName( ).first )
+            {
+            // Case for arc-wise source direction scaling factor.
+            case estimatable_parameters::arcwise_source_direction_radiation_pressure_scaling_factor:
+            {
+                // Ensure the parameter is of the correct type.
+                std::shared_ptr< estimatable_parameters::ArcWiseRadiationPressureScalingFactor > scalingFactorParameter =
+                    std::dynamic_pointer_cast< estimatable_parameters::ArcWiseRadiationPressureScalingFactor >( parameter );
+                if( scalingFactorParameter == nullptr )
+                {
+                    throw std::runtime_error(
+                        "Error when making panelled radiation pressure partial, arcwise perpendicular direction scaling factor parameter not consistent." );
+                }
+                // Bind the partial function for source direction scaling.
+                partialFunction = std::bind(
+                    &PanelledRadiationPressurePartial::wrtArcWiseSourceDirectionScaling,
+                    this,std::placeholders::_1, scalingFactorParameter );
+
+                numberOfRows = parameter->getParameterSize();
+                break;
+            }
+
+            // Case for arc-wise perpendicular direction scaling factor.
+            case estimatable_parameters::arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:
+            {
+                // Ensure the parameter is of the correct type.
+                std::shared_ptr< estimatable_parameters::ArcWiseRadiationPressureScalingFactor > scalingFactorParameter =
+                    std::dynamic_pointer_cast< estimatable_parameters::ArcWiseRadiationPressureScalingFactor >( parameter );
+                if( scalingFactorParameter == nullptr )
+                {
+                    throw std::runtime_error(
+                        "Error when making panelled radiation pressure partial, arcwise perpendicular direction scaling factor parameter not consistent." );
+                }
+                // Bind the partial function for perpendicular direction scaling.
+                partialFunction = std::bind(
+                    &PanelledRadiationPressurePartial::wrtArcWisePerpendicularDirectionScaling,
+                    this,
+                    std::placeholders::_1, // Placeholder for the first argument (Eigen::MatrixXd&)
+                    scalingFactorParameter // Pre-bind the second argument (parameter)
+                );
+                numberOfRows = parameter->getParameterSize();
+                break;
+            }
+
+            default:
+                break;
+            }
+        }
+
+        return std::make_pair( partialFunction, numberOfRows );
+    }
     Eigen::Matrix< double, 1, 3 > getCurrentCosineAnglePartial( )
     {
         return currentCosineAnglePartial_;

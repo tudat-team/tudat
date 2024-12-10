@@ -100,6 +100,8 @@ class RadiationPressureScalingFactor: public EstimatableParameter< double >
 
 public:
 
+    // TODO: Since I changed the scaling attributes to be in the MODEL, the constructor should use the model as well, not the acceleration (redundancy of get/set functions)
+
     RadiationPressureScalingFactor(
         const std::shared_ptr< electromagnetism::RadiationPressureAcceleration > radiationPressureAcceleration,
         const EstimatebleParametersEnum parameterType,
@@ -275,6 +277,150 @@ private:
 
     //! Interpolator that returns the radiation pressure coefficient as a function of time.
     std::shared_ptr< interpolators::PiecewiseConstantInterpolator< double, double > > coefficientInterpolator_;
+};
+
+class ArcWiseRadiationPressureScalingFactor : public EstimatableParameter< Eigen::VectorXd >
+{
+public:
+    //! Constructor
+    ArcWiseRadiationPressureScalingFactor(
+        const std::vector< std::shared_ptr< electromagnetism::RadiationPressureAcceleration > >& radiationPressureAccelerations,
+        const std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel >& radiationPressureInterface,
+        const std::vector< double >& timeLimits,
+        const EstimatebleParametersEnum parameterType,
+        const std::string& associatedBody,
+        const std::string& exertingBody ) :
+
+        EstimatableParameter< Eigen::VectorXd >( parameterType, associatedBody, exertingBody ),
+        radiationPressureAccelerations_( radiationPressureAccelerations ),
+        radiationPressureInterface_( radiationPressureInterface ),
+        timeLimits_( timeLimits ),
+        parameterType_( parameterType ) // Initialize parameterType_
+    {
+
+        // Validate parameter type
+        if (parameterType_ != estimatable_parameters::arcwise_source_direction_radiation_pressure_scaling_factor &&
+            parameterType_ != estimatable_parameters::arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor)
+        {
+            throw std::runtime_error("Error: Invalid parameter type for radiation pressure scaling factor: " +
+                                     std::to_string(parameterType_));
+        }
+
+        // Initialize scaling factors based on parameter type
+        double initialScalingFactor = (parameterType_ == estimatable_parameters::source_direction_radiation_pressure_scaling_factor)
+                                          ? radiationPressureAccelerations.at(0)->getSourceDirectionScaling()
+                                          : radiationPressureAccelerations.at(0)->getPerpendicularSourceDirectionScaling();
+
+        for (unsigned int i = 0; i < timeLimits.size(); i++)
+        {
+            scalingFactors_.push_back(initialScalingFactor);
+        }
+
+        // Finalize time limits and scaling factors
+        timeLimits_.push_back(std::numeric_limits<double>::max());
+        fullScalingFactors_ = scalingFactors_;
+        fullScalingFactors_.push_back(scalingFactors_.back());
+
+        initializeScalingFunctions();
+    }
+
+    //! Destructor
+    ~ArcWiseRadiationPressureScalingFactor() {}
+
+    //! Retrieve the parameter value
+    Eigen::VectorXd getParameterValue()
+    {
+        return utilities::convertStlVectorToEigenVector(scalingFactors_);
+    }
+
+    //! Set the parameter value
+    void setParameterValue(Eigen::VectorXd parameterValue)
+    {
+        if (static_cast<int>(scalingFactors_.size()) != static_cast<int>(parameterValue.rows()))
+        {
+            throw std::runtime_error("Error when resetting arc-wise radiation pressure coefficients, sizes are incompatible");
+        }
+
+        scalingFactors_ = utilities::convertEigenVectorToStlVector(parameterValue);
+        for (unsigned int i = 0; i < scalingFactors_.size(); i++)
+        {
+            fullScalingFactors_[i] = scalingFactors_[i];
+        }
+        fullScalingFactors_[scalingFactors_.size()] = scalingFactors_.back();
+
+        scalingFactorInterpolator_->resetDependentValues(fullScalingFactors_);
+
+    }
+
+    //! Retrieve the parameter size
+    int getParameterSize()
+    {
+        return scalingFactors_.size();
+    }
+
+    //! Retrieve the arc time lookup scheme (mimicking ArcWiseRadiationPressureCoefficient)
+    std::shared_ptr< interpolators::LookUpScheme< double > > getArcTimeLookupScheme()
+    {
+        return scalingFactorInterpolator_->getLookUpScheme( );
+    }
+
+    void initializeScalingFunctions()
+    {
+
+        scalingFactorInterpolator_ = std::make_shared< interpolators::PiecewiseConstantInterpolator< double, double > >(
+                timeLimits_, fullScalingFactors_ );
+
+        typedef interpolators::OneDimensionalInterpolator< double, double > LocalInterpolator;
+
+        // Check the parameter type and initialize accordingly
+        if (parameterType_ == estimatable_parameters::arcwise_source_direction_radiation_pressure_scaling_factor)
+        {
+            radiationPressureInterface_->resetSourceDirectionScalingFunction(
+                std::bind(
+                    static_cast< double( LocalInterpolator::* )( const double ) >
+                    ( &LocalInterpolator::interpolate ), scalingFactorInterpolator_, std::placeholders::_1 ) );
+        }
+        else if (parameterType_ == estimatable_parameters::arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor)
+        {
+            radiationPressureInterface_->resetPerpendicularSourceDirectionScalingFunction(
+                std::bind(
+                    static_cast< double( LocalInterpolator::* )( const double ) >
+                    ( &LocalInterpolator::interpolate ), scalingFactorInterpolator_, std::placeholders::_1 ) );
+        }
+        else
+        {
+            throw std::runtime_error("Error: Invalid parameter type for initializeScalingFunctions in ArcWiseRadiationPressureScalingFactor");
+        }
+
+        // Call enableScaling() for target model
+        radiationPressureInterface_->enableScaling();
+    }
+
+private:
+
+    //! List of radiation pressure accelerations
+    std::vector< std::shared_ptr< electromagnetism::RadiationPressureAcceleration > > radiationPressureAccelerations_;
+
+    //! Radiation pressure target model
+    std::shared_ptr< electromagnetism::PaneledRadiationPressureTargetModel > radiationPressureInterface_;
+
+    //! Arc time limits
+    std::vector< double > timeLimits_;
+
+    //! Scaling factors for each arc
+    std::vector< double > scalingFactors_;
+
+    //! Full scaling factors for extrapolation
+    std::vector< double > fullScalingFactors_;
+
+    //! Interpolator for scaling factors
+    std::shared_ptr<interpolators::PiecewiseConstantInterpolator<double, double>> scalingFactorInterpolator_;
+
+    //! Lookup scheme for arc times
+    std::shared_ptr<interpolators::HuntingAlgorithmLookupScheme<double>> arcTimeLookupScheme_;
+
+    //! Parameter type to distinguish source and perpendicular direction
+    EstimatebleParametersEnum parameterType_;
 };
 
 } // namespace estimatable_parameters

@@ -230,10 +230,6 @@ Eigen::Vector3d PaneledRadiationPressureTargetModel::evaluateRadiationPressureFo
     return forcePartialWrtSpecularReflectivity;
 }
 
-void PaneledRadiationPressureTargetModel::updateMembers_(double currentTime)
-{
-
-}
 
 } // tudat
 } // electromagnetism
