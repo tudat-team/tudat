@@ -750,6 +750,38 @@ public:
 
 };
 
+class ArcWiseRadiationPressureScalingFactorEstimatableParameterSettings : public EstimatableParameterSettings
+{
+public:
+    //! Constructor
+    ArcWiseRadiationPressureScalingFactorEstimatableParameterSettings(
+        const std::string& targetName,
+        const std::string& sourceName,
+        const std::vector< double >& arcStartTimeList,
+        const EstimatebleParametersEnum parameterType ) :
+        EstimatableParameterSettings( targetName, parameterType, sourceName ), // Corrected argument order
+        arcStartTimeList_( arcStartTimeList )
+    {
+        // Validate parameter type
+        if( parameterType != arcwise_source_direction_radiation_pressure_scaling_factor &&
+            parameterType != arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor )
+        {
+            throw std::runtime_error(
+                "Error when creating ArcWiseRadiationPressureScalingFactorEstimatableParameterSettings, invalid parameter type" );
+        }
+    }
+
+    //! Retrieve arc start times
+    std::vector< double > getArcStartTimeList( ) const
+    {
+        return arcStartTimeList_;
+    }
+
+private:
+    //! List of arc start times
+    std::vector< double > arcStartTimeList_;
+};
+
 //! Class to define settings for estimating time-dependent (arcwise constant) drag coefficients
 class ArcWiseDragCoefficientEstimatableParameterSettings: public EstimatableParameterSettings
 {
@@ -1602,6 +1634,18 @@ inline std::shared_ptr< EstimatableParameterSettings > radiationPressureTargetPe
     const std::string targetName, const std::string sourceName )
 {
     return std::make_shared< EstimatableParameterSettings >( targetName, source_perpendicular_direction_radiation_pressure_scaling_factor, sourceName );
+}
+
+inline std::shared_ptr< EstimatableParameterSettings > arcWiseRadiationPressureTargetDirectionScaling(
+    const std::string targetName, const std::string sourceName, const std::vector< double > arcStartTimeList )
+{
+    return std::make_shared< ArcWiseRadiationPressureScalingFactorEstimatableParameterSettings >( targetName, sourceName, arcStartTimeList, arcwise_source_direction_radiation_pressure_scaling_factor );
+}
+
+inline std::shared_ptr< EstimatableParameterSettings > arcWiseRadiationPressureTargetPerpendicularDirectionScaling(
+    const std::string targetName, const std::string sourceName, const std::vector< double > arcStartTimeList )
+{
+    return std::make_shared< ArcWiseRadiationPressureScalingFactorEstimatableParameterSettings >( targetName, sourceName, arcStartTimeList, arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor );
 }
 
 inline std::shared_ptr< EstimatableParameterSettings > diffuseReflectivity(

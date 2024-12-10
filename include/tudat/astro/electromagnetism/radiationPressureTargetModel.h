@@ -253,7 +253,8 @@ public:
         RadiationPressureTargetModel( sourceToTargetOccultingBodies ),
         bodyFixedPanels_( bodyFixedPanels ),
         segmentFixedPanels_( segmentFixedPanels ),
-        segmentFixedToBodyFixedRotations_( segmentFixedToBodyFixedRotations )
+        segmentFixedToBodyFixedRotations_( segmentFixedToBodyFixedRotations ),
+        isScalingModelSet_( false )
     {
         totalNumberOfPanels_ = bodyFixedPanels_.size( );
         fullPanels_ = bodyFixedPanels_;
@@ -355,8 +356,80 @@ public:
 
     void saveLocalComputations( const std::string sourceName, const bool saveCosines ) override ;
 
+    // Reset the source direction scaling function
+    void resetSourceDirectionScalingFunction(
+        const std::function< double( const double ) >& scalingFunction )
+    {
+        sourceDirectionScalingFunction_ = scalingFunction;
+    }
+
+    // Reset the perpendicular direction scaling function
+    void resetPerpendicularSourceDirectionScalingFunction(
+        const std::function< double( const double ) >& scalingFunction )
+    {
+        perpendicularSourceDirectionScalingFunction_ = scalingFunction;
+    }
+
+    // Get the source direction scaling function
+    std::function< double( const double ) > getSourceDirectionScalingFunction( ) const
+    {
+        return sourceDirectionScalingFunction_;
+    }
+
+    // Get the perpendicular direction scaling function
+    std::function< double( const double ) > getPerpendicularSourceDirectionScalingFunction( ) const
+    {
+        return perpendicularSourceDirectionScalingFunction_;
+    }
+
+    double getSourceDirectionScaling() const
+    {
+        return sourceDirectionScaling_;
+    }
+
+    double getPerpendicularSourceDirectionScaling() const
+    {
+        return perpendicularSourceDirectionScaling_;
+    }
+
+    void enableScaling( )
+    {
+        isScalingModelSet_ = true;
+    }
+
+    void setSourceDirectionScaling(double scaling)
+    {
+        sourceDirectionScaling_ = scaling;
+    }
+
+    void setPerpendicularSourceDirectionScaling(double scaling)
+    {
+        perpendicularSourceDirectionScaling_ = scaling;
+    }
+
+    bool isScalingModelSet(){
+        return isScalingModelSet_;
+    }
+
 private:
-    void updateMembers_( double currentTime ) override;
+    void updateMembers_( double currentTime ) override
+    {
+        // Check if the scaling model is set
+        if (isScalingModelSet_)
+        {
+            // Update the source direction scaling
+            if (sourceDirectionScalingFunction_ != nullptr)
+            {
+                sourceDirectionScaling_ = sourceDirectionScalingFunction_(currentTime);
+            }
+
+            // Update the perpendicular direction scaling
+            if (perpendicularSourceDirectionScalingFunction_ != nullptr)
+            {
+                perpendicularSourceDirectionScaling_ = perpendicularSourceDirectionScalingFunction_(currentTime);
+            }
+        }
+    }
 
     void resetDerivedComputations( const std::string sourceName ) override
     {
@@ -396,6 +469,17 @@ private:
     std::map< std::string, std::vector< double > > surfacePanelCosinesPerSource_;
     std::map< std::string, std::vector< Eigen::Vector3d > > panelForcesPerSource_;
     std::map< std::string, std::vector< Eigen::Vector3d > > panelTorquesPerSource_;
+
+    //! Scaling function for source direction
+    std::function< double( const double ) > sourceDirectionScalingFunction_;
+
+    //! Scaling function for perpendicular direction
+    std::function< double( const double ) > perpendicularSourceDirectionScalingFunction_;
+
+    bool isScalingModelSet_;
+
+    double sourceDirectionScaling_ = 1.0;
+    double perpendicularSourceDirectionScaling_ = 1.0;
 
 };
 

@@ -89,31 +89,65 @@ public:
         return getReceivedIrradiance( ) / physical_constants::SPEED_OF_LIGHT;
     }
 
-    void enableScaling( )
-    {
-        isScalingModelSet_ = true;
-    }
 
     double getSourceDirectionScaling( )
     {
-        return sourceDirectionScaling_;
+        std::shared_ptr< PaneledRadiationPressureTargetModel > paneledModel =
+            std::dynamic_pointer_cast< PaneledRadiationPressureTargetModel >( this->getTargetModel() );
+
+        if (paneledModel != nullptr)
+        {
+            return paneledModel->getSourceDirectionScaling();
+        }
+        else
+        {
+            throw std::runtime_error("Error: Target model is not a PaneledRadiationPressureTargetModel");
+        }
     }
     
     void setSourceDirectionScaling( const double sourceDirectionScaling )
     {
-        enableScaling( );
-        sourceDirectionScaling_ = sourceDirectionScaling;
+        std::shared_ptr< PaneledRadiationPressureTargetModel > paneledModel =
+            std::dynamic_pointer_cast< PaneledRadiationPressureTargetModel >( this->getTargetModel() );
+
+        if (paneledModel != nullptr)
+        {
+            paneledModel->setSourceDirectionScaling(sourceDirectionScaling);
+        }
+        else
+        {
+            throw std::runtime_error("Error: Target model is not a PaneledRadiationPressureTargetModel");
+        }
     }
     
     double getPerpendicularSourceDirectionScaling( )
     {
-        return perpendicularSourceDirectionScaling_;
+        std::shared_ptr< PaneledRadiationPressureTargetModel > paneledModel =
+            std::dynamic_pointer_cast< PaneledRadiationPressureTargetModel >( this->getTargetModel() );
+
+        if (paneledModel != nullptr)
+        {
+            return paneledModel->getPerpendicularSourceDirectionScaling();
+        }
+        else
+        {
+            throw std::runtime_error("Error: Target model is not a PaneledRadiationPressureTargetModel");
+        }
     }
 
     void setPerpendicularSourceDirectionScaling( const double perpendicularSourceDirectionScaling )
     {
-        enableScaling( );
-        perpendicularSourceDirectionScaling_ = perpendicularSourceDirectionScaling;
+        std::shared_ptr< PaneledRadiationPressureTargetModel > paneledModel =
+            std::dynamic_pointer_cast< PaneledRadiationPressureTargetModel >( this->getTargetModel() );
+
+        if (paneledModel != nullptr)
+        {
+            paneledModel->setPerpendicularSourceDirectionScaling(perpendicularSourceDirectionScaling);
+        }
+        else
+        {
+            throw std::runtime_error("Error: Target model is not a PaneledRadiationPressureTargetModel");
+        }
     }
 
     Eigen::Vector3d getTargetCenterPositionInSourceFrame( )
@@ -144,9 +178,6 @@ protected:
             sourceToTargetOccultationModel_(sourceToTargetOccultationModel),
             currentUnscaledAcceleration_( Eigen::Vector3d::Constant( TUDAT_NAN ) ),
             receivedIrradiance(TUDAT_NAN),
-            isScalingModelSet_( false ),
-            sourceDirectionScaling_( 1.0 ),
-            perpendicularSourceDirectionScaling_( 1.0 ),
             sourceName_( sourceName )
             {}
 
@@ -154,15 +185,26 @@ protected:
 
     virtual void scaleRadiationPressureAcceleration( )
     {
-        if( !isScalingModelSet_ )
+        // Attempt to cast the target model to PaneledRadiationPressureTargetModel
+        std::shared_ptr< PaneledRadiationPressureTargetModel > paneledModel =
+            std::dynamic_pointer_cast< PaneledRadiationPressureTargetModel >( targetModel_ );
+
+        if (paneledModel != nullptr && paneledModel->isScalingModelSet())
         {
-            currentAcceleration_ = currentUnscaledAcceleration_;
+            // Perform scaling using paneled model
+            Eigen::Vector3d targetUnitVector = targetCenterPositionInSourceFrame_.normalized();
+            Eigen::Vector3d toTargetComponent = currentUnscaledAcceleration_ - targetUnitVector.dot(currentUnscaledAcceleration_) * targetUnitVector;
+
+            double sourceDirectionScaling = getSourceDirectionScaling();
+            double perpendicularSourceDirectionScaling = getPerpendicularSourceDirectionScaling();
+
+            currentAcceleration_ = sourceDirectionScaling * toTargetComponent +
+                                   perpendicularSourceDirectionScaling * (currentUnscaledAcceleration_ - toTargetComponent);
         }
         else
         {
-            Eigen::Vector3d targetUnitVector = targetCenterPositionInSourceFrame_.normalized( );
-            Eigen::Vector3d toTargetComponent =  currentUnscaledAcceleration_ - targetUnitVector.dot( currentUnscaledAcceleration_ ) * targetUnitVector;
-            currentAcceleration_ = sourceDirectionScaling_ * toTargetComponent + perpendicularSourceDirectionScaling_ * ( currentUnscaledAcceleration_ - toTargetComponent );
+            // Default behavior for other types of target models (e.g., Cannonball)
+            currentAcceleration_ = currentUnscaledAcceleration_;
         }
     }
 
@@ -186,10 +228,6 @@ protected:
     // For dependent variable
     double receivedIrradiance;
     double currentRadiationPressure_;
-
-    bool isScalingModelSet_;
-    double sourceDirectionScaling_;
-    double perpendicularSourceDirectionScaling_;
 
     std::string sourceName_;
 

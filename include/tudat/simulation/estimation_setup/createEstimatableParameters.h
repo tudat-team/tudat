@@ -249,6 +249,8 @@ std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel3d > > getAc
     case source_direction_radiation_pressure_scaling_factor:
     case radiation_pressure_coefficient:
     case arc_wise_radiation_pressure_coefficient:
+    case arcwise_source_direction_radiation_pressure_scaling_factor:
+    case arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:
     {
         if( parameterSettings == nullptr )
         {
@@ -1816,6 +1818,74 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd >
                     std::dynamic_pointer_cast< electromagnetism::CannonballRadiationPressureTargetModel >( targetModel ),
                     radiationPressureCoefficientSettings->arcStartTimeList_,
                     currentBodyName );
+
+                break;
+            }
+            break;
+        }
+        case arcwise_source_direction_radiation_pressure_scaling_factor:
+        case arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:
+        {
+            // Check input consistency
+            std::shared_ptr< ArcWiseRadiationPressureScalingFactorEstimatableParameterSettings > radiationPressureCoefficientSettings =
+                    std::dynamic_pointer_cast< ArcWiseRadiationPressureScalingFactorEstimatableParameterSettings >( vectorParameterName );
+
+            // Check number of associatedRadiationPressureAccelerationModels
+            if( propagatorSettings == nullptr )
+            {
+                throw std::runtime_error( "Error when creating arc wise radiation pressure scaling factor parameter, no propagatorSettings provided." );
+            }
+
+            std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel3d > > associatedAccelerationModels =
+                getAccelerationModelsListForParametersFromBase< InitialStateParameterType, TimeType >( propagatorSettings, vectorParameterName );
+            std::vector< std::shared_ptr< electromagnetism::RadiationPressureAcceleration > > associatedRadiationPressureAccelerationModels;
+            for( unsigned int i = 0; i < associatedAccelerationModels.size( ); i++ )
+            {
+                // Create parameter object
+                if( std::dynamic_pointer_cast< electromagnetism::RadiationPressureAcceleration >( associatedAccelerationModels.at( i ) )
+                    != nullptr )
+                {
+                    associatedRadiationPressureAccelerationModels.push_back(
+                        std::dynamic_pointer_cast< electromagnetism::RadiationPressureAcceleration >( associatedAccelerationModels.at( i ) ) );
+                }
+                else
+                {
+                    throw std::runtime_error(
+                        "Error, expected RadiationPressureAcceleration in list when creating arcwise radiation pressure scaling parameter" );
+                }
+            }
+            if( associatedRadiationPressureAccelerationModels.size( ) == 1 )
+            {
+                throw std::runtime_error(
+                    "Error, expected multiple RadiationPressureAcceleration in list when creating radiation pressure scaling parameter, found 1"
+                    );
+            }
+
+            // Check input consistency
+            std::shared_ptr< ArcWiseRadiationPressureScalingFactorEstimatableParameterSettings > radiationPressureScalingFactorSettings =
+                    std::dynamic_pointer_cast< ArcWiseRadiationPressureScalingFactorEstimatableParameterSettings >( vectorParameterName );
+            if( radiationPressureScalingFactorSettings == nullptr )
+            {
+                throw std::runtime_error(
+                            "Error when trying to make arc-wise radiation pressure scaling factor parameter, settings type inconsistent" );
+            }
+            else
+            {
+                std::shared_ptr<electromagnetism::RadiationPressureTargetModel> targetModel =
+                    getRadiationPressureTargetModelOfType( currentBody, paneled_target, " when creating arc-wise radiation pressure scaling factor parameter " );
+
+                if( std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( targetModel ) == nullptr )
+                {
+                    std::string errorMessage = "Error, no radiation pressure target model found in body " +
+                                               currentBodyName + " target model is incompatible.";
+                }
+                vectorParameterToEstimate = std::make_shared< ArcWiseRadiationPressureScalingFactor >(
+                    associatedRadiationPressureAccelerationModels,
+                    std::dynamic_pointer_cast< electromagnetism::PaneledRadiationPressureTargetModel >( targetModel ),
+                    radiationPressureScalingFactorSettings->getArcStartTimeList(),
+                    vectorParameterName->parameterType_.first,
+                    currentBodyName,
+                    vectorParameterName->parameterType_.second.second );
 
                 break;
             }
