@@ -165,6 +165,12 @@ std::string getParameterTypeString( const EstimatebleParametersEnum parameterTyp
     case source_perpendicular_direction_radiation_pressure_scaling_factor:
         parameterDescription = " Radiation pressure acceleration scaling factor perpendicular to source ";
         break;
+    case arcwise_source_direction_radiation_pressure_scaling_factor:
+        parameterDescription = "Arcwise radiation pressure acceleration scaling factor to source ";
+        break;
+    case arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:
+        parameterDescription = "Arcwise radiation pressure acceleration scaling factor perpendicular to source ";
+        break;
     case specular_reflectivity:
         parameterDescription = " specular reflectivity for panel group ";
         break;
@@ -355,6 +361,12 @@ bool isDoubleParameter( const EstimatebleParametersEnum parameterType )
         isDoubleParameter = true;
         break;
     case mode_coupled_tidal_love_numbers:
+        isDoubleParameter = false;
+        break;
+    case arcwise_source_direction_radiation_pressure_scaling_factor:
+        isDoubleParameter = false;
+        break;
+    case arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:
         isDoubleParameter = false;
         break;
     default:
