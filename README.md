@@ -1,4 +1,10 @@
-[![Platforms Supported](https://img.shields.io/conda/pn/tudat-team/tudat?color=orange&logo=anaconda&style=for-the-badge)](https://anaconda.org/tudat-team/tudat)
+
+Current release info
+====================
+
+| Name | Downloads | Version | Platforms |
+| --- | --- | --- | --- |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-tudat-green.svg)](https://anaconda.org/tudat-team/tudat) | [![Conda Downloads](https://img.shields.io/conda/dn/tudat-team/tudat.svg)](https://anaconda.org/tudat-team/tudat) | [![Conda Version](https://img.shields.io/conda/vn/tudat-team/tudat.svg)](https://anaconda.org/tudat-team/tudat) | [![Conda Platforms](https://img.shields.io/conda/pn/tudat-team/tudat.svg)](https://anaconda.org/tudat-team/tudat) |
 
 # tudat
 
