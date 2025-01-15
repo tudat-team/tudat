@@ -104,28 +104,12 @@ BOOST_AUTO_TEST_CASE( testFullPropagationLambertTargeterBasic )
     std::pair< std::string, std::string > departureAndArrivalBodies =
             std::make_pair( "departure", "arrival" );
 
-<<<<<<< HEAD
-    // Define the system of bodies.
-    simulation_setup::SystemOfBodies bodies = propagators::setupBodyMapFromUserDefinedStatesForLambertTargeter("Earth", "spacecraft", departureAndArrivalBodies,
-                                                                                      cartesianPositionAtDeparture, cartesianPositionAtArrival);
-
-    basic_astrodynamics::AccelerationMap accelerationModelMap = propagators::setupAccelerationMapLambertTargeter(
-                "Earth", "spacecraft", bodies);
-
-
-   // Compute the difference in state between the full problem and the Lambert targeter solution at departure and at arrival
-   std::pair< Eigen::Vector6d, Eigen::Vector6d > differenceState =
-            propagators::getDifferenceFullPropagationWrtLambertTargeterAtDepartureAndArrival(cartesianPositionAtDeparture,
-             cartesianPositionAtArrival, timeOfFlight, initialTime, bodies, accelerationModelMap, bodyToPropagate,
-             centralBody, integratorSettings, departureAndArrivalBodies, false);
-=======
     // Define the body map.
     simulation_setup::NamedBodyMap bodyMap = setupBodyMapFromUserDefinedStatesForLambertTargeter(
                 "Earth", "spacecraft", departureAndArrivalBodies, cartesianPositionAtDeparture, cartesianPositionAtArrival );
 
     basic_astrodynamics::AccelerationMap accelerationModelMap = propagators::setupAccelerationMapLambertTargeter(
                 "Earth", "spacecraft", bodyMap );
->>>>>>> dominic-origin/features/mission_segments_refactor
 
     std::map< double, Eigen::Vector6d > lambertTargeterResult;
     std::map< double, Eigen::Vector6d > fullProblemResult;

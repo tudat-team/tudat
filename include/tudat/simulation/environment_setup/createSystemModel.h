@@ -163,6 +163,41 @@ inline std::shared_ptr< BodyPanelGeometrySettings > bodyTrackingPanelGeometry(
 
 
 
+inline std::shared_ptr< BodyPanelGeometrySettings > frameFixedPanelGeometry(
+    const Eigen::Vector3d& surfaceNormal,
+    const double area,
+    const double panelTemperature = 273.0,
+    const std::string& frameOrientation = "" )
+{
+    return std::make_shared< FrameFixedBodyPanelGeometrySettings >(
+        surfaceNormal, positionVector, area, panelTemperature, frameOrientation );
+}
+
+inline std::shared_ptr< BodyPanelGeometrySettings > timeVaryingPanelGeometry(
+    const std::function< Eigen::Vector3d( ) >& surfaceNormalFunction,
+    const std::function< Eigen::Vector3d( ) >& positionVectorFunction,
+    const double area,
+    const double panelTemperature = 273.0,
+    const std::string& frameOrientation = "" )
+{
+    return std::make_shared< FrameVariableBodyPanelGeometrySettings >(
+        surfaceNormalFunction, positionVectorFunction, area, panelTemperature, frameOrientation );
+}
+
+inline std::shared_ptr< BodyPanelGeometrySettings > bodyTrackingPanelGeometry(
+    const std::string& bodyToTrack,
+    const bool towardsTrackedBody,    
+    const std::function< Eigen::Vector3d( ) >& positionVectorFunction,
+    const double area,
+    const double panelTemperature = 273.0,
+    const std::string& frameOrientation = "" )
+{
+    return std::make_shared< FrameVariableBodyPanelGeometrySettings >(
+        bodyToTrack, towardsTrackedBody, positionVectorFunction, area, panelTemperature, frameOrientation );
+}
+
+
+
 // inline std::shared_ptr< BodyPanelGeometrySettings > frameFixedPanelGeometry(
 //     const Eigen::Vector3d& surfaceNormal,
 //     const double area,

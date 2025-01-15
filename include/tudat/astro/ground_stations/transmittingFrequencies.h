@@ -16,6 +16,7 @@
 
 #include "tudat/math/quadrature/trapezoidQuadrature.h"
 #include "tudat/math/interpolators.h"
+#include "tudat/astro/basic_astro/dateTime.h"
 
 namespace tudat
 {
@@ -40,7 +41,7 @@ public:
      * @param lookupTime Time at which to compute the frequency.
      * @return Frequency value.
      */
-    template< typename ObservationScalarType = double, typename TimeType = double >
+    template< typename ObservationScalarType = double, typename TimeType = Time >
     ObservationScalarType getTemplatedCurrentFrequency( const TimeType& lookupTime );
 
     /*! Templated function to compute the integral of the transmitted frequency.
@@ -51,7 +52,7 @@ public:
      * @param quadratureEndTime End time of integration interval.
      * @return Frequency integral
      */
-    template< typename ObservationScalarType = double, typename TimeType = double >
+    template< typename ObservationScalarType = double, typename TimeType = Time >
     ObservationScalarType getTemplatedFrequencyIntegral( const TimeType& quadratureStartTime, const TimeType& quadratureEndTime );
 
 private:
@@ -94,13 +95,13 @@ public:
     //! Destructor
     ~ConstantFrequencyInterpolator( ) { }
 
-    template< typename ObservationScalarType = double, typename TimeType = double >
+    template< typename ObservationScalarType = double, typename TimeType = Time >
     ObservationScalarType computeCurrentFrequency( const TimeType lookupTime )
     {
         return frequency_;
     }
 
-    template< typename ObservationScalarType = double, typename TimeType = double >
+    template< typename ObservationScalarType = double, typename TimeType = Time >
     ObservationScalarType computeFrequencyIntegral( const TimeType quadratureStartTime,
                                                     const TimeType quadratureEndTime )
     {
@@ -176,8 +177,8 @@ public:
      * @param startFrequency Start frequency of each ramp
      */
     PiecewiseLinearFrequencyInterpolator(
-            const std::vector< double >& startTimes,
-            const std::vector< double >& endTimes,
+            const std::vector< Time >& startTimes,
+            const std::vector< Time >& endTimes,
             const std::vector< double >& rampRates,
             const std::vector< double >& startFrequency ):
         StationFrequencyInterpolator( ),
@@ -200,30 +201,31 @@ public:
             // If there are discontinuities
             if ( startTimes_.at( i ) != endTimes_.at( i - 1 ) )
             {
-                // If the start and end times are inconsistent throw error
-                if ( endTimes_.at( i - 1 ) > startTimes_.at( i ) )
-                {
-                    throw std::runtime_error(
-                            "Error when creating piecewise linear frequency interpolator: inconsistency between ramp end "
-                            "time (" + std::to_string( endTimes_.at( i - 1 ) ) + ") and start time of the following ramp (" +
-                            std::to_string( startTimes_.at( i ) ) + "); the end is smaller than the start time." );
-                }
-                // If there are gaps in the data save that information
-                else
-                {
-                    invalidTimeBlocksStartTimes_.push_back( endTimes_.at( i - 1 ) );
-                    invalidTimeBlocksEndTimes_.push_back( startTimes_.at( i ) );
-                }
+//                // If the start and end times are inconsistent throw error
+//                if ( endTimes_.at( i - 1 ) > startTimes_.at( i ) )
+//                {
+//                    throw std::runtime_error(
+//                            "Error when creating piecewise linear frequency interpolator: inconsistency between ramp end "
+//                            "time (" + std::to_string( double( endTimes_.at( i - 1 ) ) ) + ";" +
+//                            basic_astrodynamics::getCalendarDateFromTime( endTimes_.at( i - 1 ) ).isoString( ) + ") and start time of the following ramp (" +
+//                            std::to_string( double( startTimes_.at( i ) ) ) + ";" +
+//                            basic_astrodynamics::getCalendarDateFromTime( startTimes_.at( i ) ).isoString( ) +
+//                            "); the end is smaller than the start time." );
+//                }
+//                // If there are gaps in the data save that information
+//                else
+//                {
+//                    invalidTimeBlocksStartTimes_.push_back( endTimes_.at( i - 1 ) );
+//                    invalidTimeBlocksEndTimes_.push_back( startTimes_.at( i ) );
+//                }
             }
         }
 
-        startTimeLookupScheme_ = std::make_shared< interpolators::HuntingAlgorithmLookupScheme< double > >(
-                startTimes_ );
+        startTimeLookupScheme_ = std::make_shared< interpolators::HuntingAlgorithmLookupScheme< Time > >( startTimes_ );
 
         if ( !invalidTimeBlocksStartTimes_.empty( ) )
         {
-            invalidStartTimeLookupScheme_ = std::make_shared< interpolators::BinarySearchLookupScheme< double > >(
-                invalidTimeBlocksStartTimes_ );
+            invalidStartTimeLookupScheme_ = std::make_shared< interpolators::BinarySearchLookupScheme< Time > >( invalidTimeBlocksStartTimes_ );
         }
     }
 
@@ -235,31 +237,27 @@ public:
      * @param lookupTime Time at which to compute the frequency.
      * @return Frequency value.
      */
-    template< typename ObservationScalarType = double, typename TimeType = double >
-    ObservationScalarType computeCurrentFrequency( const TimeType lookupTime )
+    template< typename ObservationScalarType = double, typename TimeType = Time >
+    ObservationScalarType computeCurrentFrequency( const TimeType lookupTimeOriginal )
     {
-        int lowerNearestNeighbour = startTimeLookupScheme_->findNearestLowerNeighbour( lookupTime );
-
-        if( lookupTime > endTimes_.at( lowerNearestNeighbour ) || lookupTime < startTimes_.at ( lowerNearestNeighbour ) )
+        TimeType lookupTime = lookupTimeOriginal;
+        int lowerNearestNeighbour = -1;
+        if( lookupTimeOriginal < startTimes_.at( 0 ) )
         {
-            throw std::runtime_error(
-                    "Error when interpolating ramp reference frequency: look up time (" + std::to_string(
-                            static_cast< double >( lookupTime ) ) +
-                    ") is outside the ramp table interval (" + std::to_string( startTimes_.at( 0 ) ) + " to " +
-                    std::to_string( startTimes_.back( ) ) + ")." );
+            lowerNearestNeighbour = 0;
         }
-        else if ( invalidStartTimeLookupScheme_ != nullptr )
+        else
         {
-            int invalidLowestNearestNeighbour = invalidStartTimeLookupScheme_->findNearestLowerNeighbour( lookupTime );
-            if ( lookupTime > invalidTimeBlocksStartTimes_.at ( invalidLowestNearestNeighbour ) &&
-                lookupTime < invalidTimeBlocksEndTimes_.at ( invalidLowestNearestNeighbour ) )
+            try
             {
+                lowerNearestNeighbour = startTimeLookupScheme_->findNearestLowerNeighbour( lookupTime );
+            }
+            catch ( const std::exception &caughtException )
+            {
+                std::string exceptionText = std::string( caughtException.what( ));
                 throw std::runtime_error(
                     "Error when interpolating ramp reference frequency: look up time (" + std::to_string(
-                            static_cast< double >( lookupTime ) ) +
-                    ") is in time interval without transmitted frequency (" +
-                    std::to_string( invalidTimeBlocksStartTimes_.at ( invalidLowestNearestNeighbour ) ) + " to " +
-                    std::to_string( invalidTimeBlocksEndTimes_.at ( invalidLowestNearestNeighbour ) ) + ")." );
+                        static_cast< double >( lookupTime )) + ", caught exception: " + exceptionText );
             }
         }
 
@@ -297,8 +295,8 @@ public:
                         "Error when integrating ramp reference frequency: look up time (" + std::to_string(
                             static_cast< double >( quadratureStartTime ) ) +
                         ") is in time interval without transmitted frequency (" +
-                        std::to_string( invalidTimeBlocksStartTimes_.at ( invalidStartLowestNearestNeighbour ) ) + " to " +
-                        std::to_string( invalidTimeBlocksEndTimes_.at ( invalidStartLowestNearestNeighbour ) ) + ")." );
+                        std::to_string( double( invalidTimeBlocksStartTimes_.at ( invalidStartLowestNearestNeighbour ) ) ) + " to " +
+                        std::to_string( double( invalidTimeBlocksEndTimes_.at ( invalidStartLowestNearestNeighbour ) ) ) + ")." );
             }
         }
 
@@ -343,25 +341,25 @@ public:
     }
 
     //! Function to retrieve ramp start times
-    std::vector< double > getStartTimes ( )
+    std::vector< Time > getStartTimes ( )
     {
         return startTimes_;
     }
 
     //! Function to retrieve ramp start time
-    double getStartTime ( )
+    Time getStartTime ( )
     {
         return startTimes_.front( );
     }
 
     //! Function to retrieve ramp end times
-    std::vector< double > getEndTimes ( )
+    std::vector< Time > getEndTimes ( )
     {
         return endTimes_;
     }
 
     //! Function to retrieve ramp end time
-    double getEndTime( )
+    Time getEndTime( )
     {
         return endTimes_.back( );
     }
@@ -429,23 +427,23 @@ private:
     }
 
     //! Start time of each ramp
-    std::vector< double > startTimes_;
+    std::vector< Time > startTimes_;
     //! End time of each ramp
-    std::vector< double > endTimes_;
+    std::vector< Time > endTimes_;
     //! Rate of each ramp
     std::vector< double > rampRates_;
     //! Start frequency of each ramp
     std::vector< double > startFrequencies_;
 
     //! Start and end times of blocks where no frequency was transmitted
-    std::vector< double > invalidTimeBlocksStartTimes_;
-    std::vector< double > invalidTimeBlocksEndTimes_;
+    std::vector< Time > invalidTimeBlocksStartTimes_;
+    std::vector< Time > invalidTimeBlocksEndTimes_;
 
     //! Lookup scheme to find the nearest ramp start time for a given time
-    std::shared_ptr< interpolators::LookUpScheme< double > > startTimeLookupScheme_;
+    std::shared_ptr< interpolators::LookUpScheme< Time > > startTimeLookupScheme_;
 
     //! Lookup scheme to find the nearest start time of the blocks without frequency transmission
-    std::shared_ptr< interpolators::LookUpScheme< double > > invalidStartTimeLookupScheme_;
+    std::shared_ptr< interpolators::LookUpScheme< Time > > invalidStartTimeLookupScheme_;
 
 };
 

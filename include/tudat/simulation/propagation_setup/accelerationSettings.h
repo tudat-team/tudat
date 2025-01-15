@@ -18,7 +18,10 @@
 #include "tudat/astro/gravitation/thirdBodyPerturbation.h"
 #include "tudat/astro/aerodynamics/aerodynamicAcceleration.h"
 #include "tudat/astro/basic_astro/accelerationModelTypes.h"
+#include "tudat/astro/reference_frames/referenceFrameTransformations.h"
 #include "tudat/basics/deprecationWarnings.h"
+#include "tudat/simulation/environment_setup/createRadiationPressureTargetModel.h"
+
 // #include "tudat/math/interpolators/createInterpolator.h"
 
 namespace tudat
@@ -60,6 +63,31 @@ public:
 
 };
 
+class RadiationPressureAccelerationSettings: public AccelerationSettings
+{
+public:
+
+    // Constructor, sets type of acceleration.
+    /*
+     *  Constructor, sets type of acceleration.
+     *  \param accelerationType Type of acceleration from AvailableAcceleration enum.
+     */
+    RadiationPressureAccelerationSettings( const RadiationPressureTargetModelType targetModelType = undefined_target ):
+        AccelerationSettings( basic_astrodynamics::radiation_pressure ), targetModelType_( targetModelType )
+        {
+            if( targetModelType_ == multi_type_target )
+            {
+                throw std::runtime_error( "Error when creating radiation pressure acceleration settings, cannot select multi-type target" );
+            }
+        }
+
+    // Destructor.
+    virtual ~RadiationPressureAccelerationSettings( ){ }
+
+    RadiationPressureTargetModelType targetModelType_;
+
+};
+
 inline std::shared_ptr< AccelerationSettings > acceleration( basic_astrodynamics::AvailableAcceleration accelerationType  )
 {
     return std::make_shared< AccelerationSettings >( accelerationType );
@@ -89,9 +117,9 @@ inline std::shared_ptr< AccelerationSettings > cannonBallRadiationPressureAccele
     return std::make_shared< AccelerationSettings >( basic_astrodynamics::cannon_ball_radiation_pressure );
 }
 
-inline std::shared_ptr< AccelerationSettings > radiationPressureAcceleration()
+inline std::shared_ptr< AccelerationSettings > radiationPressureAcceleration( const RadiationPressureTargetModelType targetModelType = undefined_target )
 {
-    return std::make_shared< AccelerationSettings >( basic_astrodynamics::radiation_pressure );
+    return std::make_shared< RadiationPressureAccelerationSettings >( targetModelType );
 }
 
 
@@ -464,6 +492,7 @@ private:
 
 };
 
+
 // Class for providing acceleration settings for a thrust acceleration model
 /*
  *  Class for providing acceleration settings for a thrust acceleration model. Settings for the direction and magnitude
@@ -473,6 +502,7 @@ private:
 class ThrustAccelerationSettings: public AccelerationSettings
 {
 public:
+
 
     ThrustAccelerationSettings( const std::string& engineId ):
         AccelerationSettings( basic_astrodynamics::thrust_acceleration )
@@ -501,6 +531,7 @@ public:
     std::vector< std::string > engineIds_;
 
     bool useAllEngines_;    
+
 
     template< typename ReturnType >
     ReturnType printDeprecationError( )

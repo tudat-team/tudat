@@ -115,8 +115,6 @@ public:
     {
         if( tdbToTtInterpolatorSettings != nullptr )
         {
-            std::cout<<"Creating interpolator"<<std::endl;
-
             std::function< double( const double ) > correctionFunction =
                 std::bind< double( const double, const double, const double, const double ) >(
                     sofa_interface::getTDBminusTT, std::placeholders::_1, 0.0, 0.0, 0.0 );
@@ -240,7 +238,23 @@ public:
             convertedTimes.push_back(
                     getCurrentTime( inputScale, outputScale, inputTimeValues.at( i ), earthFixedPositions.at( i ) ) );
         }
+        return convertedTimes;
+    }
 
+    template< typename TimeType >
+    std::vector< TimeType > getCurrentTimesFromSinglePosition(
+        const basic_astrodynamics::TimeScales inputScale, const basic_astrodynamics::TimeScales outputScale,
+        const std::vector< TimeType >& inputTimeValues,
+        const Eigen::Vector3d& earthFixedPosition )
+    {
+        std::vector < TimeType > convertedTimes;
+        convertedTimes.resize( inputTimeValues.size( ) );
+
+        for ( unsigned int i = 0; i < inputTimeValues.size(); ++i )
+        {
+            convertedTimes [ i ] =
+                getCurrentTime( inputScale, outputScale, inputTimeValues.at( i ), earthFixedPosition );
+        }
         return convertedTimes;
     }
 

@@ -235,12 +235,9 @@ double AtmosphericFlightConditions::getAerodynamicCoefficientIndependentVariable
     case anomalous_o_number_density_dependent:
         currentIndependentVariable = getCurrentNumberDensity( anomalous_o_species );
         break;
-
-    // non-dimenstional numbers
     case knudsen_number_dependent:
         currentIndependentVariable = getCurrentKnudsenNumber( );
         break;
-
     case control_surface_deflection_dependent:
     {
         try

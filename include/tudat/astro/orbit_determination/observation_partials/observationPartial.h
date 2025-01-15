@@ -125,7 +125,20 @@ public:
         }
     }
 
+    virtual Eigen::Matrix< double, ObservationSize, 3 > getLightTimeGradientPartialScalingFactor( const observation_models::LinkEndType linkEndType )
+    {
+        throw std::runtime_error( "Error when getting light time gradient partials of observable type " +
+                                  observation_models::getObservableName( observableType_) +
+                                  ", derived class model is not implemented." );
+    }
+
+
     virtual bool useLinkIndependentPartials( )
+    {
+        return false;
+    }
+
+    virtual bool useLightTimeGradientPartials( )
     {
         return false;
     }
@@ -555,7 +568,6 @@ typedef std::map< std::pair< int, int >, std::shared_ptr< ObservationPartial< 2 
  *  wrt which the current partial (corresponding value in map) is taken.
  */
 typedef std::map< std::pair< int, int >, std::shared_ptr< ObservationPartial< 3 > > > SingleLinkObservationThreePartialList;
-
 
 
 }

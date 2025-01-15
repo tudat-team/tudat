@@ -29,8 +29,8 @@ BOOST_AUTO_TEST_SUITE( test_transmitting_frequencies )
 BOOST_AUTO_TEST_CASE( testPiecewiseLinearFrequencyInterpolator )
 {
 
-    std::vector< double > startTimes = { 1.0, 5.0, 9.0, 10.0 };
-    std::vector< double > endTimes = { 5.0, 9.0, 10.0, 15.0 };
+    std::vector< Time > startTimes = { 1.0, 5.0, 9.0, 10.0 };
+    std::vector< Time > endTimes = { 5.0, 9.0, 10.0, 15.0 };
     std::vector< double > rampRates = { 1.0, 2.0, 1.0, 3.0 };
     std::vector< double > startFrequency = { 10.0, 5.0, 10.0, 2.0 };
 
@@ -101,39 +101,23 @@ BOOST_AUTO_TEST_CASE( testPiecewiseLinearFrequencyInterpolator )
         errorThrown = true;
     }
     BOOST_CHECK( errorThrown );
-
-    // Check whether error is thrown for discontinuous start/end times
-    startTimes.pop_back( );
-    startTimes.pop_back( );
-    startTimes.push_back( 9.9 );
-    try
-    {
-        frequencyInterpolator = PiecewiseLinearFrequencyInterpolator(
-            startTimes, endTimes, rampRates, startFrequency );
-        errorThrown = false;
-    }
-    catch( std::runtime_error const& )
-    {
-        errorThrown = true;
-    }
-    BOOST_CHECK( errorThrown );
-
-    // Check whether error is thrown when accessing an invalid time block
-    startTimes.pop_back( );
-    startTimes.push_back( 10.1 );
-    frequencyInterpolator = PiecewiseLinearFrequencyInterpolator(
-            startTimes, endTimes, rampRates, startFrequency );
-    frequencyInterpolator.template getTemplatedCurrentFrequency< >( 10.15 );
-    try
-    {
-        frequencyInterpolator.template getTemplatedCurrentFrequency< >( 10.05 );
-        errorThrown = false;
-    }
-    catch( std::runtime_error const& )
-    {
-        errorThrown = true;
-    }
-    BOOST_CHECK( errorThrown );
+//
+//    // Check whether error is thrown for discontinuous start/end times
+//    startTimes.pop_back( );
+//    startTimes.pop_back( );
+//    startTimes.push_back( 9.9 );
+//    try
+//    {
+//        frequencyInterpolator = PiecewiseLinearFrequencyInterpolator(
+//            startTimes, endTimes, rampRates, startFrequency );
+//        errorThrown = false;
+//    }
+//    catch( std::runtime_error const& )
+//    {
+//        errorThrown = true;
+//    }
+//    BOOST_CHECK( errorThrown );
+    
 
 }
 

@@ -675,7 +675,8 @@ public:
             const std::shared_ptr< SingleArcPropagatorSettings< StateScalarType, TimeType > > propagatorSettings,
             const bool areEquationsOfMotionToBeIntegrated = true,
             const PredefinedSingleArcStateDerivativeModels< StateScalarType, TimeType >& predefinedStateDerivativeModels =
-            PredefinedSingleArcStateDerivativeModels< StateScalarType, TimeType >( ) ):
+            PredefinedSingleArcStateDerivativeModels< StateScalarType, TimeType >( ),
+            const bool isPartOfMultiArc = false ):
         DynamicsSimulator< StateScalarType, TimeType >(
             bodies, propagatorSettings ),
         propagatorSettings_( propagatorSettings )
@@ -699,7 +700,7 @@ public:
         {
             throw std::runtime_error( "Error in dynamics simulator, integrator settings not defined." );
         }
-        checkPropagatedStatesFeasibility( propagatorSettings_, bodies_ );
+        checkPropagatedStatesFeasibility( propagatorSettings_, bodies_, isPartOfMultiArc );
 
         // Create objects that reset the environment (e.g. ephemerides) after propagation is required
         if( propagatorSettings_->getOutputSettings( )->getSetIntegratedResult( ) )
@@ -780,7 +781,7 @@ public:
                 std::shared_ptr< interpolators::OneDimensionalInterpolator< TimeType, Eigen::VectorXd > >( ),
                 propagatorSettings_->getDependentVariablesToSave( ),
                 dependentVariableIds_,
-                orderedDependentVariableSettings_ );
+                orderedDependentVariableSettings_, bodies );
 
         propagationResults_= std::make_shared< SingleArcSimulationResults< StateScalarType, TimeType > >(
                     integratedStateAndBodyList, propagatorSettings_->getOutputSettingsWithCheck( ),
@@ -1131,6 +1132,8 @@ public:
     {
         return propagationResults_->equationsOfMotionNumericalSolution_;
     }
+
+
 
     //! Function to return the map of state history of numerically integrated bodies, in propagation coordinates.
     /*!
@@ -1717,7 +1720,7 @@ public:
             for ( unsigned int i = 0; i < singleArcSettings.size( ); i++ ) {
                 singleArcDynamicsSimulators_.push_back(
                         std::make_shared<SingleArcDynamicsSimulator<StateScalarType, TimeType> >(
-                                bodies, singleArcSettings.at( i ), false ));
+                                bodies, singleArcSettings.at( i ), false, PredefinedSingleArcStateDerivativeModels< StateScalarType, TimeType >( ), true ) );
                 singleArcResults.push_back( singleArcDynamicsSimulators_.at( i )->getSingleArcPropagationResults( ));
                 singleArcDynamicsSimulators_.at( i )->createAndSetIntegratedStateProcessors( );
             }
@@ -2282,7 +2285,7 @@ public:
      *  \param propagatorSettings Propagator settings for dynamics (must be of multi arc type)
      *  \param arcStartTimes Times at which the separate arcs start, for the multi-arc case
      *  \param areEquationsOfMotionToBeIntegrated Boolean to denote whether equations of motion should be integrated at
-     *  the end of the contructor or not.extern template class MultiArcDynamicsSimulator< double, double >;
+     *  the end of the contructor or not.//extern template class MultiArcDynamicsSimulator< double, double >;
 
 
      *  \param clearNumericalSolutions Boolean to determine whether to clear the raw numerical solution member variables
@@ -2517,9 +2520,9 @@ std::shared_ptr< PropagatorSettings< StateScalarType > > validateDeprecatePropag
     }
 }
 
-extern template class SingleArcDynamicsSimulator< double, double >;
-extern template class MultiArcDynamicsSimulator< double, double >;
-extern template class HybridArcDynamicsSimulator< double, double >;
+//extern template class SingleArcDynamicsSimulator< double, double >;
+//extern template class MultiArcDynamicsSimulator< double, double >;
+//extern template class HybridArcDynamicsSimulator< double, double >;
 
 
 

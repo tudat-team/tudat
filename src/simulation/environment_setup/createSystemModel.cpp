@@ -147,11 +147,15 @@ std::pair< std::shared_ptr< system_models::VehicleExteriorPanel >, std::string >
         std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw = createReflectionLaw(
             panelSettings->reflectionLawSettings_ );
         exteriorPanel->setReflectionLaw( reflectionLaw );
+        if( panelSettings->panelTypeId_ != "" )
+        {
+            exteriorPanel->setPanelTypeId( panelSettings->panelTypeId_ );
+        }
     }
 
     if( bodies.at( bodyName )->getRotationalEphemeris( ) == nullptr )
     {
-        throw std::runtime_error( "Error when creating body exterior panel model for body " + bodyName + ", no panel geometry settings provided" );
+        throw std::runtime_error( "Error when creating body exterior panel model for body " + bodyName + ", no body rotation model provided" );
     }
 
     if( ( panelSettings->panelGeometry_->frameOrientation_ != "" ) &&
