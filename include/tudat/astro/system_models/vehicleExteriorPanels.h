@@ -18,7 +18,6 @@
 
 #include "tudat/astro/electromagnetism/reflectionLaw.h"
 #include "tudat/astro/aerodynamics/rarefiedFlowInteractionModel.h"
-#include "tudat/astro/aerodynamics/hypersonicFlowInteractionModel.h"
 #include "tudat/astro/ephemerides/rotationalEphemeris.h"
 #include "tudat/astro/system_models/engineModel.h"
 
@@ -46,8 +45,7 @@ public:
         panelTemperature_( panelTemperature ),
         trackedBody_( trackedBody ),
         reflectionLaw_( reflectionLaw ),
-        rarefiedFlowInteractionModel_( std::make_shared<aerodynamics::RarefiedFlowInteractionModel>() ),
-        hypersonicFlowInteractionModel_( std::make_shared<aerodynamics::HypersonicFlowInteractionModel>() ){}
+        rarefiedFlowInteractionModel_( std::make_shared<aerodynamics::RarefiedFlowInteractionModel>() ){}
 
     VehicleExteriorPanel(
         const std::function< Eigen::Vector3d( ) > frameFixedSurfaceNormal,
@@ -62,8 +60,7 @@ public:
         panelTemperature_( panelTemperature ),
         trackedBody_( trackedBody ),
         reflectionLaw_( reflectionLaw ),
-        rarefiedFlowInteractionModel_( std::make_shared<aerodynamics::RarefiedFlowInteractionModel>() ),
-        hypersonicFlowInteractionModel_( std::make_shared<aerodynamics::HypersonicFlowInteractionModel>() ){}
+        rarefiedFlowInteractionModel_( std::make_shared<aerodynamics::RarefiedFlowInteractionModel>() ){}
 
         VehicleExteriorPanel(
         const double panelArea,
@@ -73,8 +70,7 @@ public:
         panelArea_( panelArea ),
         trackedBody_( "" ),
         reflectionLaw_( reflectionLaw ),
-        rarefiedFlowInteractionModel_( std::make_shared<aerodynamics::RarefiedFlowInteractionModel>() ),
-        hypersonicFlowInteractionModel_( std::make_shared<aerodynamics::HypersonicFlowInteractionModel>() ){}
+        rarefiedFlowInteractionModel_( std::make_shared<aerodynamics::RarefiedFlowInteractionModel>() ){}
 
     VehicleExteriorPanel(
         const Eigen::Vector3d& frameFixedSurfaceNormal,
@@ -85,8 +81,7 @@ public:
         panelArea_( panelArea ),
         trackedBody_( trackedBody ),
         reflectionLaw_( reflectionLaw ),
-        rarefiedFlowInteractionModel_( std::make_shared<aerodynamics::RarefiedFlowInteractionModel>() ),
-        hypersonicFlowInteractionModel_( std::make_shared<aerodynamics::HypersonicFlowInteractionModel>() ){}
+        rarefiedFlowInteractionModel_( std::make_shared<aerodynamics::RarefiedFlowInteractionModel>() ){}
 
     VehicleExteriorPanel(
         const std::function< Eigen::Vector3d( ) > frameFixedSurfaceNormal,
@@ -97,8 +92,7 @@ public:
         panelArea_( panelArea ),
         trackedBody_( trackedBody ),
         reflectionLaw_( reflectionLaw ),
-        rarefiedFlowInteractionModel_( std::make_shared<aerodynamics::RarefiedFlowInteractionModel>() ),
-        hypersonicFlowInteractionModel_( std::make_shared<aerodynamics::HypersonicFlowInteractionModel>() ){}
+        rarefiedFlowInteractionModel_( std::make_shared<aerodynamics::RarefiedFlowInteractionModel>() ){}
 
     void setReflectionLaw( const std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw )
     {
@@ -113,11 +107,6 @@ public:
     std::shared_ptr< aerodynamics::RarefiedFlowInteractionModel > getRarefiedFlowInteractionModel( ) const
     {
         return rarefiedFlowInteractionModel_;
-    }
-
-    std::shared_ptr< aerodynamics::HypersonicFlowInteractionModel > getHypersonicFlowInteractionModel( ) const
-    {
-        return hypersonicFlowInteractionModel_;
     }
 
     std::function< Eigen::Vector3d( ) > getFrameFixedSurfaceNormal( ) const
@@ -160,9 +149,6 @@ protected:
     std::shared_ptr< electromagnetism::ReflectionLaw > reflectionLaw_;
 
     std::shared_ptr< aerodynamics::RarefiedFlowInteractionModel > rarefiedFlowInteractionModel_;
-
-    std::shared_ptr< aerodynamics::HypersonicFlowInteractionModel > hypersonicFlowInteractionModel_;
-
 };
 
 } // namespace system_models

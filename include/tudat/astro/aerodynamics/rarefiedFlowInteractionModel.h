@@ -12,6 +12,10 @@
 #ifndef TUDAT_RAREFIEDFLOWMODEL_H
 #define TUDAT_RAREFIEDFLOWMODEL_H
 
+#include <map>
+#include <string>
+#include <vector>
+
 #include <Eigen/Core>
 
 namespace tudat

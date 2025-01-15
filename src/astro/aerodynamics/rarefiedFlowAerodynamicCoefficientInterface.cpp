@@ -69,6 +69,8 @@ void RarefiedFlowAerodynamicCoefficientInterface::updateCurrentCoefficients(
     
     // initialize total aerodynamic coefficient vector with zeros
     totalAerodynamicCoefficients_ = Eigen::Vector6d::Zero();
+    currentForceCoefficients_ = Eigen::Vector3d::Zero();
+    currentMomentCoefficients_ = Eigen::Vector3d::Zero();
 
     for (auto& vehiclePartEntry : vehicleExteriorPanels_) {
         const std::string& vehiclePartName = vehiclePartEntry.first;
@@ -77,21 +79,13 @@ void RarefiedFlowAerodynamicCoefficientInterface::updateCurrentCoefficients(
         {
             totalAerodynamicCoefficients_.head(3) += vehiclePanelForceCoefficientVectors_[ vehiclePartName ].at( i );
             totalAerodynamicCoefficients_.tail(3) += vehiclePanelMomentCoefficientVectors_[ vehiclePartName ].at( i );
+            currentForceCoefficients_ += vehiclePanelForceCoefficientVectors_[ vehiclePartName ].at( i );
+            currentMomentCoefficients_ += vehiclePanelMomentCoefficientVectors_[ vehiclePartName ].at( i );
         }
     }
-
 }
 
-//! Get the current aerodynamic coefficients of the body itself (without control surfaces).
-/*!
-*  Returns the current force and moment coefficients of the body itself (without control surfaces).
-*  \return Current force and moment coefficients of the body itself (without control surfaces).
-*/
 
-Eigen::Vector6d RarefiedFlowAerodynamicCoefficientInterface::getCurrentAerodynamicCoefficients( )
-{
-    return totalAerodynamicCoefficients_;
-}
 
 void RarefiedFlowAerodynamicCoefficientInterface::determineIncinations(
     double secondsSinceEpoch,
@@ -200,7 +194,7 @@ void RarefiedFlowAerodynamicCoefficientInterface::determinePanelForceCoefficient
                     vehiclePanelCosinesOfLiftAndDragAngles_[ vehiclePartName ].at( i ).first,
                     vehiclePanelCosinesOfLiftAndDragAngles_[ vehiclePartName ].at( i ).second,
                     vehiclePanel->getPanelArea(),
-                    vehiclePanel->getPanelTemperature()(),
+                    vehiclePanel->getPanelTemperature(),
                     vehiclePanelLiftUnitVectors_[ vehiclePartName ].at( i ),
                     dragUnitVector_,
                     freestreamVelocity,

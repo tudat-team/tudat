@@ -86,9 +86,10 @@ public:
         momentCoefficientsFrame_( momentCoefficientsFrame ), accountForShadedPanels_( accountForShadedPanels )
         // dataPointsOfInclinationsForShading_( dataPointsOfInclinationsForShading)
         {
-            // initializing total aerodynamic coefficient vector with nans
-            totalAerodynamicCoefficients_ = Eigen::Vector6d::Constant( TUDAT_NAN );
-
+            // initializing total aerodynamic coefficient vector with zeros
+            totalAerodynamicCoefficients_ = Eigen::Vector6d::Zero();
+            currentForceCoefficients_ = Eigen::Vector3d::Zero();
+            currentMomentCoefficients_ = Eigen::Vector3d::Zero();
             vehicleExteriorPanels_ = vehicle_->getVehicleExteriorPanels();
             // vehiclePartOrientations_ = vehicle_->getVehiclePartOrientations();
         }
@@ -103,9 +104,6 @@ public:
     void updateCurrentCoefficients(
         const std::vector< double >& independentVariables,
         const double currentTime);
-    
-
-    Eigen::Vector6d getCurrentAerodynamicCoefficients( );
 
 private:
 

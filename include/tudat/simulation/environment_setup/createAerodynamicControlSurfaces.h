@@ -39,9 +39,7 @@ enum AerodynamicCoefficientTypes
     hypersonic_local_inclincation_coefficients,
     tabulated_coefficients,
     scaled_coefficients,
-    rarefied_flow_aerodynamic_coefficients,
-    hypersonic_flow_aerodynamic_coefficients,
-    bridged_models_aerodynamic_coefficients
+    rarefied_flow_aerodynamic_coefficients
 };
 
 //! Class for providing settings for aerodynamic coefficient model of control surfaces.
