@@ -47,7 +47,7 @@ jobs:
             run: |
               STR=$(git rev-list --after="24 hours" $(git log -n 1 --pretty=format:"%H"))
               if test -z $STR; then
-                echo "should_run=false" >> $GITHUB_OUTPUT
+                echo "should_run=true" >> $GITHUB_OUTPUT
               else
                 echo "should_run=true" >> $GITHUB_OUTPUT
               fi
