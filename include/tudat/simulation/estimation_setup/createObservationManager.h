@@ -335,6 +335,7 @@ void performObservationParameterEstimationClosureForSingleModelSet(
             // Check if bias object is of same type as estimated parameter
             std::shared_ptr< ArcWiseTimeBias< ObservationSize > > timeBiasObject =
                     std::dynamic_pointer_cast< ArcWiseTimeBias< ObservationSize > >( observationBias );
+
             if( timeBiasObject != nullptr )
             {
                 // Check if bias and parameter link properties are equal
@@ -355,6 +356,8 @@ void performObservationParameterEstimationClosureForSingleModelSet(
 
                     if( doTimesMatch == true )
                     {
+
+
                         timeBiasParameter->setObservationBiasFunctions(
                                 std::bind( &ArcWiseTimeBias< ObservationSize >::getTemplateFreeConstantObservationBias,
                                            timeBiasObject ),
@@ -366,6 +369,10 @@ void performObservationParameterEstimationClosureForSingleModelSet(
             }
             break;
         }
+        case estimatable_parameters::global_polynomial_clock_corrections:
+            break;
+        case estimatable_parameters::arc_wise_polynomial_clock_corrections:
+            break;
         default:
             std::string errorMessage = "Error when closing observation bias/estimation loop, did not recognize bias type " +
                     std::to_string( parameter->getParameterName( ).first );
@@ -373,6 +380,34 @@ void performObservationParameterEstimationClosureForSingleModelSet(
 
         }
     }
+}
+
+
+template< typename TimeType >
+void performTimeBiasPartialClosure(
+    const std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > timeBiasPartial,
+    const std::shared_ptr< propagators::DependentVariablesInterface< TimeType > > dependentVariablesInterface )
+{
+    std::string bodyName = timeBiasPartial->getParameterName( ).second.first;
+    std::shared_ptr< propagators::SingleDependentVariableSaveSettings > totalAccelerationVariable
+        = std::make_shared< propagators::SingleDependentVariableSaveSettings >( propagators::total_acceleration_dependent_variable, bodyName );
+    std::function< Eigen::VectorXd( const double ) > accelerationPartialFunction =
+        [=](const double time)
+        {
+            return dependentVariablesInterface->getSingleDependentVariable(
+                totalAccelerationVariable, time );
+        };
+    if( std::dynamic_pointer_cast< estimatable_parameters::TimeBiasParameterBase >( timeBiasPartial ) != nullptr )
+    {
+        std::dynamic_pointer_cast< estimatable_parameters::TimeBiasParameterBase >( timeBiasPartial )->setBodyAccelerationFunction(
+            accelerationPartialFunction );
+    }
+    else
+    {
+        throw std::runtime_error( "Error when setting time bias parameter closure, type is not supported for parameter " +
+            std::to_string( timeBiasPartial->getParameterName( ).first ) + ", " + timeBiasPartial->getParameterName( ).second.first );
+    }
+
 }
 
 //! Function to perform the closure between observation models and estimated parameters.
@@ -385,7 +420,8 @@ template< int ObservationSize = 1, typename ObservationScalarType = double, type
 void performObservationParameterEstimationClosure(
         std::shared_ptr< ObservationSimulator< ObservationSize, ObservationScalarType, TimeType > > observationSimulator ,
         const std::shared_ptr< estimatable_parameters::EstimatableParameterSet< ObservationScalarType > >
-        parametersToEstimate )
+        parametersToEstimate,
+        std::shared_ptr< propagators::DependentVariablesInterface< TimeType > > dependentVariablesInterface = nullptr )
 {
     // Retrieve observation models and parameter
     std::map< LinkEnds, std::shared_ptr< ObservationModel< ObservationSize, ObservationScalarType, TimeType > > >
@@ -395,12 +431,19 @@ void performObservationParameterEstimationClosure(
 
     // Retrieve estimated bias parameters.
     std::vector< std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > > vectorBiasParameters;
+    std::vector< std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > > vectorTimeBiasParameters;
+
     for( unsigned int i = 0; i < vectorParameters.size( ); i++ )
     {
         if( ( estimatable_parameters::isParameterObservationLinkProperty( vectorParameters.at( i )->getParameterName( ).first ) ) ||
                 ( estimatable_parameters::isParameterObservationLinkTimeProperty( vectorParameters.at( i )->getParameterName( ).first ) ) )
         {
             vectorBiasParameters.push_back( vectorParameters.at( i ) );
+        }
+
+        if( estimatable_parameters::isParameterObservationLinkTimeProperty( vectorParameters.at( i )->getParameterName( ).first ) )
+        {
+            vectorTimeBiasParameters.push_back( vectorParameters.at( i ) );
         }
     }
 
@@ -421,6 +464,11 @@ void performObservationParameterEstimationClosure(
                             observationSimulator->getObservableType( ) );
             }
         }
+    }
+
+    for( unsigned int i = 0; i < vectorTimeBiasParameters.size( ); i++ )
+    {
+        performTimeBiasPartialClosure( vectorTimeBiasParameters.at( i ), dependentVariablesInterface );
     }
 }
 
@@ -456,7 +504,7 @@ std::shared_ptr< ObservationManagerBase< ObservationScalarType, TimeType > > cre
                 observableType, observationModelSettingsList, bodies );
 
     performObservationParameterEstimationClosure(
-                observationSimulator, parametersToEstimate );
+                observationSimulator, parametersToEstimate, dependentVariablesInterface );
 
     // Create observation partials for all link ends/parameters
     std::map< LinkEnds, std::pair< std::map< std::pair< int, int >,
@@ -466,7 +514,7 @@ std::shared_ptr< ObservationManagerBase< ObservationScalarType, TimeType > > cre
     {
         observationPartialsAndScaler =
                 createObservablePartialsList(
-                    observationSimulator->getObservationModels( ), bodies, parametersToEstimate, true, dependentVariablesInterface );
+                    observationSimulator->getObservationModels( ), bodies, parametersToEstimate, false, false, dependentVariablesInterface );
     }
 
     // Split position partial scaling and observation partial objects.
@@ -514,6 +562,8 @@ std::shared_ptr< ObservationManagerBase< ObservationScalarType, TimeType > > cre
     case n_way_differenced_range:
     case dsn_one_way_averaged_doppler:
     case dsn_n_way_averaged_doppler:
+    case doppler_measured_frequency:
+    case dsn_n_way_range:
         observationManager = createObservationManager< 1, ObservationScalarType, TimeType >(
                     observableType, observationModelSettingsList, bodies, parametersToEstimate,
                     stateTransitionMatrixInterface, dependentVariablesInterface );

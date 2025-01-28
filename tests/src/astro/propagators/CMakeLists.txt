@@ -10,8 +10,7 @@
 
 TUDAT_ADD_TEST_CASE(CentralBodyData
         PRIVATE_LINKS
-        tudat_propagators
-        tudat_basic_mathematics
+        ${Tudat_PROPAGATION_LIBRARIES}
         )
 
 TUDAT_ADD_TEST_CASE(CowellStateDerivative
@@ -43,6 +42,8 @@ TUDAT_ADD_TEST_CASE(HybridArcDynamics PRIVATE_LINKS ${Tudat_PROPAGATION_LIBRARIE
 
 TUDAT_ADD_TEST_CASE(PropagationTerminationReason PRIVATE_LINKS ${Tudat_ESTIMATION_LIBRARIES})
 
+TUDAT_ADD_TEST_CASE(PropagationTermination PRIVATE_LINKS ${Tudat_ESTIMATION_LIBRARIES})
+
 TUDAT_ADD_TEST_CASE(RotationalDynamicsPropagator PRIVATE_LINKS ${Tudat_PROPAGATION_LIBRARIES})
 
 TUDAT_ADD_TEST_CASE(CR3BPPropagation PRIVATE_LINKS ${Tudat_PROPAGATION_LIBRARIES})
@@ -60,6 +61,8 @@ TUDAT_ADD_TEST_CASE(NonSequentialPropagation PRIVATE_LINKS ${Tudat_PROPAGATION_L
 TUDAT_ADD_TEST_CASE(PropagationResultsSaving PRIVATE_LINKS ${Tudat_PROPAGATION_LIBRARIES})
 
 TUDAT_ADD_TEST_CASE(IntegratorSteps PRIVATE_LINKS ${Tudat_PROPAGATION_LIBRARIES})
+
+TUDAT_ADD_TEST_CASE(RadiationPressurePropagation PRIVATE_LINKS ${Tudat_PROPAGATION_LIBRARIES})
 
 TUDAT_ADD_TEST_CASE(StateDerivativeRestrictedThreeBodyProblem PRIVATE_LINKS tudat_mission_segments tudat_root_finders tudat_propagators tudat_numerical_integrators tudat_basic_astrodynamics tudat_input_output)
 

@@ -22,8 +22,12 @@
 
 #include "tudat/astro/basic_astro/physicalConstants.h"
 #include "tudat/basics/basicTypedefs.h"
+#include "tudat/astro/basic_astro/physicalConstants.h"
+#include "tudat/astro/earth_orientation/terrestrialTimeScaleConverter.h"
+#include "tudat/astro/ground_stations/groundStationState.h"
 #include "tudat/astro/observation_models/linkTypeDefs.h"
 #include "tudat/astro/observation_models/observableTypes.h"
+#include "tudat/astro/system_models/timingSystem.h"
 #include "tudat/math/interpolators/lookupScheme.h"
 
 
@@ -44,7 +48,9 @@ enum ObservationBiasTypes
     constant_time_drift_bias,
     arc_wise_time_drift_bias,
     constant_time_bias,
-    arc_wise_time_bias
+    arc_wise_time_bias,
+    clock_induced_bias,
+    two_way_range_time_scale_bias
 };
 
 //! Base class (non-functional) for describing observation biases
@@ -58,7 +64,7 @@ class ObservationBias
 public:
 
     //! Constructor
-    ObservationBias( ){ }
+    ObservationBias( const bool hasTimeBias = false ): hasTimeBias_( hasTimeBias ){ }
 
     //! Destructor
     virtual ~ObservationBias( ){ }
@@ -79,6 +85,17 @@ public:
             const Eigen::Matrix< double, ObservationSize, 1 >& currentObservableValue =
             Eigen::Matrix< double, ObservationSize, 1 >::Constant( TUDAT_NAN ) ) = 0;
 
+    virtual double getTimeBias(
+        const double nominalObservationTime,
+        const LinkEndType referenceLinkEnd )
+    {
+        if( hasTimeBias_ )
+        {
+            throw std::runtime_error( "Error when getting time bias, value should be non-zero, but none is implemented." );
+        }
+        return 0.0;
+    }
+
     //! Function to return the size of the associated observation
     /*!
      * Function to return the size of the associated observation
@@ -88,6 +105,15 @@ public:
     {
         return ObservationSize;
     }
+
+    bool getHasTimeBias( )
+    {
+        return hasTimeBias_;
+    }
+
+protected:
+
+    bool hasTimeBias_;
 };
 
 //! Class for a constant absolute observation bias of a given size
@@ -182,7 +208,6 @@ private:
 
     //! Constant (entry-wise) observation bias.
     Eigen::Matrix< double, ObservationSize, 1 > observationBias_;
-
 };
 
 //! Class for an arc-wise constant absolute observation bias of a given size
@@ -606,7 +631,16 @@ public:
      * \param biasList List of bias objects that are to be combined.
      */
     MultiTypeObservationBias( const std::vector< std::shared_ptr< ObservationBias< ObservationSize > > > biasList ):
-        biasList_( biasList ){ }
+        biasList_( biasList )
+    {
+        for( unsigned int i = 0; i < biasList_.size( ); i++ )
+        {
+            if( biasList_.at( i )->getHasTimeBias( ) )
+            {
+                this->hasTimeBias_ = true;
+            }
+        }
+    }
 
     //! Destructor
     ~MultiTypeObservationBias( ){ }
@@ -630,6 +664,24 @@ public:
             totalBias += biasList_.at( i )->getObservationBias( linkEndTimes, linkEndStates, currentObservableValue );
         }
         return totalBias;
+    }
+
+    double getTimeBias(
+        const double nominalObservationTime,
+        const LinkEndType referenceLinkEnd )
+    {
+        double timeBias = 0.0;
+        if( this->hasTimeBias_ )
+        {
+            for ( unsigned int i = 0; i < biasList_.size( ); i++ )
+            {
+                if ( biasList_.at( i )->getHasTimeBias( ) )
+                {
+                    timeBias += biasList_.at( i )->getTimeBias( nominalObservationTime, referenceLinkEnd );
+                }
+            }
+        }
+        return timeBias;
     }
 
     //! Function to retrieve the list of bias objects that are to be combined.
@@ -929,7 +981,7 @@ public:
      * \param linkEndIndexForTime Link end index from which the 'current time' is determined
      */
     ConstantTimeBias( const double timeBias,
-                      const int linkEndIndexForTime ):
+                      const int linkEndIndexForTime ): ObservationBias< ObservationSize >( true ),
             timeBias_( timeBias ), linkEndIndexForTime_( linkEndIndexForTime ){ }
 
     //! Destructor
@@ -952,16 +1004,13 @@ public:
         return Eigen::Matrix< double, ObservationSize, 1 >::Zero( );
     }
 
-
-    //! Function retrieve the constant (entry-wise) time bias.
-    /*!
-     * Function retrieve the constant (entry-wise) time bias.
-     * \return The constant (entry-wise) time bias.
-     */
-    double getConstantTimeBias( const double time ) const
+    double getTimeBias(
+        const double nominalObservationTime,
+        const LinkEndType referenceLinkEnd )
     {
         return timeBias_;
     }
+
 
     //! Function to reset the constant (entry-wise) time bias.
     /*!
@@ -980,11 +1029,8 @@ public:
      */
     Eigen::VectorXd getTemplateFreeConstantObservationBias( )
     {
-        Eigen::VectorXd bias = Eigen::VectorXd( ObservationSize );
-        for ( unsigned int j = 0 ; j < bias.size( ) ; j++ )
-        {
-            bias[ j ] = timeBias_;
-        }
+        Eigen::VectorXd bias = Eigen::VectorXd( 1 );
+        bias[ 0 ] = timeBias_;
         return bias;
     }
 
@@ -1038,7 +1084,7 @@ public:
     ArcWiseTimeBias(
             const std::vector< double >& arcStartTimes,
             const std::vector< double >& timeBiases,
-            const int linkEndIndexForTime ):
+            const int linkEndIndexForTime ): ObservationBias< ObservationSize >( true ),
             arcStartTimes_( arcStartTimes ), timeBiases_( timeBiases ), linkEndIndexForTime_( linkEndIndexForTime )
     {
         if( arcStartTimes_.size( ) != timeBiases_.size( ) )
@@ -1073,14 +1119,11 @@ public:
         return Eigen::Matrix< double, ObservationSize, 1 >::Zero( );
     }
 
-    //! Function retrieve the current time observation bias.
-    /*!
-     * Function retrieve the current time observation bias.
-     * \return Arc-wise time observation bias.
-     */
-    double getArcWiseTimeBias( const double time ) const
+    double getTimeBias(
+        const double nominalObservationTime,
+        const LinkEndType referenceLinkEnd )
     {
-        return timeBiases_.at( lookupScheme_->findNearestLowerNeighbour( time ) );
+        return timeBiases_.at( lookupScheme_->findNearestLowerNeighbour( nominalObservationTime ) );
     }
 
     //! Function retrieve the constant (entry-wise) time bias as a variable-size vector.
@@ -1093,11 +1136,7 @@ public:
         std::vector< Eigen::VectorXd > templateFreeObservationBiases;
         for( unsigned int i = 0; i < timeBiases_.size( ); i++ )
         {
-            Eigen::VectorXd biases = Eigen::VectorXd( ObservationSize );
-            for ( unsigned int j = 0 ; j < ObservationSize ; j++ )
-            {
-                biases[ j ] = timeBiases_.at( i );
-            }
+            Eigen::VectorXd biases = ( Eigen::Vector1d( ) << timeBiases_.at( i ) ).finished( );
             templateFreeObservationBiases.push_back( biases );
         }
         return templateFreeObservationBiases;
@@ -1116,7 +1155,7 @@ public:
         {
             for( unsigned int i = 0; i < timeBiases.size( ); i++ )
             {
-                if( ! ( timeBiases.at( i ).rows( ) == ObservationSize ) )
+                if( ( timeBiases.at( i ).rows( ) != 1 ) )
                 {
                     throw std::runtime_error( "Error when resetting arc-wise time bias, single entry size is inconsistent" );
                 }
@@ -1180,6 +1219,135 @@ private:
 };
 
 
+template< int ObservationSize = 1 >
+class ClockInducedRangeBias: public ObservationBias< ObservationSize >
+{
+public:
+
+    ClockInducedRangeBias(
+        const std::shared_ptr<system_models::TimingSystem> timingSystem,
+        const std::vector<int> linkEndIndicesForTime,
+        const observation_models::LinkEndId linkEndId ) :
+        timingSystem_( timingSystem ), linkEndIndicesForTime_( linkEndIndicesForTime ),
+        linkEndId_( linkEndId ), onesVector_( Eigen::Matrix<double, ObservationSize, 1>::Ones( ))
+    {
+        for ( unsigned int i = 0; i < linkEndIndicesForTime_.size( ); i++ )
+        {
+            signMultipliers_.push_back(( linkEndIndicesForTime_.at( i ) % 2 == 1 ? 1.0 : -1.0 ));
+        }
+    }
+
+    //! Destructor
+    ~ClockInducedRangeBias( )
+    {
+    }
+
+    Eigen::Matrix<double, ObservationSize, 1> getObservationBias(
+        const std::vector<double> &linkEndTimes,
+        const std::vector<Eigen::Matrix<double, 6, 1> > &linkEndStates,
+        const Eigen::Matrix<double, ObservationSize, 1> &currentObservableValue =
+        ( Eigen::Matrix<double, ObservationSize, 1>( ) << TUDAT_NAN ).finished( ))
+    {
+        double currentBias = 0.0;
+        for ( unsigned int i = 0; i < linkEndIndicesForTime_.size( ); i++ )
+        {
+            currentBias += signMultipliers_.at( i ) * timingSystem_->getCompleteClockError(
+                linkEndTimes.at( linkEndIndicesForTime_.at( i )));
+        }
+        return currentBias * onesVector_ * physical_constants::SPEED_OF_LIGHT;
+    }
+
+    std::shared_ptr<system_models::TimingSystem> getTimingSystem( )
+    {
+        return timingSystem_;
+    }
+
+    LinkEndId getLinkEndId( )
+    {
+        return linkEndId_;
+
+    }
+
+private:
+
+    std::shared_ptr<system_models::TimingSystem> timingSystem_;
+
+    //! Link end index from which the 'current time' is determined (e.g. entry from linkEndTimes used in getObservationBias
+    //! function.
+    std::vector<int> linkEndIndicesForTime_;
+
+    std::vector<double> signMultipliers_;
+
+    LinkEndId linkEndId_;
+
+    Eigen::Matrix<double, ObservationSize, 1> onesVector_;
+};
+
+//! Class for a constant time observation bias of a given size
+/*!
+ *  Class for a constant time observation bias of a given size. For unbiases observation h and time bias c, the biased observation
+ *  is computed as h(t+c)
+ */
+template< int ObservationSize = 1 >
+class TwoWayTimeScaleRangeBias: public ObservationBias< ObservationSize >
+{
+public:
+
+    //! Constructor
+    /*!
+     * Constructor
+     * \param timeBias Constant (entry-wise) time bias.
+     * \param linkEndIndexForTime Link end index from which the 'current time' is determined
+     */
+    TwoWayTimeScaleRangeBias(
+        const std::shared_ptr< earth_orientation::TerrestrialTimeScaleConverter > timeScaleConverter,
+        const std::shared_ptr< ground_stations::GroundStationState > transmittingStationState,
+        const std::shared_ptr< ground_stations::GroundStationState > receivingStationState ):
+        ObservationBias< ObservationSize >( false ), timeScaleConverter_( timeScaleConverter ),
+        transmittingStationState_( transmittingStationState ),receivingStationState_( receivingStationState ){ }
+
+    //! Destructor
+    ~TwoWayTimeScaleRangeBias( ){ }
+
+    //! Function to retrieve the constant time drift bias.
+    /*!
+     * Function to retrieve the constant time drift bias.
+     * \param linkEndTimes List of times at each link end during observation (unused).
+     * \param linkEndStates List of states at each link end during observation (unused).
+     * \param currentObservableValue  Unbiased value of the observable (unused and default NAN).
+     * \return Constant time drift bias.
+     */
+    Eigen::Matrix< double, ObservationSize, 1 > getObservationBias(
+        const std::vector< double >& linkEndTimes,
+        const std::vector< Eigen::Matrix< double, 6, 1 > >& linkEndStates,
+        const Eigen::Matrix< double, ObservationSize, 1 >& currentObservableValue )
+    {
+
+        double receptionTimeDifference = timeScaleConverter_->getCurrentTimeDifference(
+            computedTimeScale_, observedTimeScale_, linkEndTimes.at( 3 ), receivingStationState_->getNominalCartesianPosition( ) );
+        double transmissionTimeDifference = timeScaleConverter_->getCurrentTimeDifference(
+            computedTimeScale_, observedTimeScale_, linkEndTimes.at( 0 ), transmittingStationState_->getNominalCartesianPosition( ) );
+        Eigen::Matrix< double, ObservationSize, 1 > biasValue = Eigen::Matrix< double, ObservationSize, 1 >::Zero( );
+        biasValue( 0 ) = ( receptionTimeDifference - transmissionTimeDifference ) * physical_constants::SPEED_OF_LIGHT;
+
+        return biasValue;
+    }
+
+private:
+
+    std::shared_ptr< earth_orientation::TerrestrialTimeScaleConverter > timeScaleConverter_;
+
+    std::shared_ptr< ground_stations::GroundStationState > transmittingStationState_;
+
+    std::shared_ptr< ground_stations::GroundStationState > receivingStationState_;
+
+    basic_astrodynamics::TimeScales observedTimeScale_ = basic_astrodynamics::utc_scale;
+
+    basic_astrodynamics::TimeScales computedTimeScale_ = basic_astrodynamics::tdb_scale;
+
+};
+
+
 //! Function to retrieve the type of an observation bias
 /*!
  *  Function to retrieve the type of an observation bias.
@@ -1229,6 +1397,15 @@ ObservationBiasTypes getObservationBiasType(
     {
         biasType = arc_wise_time_bias;
     }
+    else if( std::dynamic_pointer_cast< ClockInducedRangeBias< ObservationSize > >( biasObject ) != nullptr )
+    {
+        biasType = clock_induced_bias;
+    }
+    else if( biasObject == nullptr )
+    {
+        std::string errorMessage = "Error, found nullptr when retrieving bias type";
+        throw std::runtime_error( errorMessage );
+    }
     else
     {
         std::string errorMessage = "Error, did not recognize observation bias when retrieving bias type";
@@ -1236,6 +1413,34 @@ ObservationBiasTypes getObservationBiasType(
     }
     return biasType;
 }
+
+template< int ObservationSize = 1 >
+std::vector< std::shared_ptr< ObservationBias< ObservationSize > > > getClockInducedBiases(
+        const std::shared_ptr< ObservationBias< ObservationSize > > fullBias )
+{
+    std::vector< std::shared_ptr< ObservationBias< ObservationSize > > > clockInducedBiases;
+    if( fullBias != nullptr )
+    {
+        if( getObservationBiasType( fullBias ) == clock_induced_bias )
+        {
+            clockInducedBiases.push_back( fullBias );
+        }
+        else if( getObservationBiasType( fullBias ) == multiple_observation_biases )
+        {
+            std::shared_ptr< MultiTypeObservationBias< ObservationSize > > combinedBias =
+                    std::dynamic_pointer_cast< MultiTypeObservationBias< ObservationSize > >( fullBias );
+            for( unsigned int i = 0; i < combinedBias->getBiasList( ).size( ); i++ )
+            {
+                if( getObservationBiasType( combinedBias->getBiasList( ).at( i ) ) == clock_induced_bias )
+                {
+                    clockInducedBiases.push_back( combinedBias->getBiasList( ).at( i ) );
+                }
+            }
+        }
+    }
+    return clockInducedBiases;
+}
+
 
 } // namespace observation_models
 

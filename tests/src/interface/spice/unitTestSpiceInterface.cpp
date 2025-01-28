@@ -35,6 +35,7 @@
 
 #include "tudat/astro/basic_astro/physicalConstants.h"
 #include "tudat/basics/testMacros.h"
+#include "tudat/basics/utilityMacros.h"
 #include "tudat/io/basicInputOutput.h"
 #include "tudat/basics/basicTypedefs.h"
 #include "tudat/interface/spice/spiceEphemeris.h"
@@ -64,10 +65,32 @@ BOOST_AUTO_TEST_SUITE( test_spice_wrappers )
 //    Eigen::Vector6d marsCentricState = getBodyCartesianStateAtEpoch( "Mars Express", "Mars", "IAU_Mars", "NONE", testTime );
 //}
 
+// Test 1: Test Julian day <-> Ephemeris time conversions at J2000.
+BOOST_AUTO_TEST_CASE( testNoKernelCrash )
+{
+    using namespace spice_interface;
+    using namespace input_output;
+    using namespace physical_constants;
+
+    // Create settings at which states are to be evaluated.
+    const std::string aberrationCorrections = "NONE";
+    const std::string observer = "Solar System Barycenter";
+    const std::string target = "Mars";
+    const std::string referenceFrame = "J2000";
+    const double ephemerisTime = 1.0E6;
+
+    // Get state from wrapper for state:
+    toggleErrorReturn( );
+    suppressErrorOutput( );
+    const Eigen::Vector6d wrapperState = getBodyCartesianStateAtEpoch(
+        target, observer, referenceFrame, aberrationCorrections, ephemerisTime );
+    TUDAT_UNUSED_PARAMETER( wrapperState );
+}
 
 // Test 1: Test Julian day <-> Ephemeris time conversions at J2000.
 BOOST_AUTO_TEST_CASE( testSpiceWrappers_1 )
 {
+    std::cout<<"Test*******************"<<std::endl;
     using namespace spice_interface;
     using namespace input_output;
     using namespace physical_constants;

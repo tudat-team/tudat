@@ -4,6 +4,7 @@
 
 
 #include "tudat/astro/orbit_determination/acceleration_partials/accelerationPartial.h"
+#include "tudat/astro/orbit_determination/acceleration_partials/radiationPressureAccelerationPartial.h"
 
 namespace tudat
 {
@@ -115,6 +116,10 @@ public:
         }
     }
 
+    void wrtSpecularReflectivity( Eigen::MatrixXd& partial, const std::string& panelTypeId );
+
+    void wrtDiffuseReflectivity( Eigen::MatrixXd& partial, const std::string& panelTypeId );
+
     //! Function for updating partial w.r.t. the bodies' positions
     /*!
      *  Function for updating common blocks of partial to current state. For the panelled radiation
@@ -156,7 +161,55 @@ public:
     getParameterPartialFunction( std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > parameter )
     {
         std::function< void( Eigen::MatrixXd& ) > partialFunction;
-        return std::make_pair( partialFunction, 0 );
+        int numberOfRows = 0;
+
+        // Check if parameter dependency exists.
+        if( parameter->getParameterName( ).second.first == acceleratedBody_ )
+        {
+            if( parameter->getParameterName( ).second.second == acceleratingBody_ )
+            {
+                switch( parameter->getParameterName( ).first )
+                {
+                case estimatable_parameters::source_direction_radiation_pressure_scaling_factor:
+
+                    partialFunction = std::bind( &computeRadiationPressureAccelerationWrtSourceDirectionScaling,
+                                                 radiationPressureAcceleration_,
+                                                 std::placeholders::_1 );
+                    numberOfRows = 1;
+
+                    break;
+                case estimatable_parameters::source_perpendicular_direction_radiation_pressure_scaling_factor:
+
+                    partialFunction = std::bind( &computeRadiationPressureAccelerationWrtSourcePerpendicularDirectionScaling,
+                                                 radiationPressureAcceleration_,
+                                                 std::placeholders::_1 );
+                    numberOfRows = 1;
+
+                    break;
+
+                default:
+                    break;
+                }
+            }
+            switch( parameter->getParameterName( ).first )
+                {
+                case estimatable_parameters::specular_reflectivity:
+                    partialFunction = std::bind( &PanelledRadiationPressurePartial::wrtSpecularReflectivity,
+                                                 this, std::placeholders::_1, parameter->getParameterName( ).second.second );
+                    numberOfRows = 1;
+                    break;
+
+                case estimatable_parameters::diffuse_reflectivity:
+                    partialFunction = std::bind( &PanelledRadiationPressurePartial::wrtDiffuseReflectivity,
+                                                 this, std::placeholders::_1, parameter->getParameterName( ).second.second );
+                    numberOfRows = 1;
+                    break;
+                default:
+                    break;
+                }
+
+        }
+        return std::make_pair( partialFunction, numberOfRows );
     }
 
     //! Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.

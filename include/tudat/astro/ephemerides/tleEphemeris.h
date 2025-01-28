@@ -20,6 +20,10 @@ namespace tudat
 namespace ephemerides
 {
 
+Eigen::Matrix3d getRotationMatrixFromTemeToJ2000( const double epochSinceJ2000  );
+
+Eigen::Matrix3d getRotationMatrixFromJ2000ToTeme( const double epochSinceJ2000  );
+
 //! Class holding data for one set of two-line elements (TLE) for a specific Earth-orbiting satellite.
 /*!
  * Class holding data for one set of two-line elements (TLE) for a specific Earth-orbiting satellite. It is valid at its epoch plus/minus
@@ -160,7 +164,9 @@ public:
 				  const std::string& referenceFrameOrientation = "J2000",
 				  const std::shared_ptr< Tle > tle = nullptr, const bool useSDP = false);
 
-	//! Function to get state from ephemeris.
+    Eigen::Vector6d getCartesianStateInTemeFrame( double secondsSinceEpoch );
+
+    //! Function to get state from ephemeris.
 	/*!
 	 *  Returns state from ephemeris at given time, given a two-line element set using either SGP4 or SDP4.
 	 *  \param secondsSinceEpoch Seconds since J2000 epoch at which ephemeris is to be evaluated.

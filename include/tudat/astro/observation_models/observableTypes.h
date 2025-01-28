@@ -41,7 +41,10 @@ enum ObservableType
     n_way_differenced_range = 10,
     relative_position_observable = 11,
     dsn_one_way_averaged_doppler = 12,
-    dsn_n_way_averaged_doppler = 13
+    dsn_n_way_averaged_doppler = 13,
+    doppler_measured_frequency = 14,
+    dsn_n_way_range = 15
+
 };
 
 
@@ -71,11 +74,17 @@ ObservableType getUndifferencedObservableType( const ObservableType differencedO
 
 ObservableType getDifferencedObservableType( const ObservableType undifferencedObservableType );
 
+ObservableType getUnconcatenatedObservableType( const ObservableType observableType );
+
 ObservableType getBaseObservableType( const ObservableType observableType );
 
 std::pair< std::vector< int >, std::vector< int > > getUndifferencedTimeAndStateIndices(
         const ObservableType differencedObservableType,
         const int numberOfLinkEnds );
+
+std::pair< LinkEnds, LinkEnds > getUndifferencedLinkEnds( const ObservableType differencedObservableType, const LinkEnds& differencedLinkEnds );
+
+std::vector< LinkEnds > getUnconcatenatedLinkEnds( const ObservableType concatenatedObservableType, const LinkEnds& concatenatedLinkEnds );
 
 //! Function to get the size of an observable of a given type.
 /*!
@@ -151,7 +160,7 @@ std::vector< int > getLinkEndIndicesForLinkEndTypeAtObservable(
 //! Function to retrieve the link end indices in link end states/times that are to be used in viability calculation
 /*!
  * Function to retrieve the link end indices in link end states/times that are to be used in viability calculation.
- * Return variable is a vector of pairs, where each the first entry denotes the index of the point at which the link is to be
+ * Return variable is a vector of pairs, where eacgetLinkEndTypesForGivenLinkEndIdh the first entry denotes the index of the point at which the link is to be
  * checkd. The second entry denotes the index for the opposite end of the link.
  * \param linkEnds Complete set of link ends for which check is to be performed
  * \param observableType Observable type for which check is to be performed
@@ -167,9 +176,8 @@ std::vector< LinkEndType > getLinkEndTypesForGivenLinkEndId(
         const LinkEnds& linkEnds,
         const LinkEndId linkEndToCheck );
 
-void checkObservationResidualDiscontinuities(
-        Eigen::Block< Eigen::VectorXd > observationBlock,
-        const ObservableType observableType );
+std::vector< int > getLinkEndIndicesForLinkEndIdAtObservable(
+        const ObservableType observableType, const LinkEnds& linkEnds, const LinkEndId linkEndToCheck );
 
 static const std::map< LinkEndType, int > oneWayLinkStateEntries = {
     { transmitter, 0 },
@@ -187,6 +195,9 @@ static const std::map< LinkEndType, int > observedBodyLinkStateEntries = {
 };
 
 std::map< LinkEndType, int > getSingleLinkStateEntryIndices( const ObservableType observableType );
+
+//! Function retrieving link ends information for all interlinks for a given observable type and link ends
+std::vector< std::pair< std::pair< LinkEndType, LinkEndId >, std::pair< LinkEndType, LinkEndId > > > getInterlinks( const ObservableType observableType, const LinkEnds& linkEnds );
 
 
 } // namespace observation_models

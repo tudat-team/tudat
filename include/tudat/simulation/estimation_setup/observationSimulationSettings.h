@@ -16,7 +16,7 @@
 #include <functional>
 
 #include "tudat/astro/observation_models/observationSimulator.h"
-#include "tudat/simulation/estimation_setup/observations.h"
+#include "tudat/simulation/estimation_setup/observationCollection.h"
 #include "tudat/basics/utilities.h"
 #include "tudat/math/statistics/randomVariableGenerator.h"
 #include "tudat/math/statistics/multiVariateGaussianProbabilityDistributions.h"
@@ -209,6 +209,12 @@ public:
         return dependentVariableCalculator_;
     }
 
+    void setAncilliarySettings(
+            std::shared_ptr< observation_models::ObservationAncilliarySimulationSettings >& ancilliarySettings )
+    {
+        ancilliarySettings_ = ancilliarySettings;
+    }
+
 
     std::shared_ptr< observation_models::ObservationAncilliarySimulationSettings > getAncilliarySettings( )
     {
@@ -358,11 +364,12 @@ inline std::shared_ptr< ObservationSimulationSettings< TimeType > > tabulatedObs
         const observation_models::LinkEndType linkEndType = observation_models::receiver,
         const std::vector< std::shared_ptr< observation_models::ObservationViabilitySettings > >& viabilitySettingsList =
         std::vector< std::shared_ptr< observation_models::ObservationViabilitySettings > >( ),
-        const std::function< Eigen::VectorXd( const double ) > observationNoiseFunction = nullptr  )
+        const std::function< Eigen::VectorXd( const double ) > observationNoiseFunction = nullptr,
+        const std::shared_ptr< observation_models::ObservationAncilliarySimulationSettings > ancilliarySettings = nullptr)
 {
     return std::make_shared< TabulatedObservationSimulationSettings< TimeType > >(
                 observableType, linkEnds, simulationTimes, linkEndType, viabilitySettingsList,
-                observationNoiseFunction );
+                observationNoiseFunction, ancilliarySettings );
 }
 
 template< typename TimeType = double >
@@ -447,18 +454,33 @@ void clearNoiseFunctionFromObservationSimulationSettings(
     }
 }
 
-void addDependentVariables(
-        const std::vector< std::shared_ptr< ObservationDependentVariableSettings > > settingsList,
-        const SystemOfBodies& bodies );
-
 template< typename TimeType = double >
 void addDependentVariableToSingleObservationSimulationSettings(
         const std::shared_ptr< ObservationSimulationSettings< TimeType > >& observationSimulationSettings,
         const std::vector< std::shared_ptr< ObservationDependentVariableSettings > >& dependentVariableList,
         const SystemOfBodies& bodies )
 {
-    observationSimulationSettings->getDependentVariableCalculator( )->addDependentVariables(
-                dependentVariableList, bodies );
+    std::vector< std::shared_ptr< ObservationDependentVariableSettings > > extendedDependentVariablesList;
+
+    // Retrieve interlinks information for current observable type and link ends
+    ObservableType observableType = observationSimulationSettings->getObservableType( );
+    LinkEnds linkEnds = observationSimulationSettings->getLinkEnds( ).linkEnds_;
+    std::vector< std::pair< std::pair< LinkEndType, LinkEndId >, std::pair< LinkEndType, LinkEndId > > > interlinksInSet = getInterlinks( observableType, linkEnds );
+
+    // Parse all dependent variable settings
+    for ( auto settings : dependentVariableList )
+    {
+        // Create complete list of all dependent variable settings compatible with the original settings (possibly not fully defined, i.e. with
+        // missing information on link ends, etc.) for the given observable type and link ends
+        std::vector< std::shared_ptr< ObservationDependentVariableSettings > > allSettingsToCreate =
+                createAllCompatibleDependentVariableSettings( observableType, linkEnds, settings );
+        for ( auto it : allSettingsToCreate )
+        {
+            extendedDependentVariablesList.push_back( it );
+        }
+    }
+    // Add all relevant dependent variables
+    observationSimulationSettings->getDependentVariableCalculator( )->addDependentVariables( extendedDependentVariablesList, bodies );
 }
 
 template< typename TimeType = double >
@@ -502,6 +524,15 @@ void addGaussianNoiseToSingleObservationSimulationSettings(
     noiseSeed++;
 
     observationSimulationSettings->setObservationNoiseFunction( noiseFunction );
+}
+
+template< typename TimeType = double >
+void addAncilliarySettingsToSingleObservationSimulationSettings(
+        const std::shared_ptr< ObservationSimulationSettings< TimeType > >& observationSimulationSettings,
+        std::shared_ptr<observation_models::ObservationAncilliarySimulationSettings> &ancilliarySettings)
+{
+    observationSimulationSettings->setAncilliarySettings(
+            const_cast<std::shared_ptr<observation_models::ObservationAncilliarySimulationSettings> &>(ancilliarySettings));
 }
 
 template< typename TimeType = double >
@@ -602,6 +633,21 @@ void addDependentVariablesToObservationSimulationSettings(
                 observationSimulationSettings, modificationFunction, args ... );
 }
 
+template< typename TimeType = double, typename... ArgTypes  >
+void addAncilliarySettingsToObservationSimulationSettings(
+        const std::vector< std::shared_ptr< ObservationSimulationSettings< TimeType > > >& observationSimulationSettings,
+        const std::shared_ptr< observation_models::ObservationAncilliarySimulationSettings >& ancilliarySettings,
+        ArgTypes... args)
+{
+
+    std::function< void(  std::shared_ptr< ObservationSimulationSettings< TimeType > > ) > modificationFunction =
+            std::bind( &addAncilliarySettingsToSingleObservationSimulationSettings< TimeType >,
+                       std::placeholders::_1, ancilliarySettings );
+    modifyObservationSimulationSettings(
+            observationSimulationSettings, modificationFunction, args ... );
+
+}
+
 
 ////! Function to simulate a fixed number of simulations, in an arcwise manner, taking into account viability settings
 ///*!
@@ -691,9 +737,9 @@ std::vector< std::shared_ptr< ObservationSimulationSettings< TimeType > > >  get
     return getObservationSimulationSettings( linkDefsPerObservable, observationTimes, referenceLinkEnd );
 }
 
-extern template class ObservationSimulationSettings< double >;
-extern template class TabulatedObservationSimulationSettings< double >;
-extern template class PerArcObservationSimulationSettings< double >;
+//extern template class ObservationSimulationSettings< double >;
+//extern template class TabulatedObservationSimulationSettings< double >;
+//extern template class PerArcObservationSimulationSettings< double >;
 
 
 }

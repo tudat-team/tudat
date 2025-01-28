@@ -144,9 +144,9 @@ void testObservationPartials(
         const double positionPerturbationMultiplier = 1.0,
         const Eigen::VectorXd parameterPerturbationMultipliers = Eigen::VectorXd::Constant( 4, 1.0 ),
         const std::shared_ptr< observation_models::ObservationAncilliarySimulationSettings > ancilliarySettings = nullptr,
-        double observationTime = 1.1E7 )
+        double observationTime = 1.1E7,
+        const double gammaToleranceWeakening = 1.0 )
 {
-
     printEstimatableParameterEntries( fullEstimatableParameterSet );
 
     // Retrieve double and vector parameters and estimate body states
@@ -201,6 +201,11 @@ void testObservationPartials(
             runSimulation = false;
         }
 
+        if( observableType == observation_models::doppler_measured_frequency && linkEndIterator->first != receiver )
+        {
+            runSimulation = false;
+        }
+
         // Remove retransmission delay from the retransmitting reference link end: computation of multi-leg light currently doesn't support
         // retransmission delays at the reference link end
         std::shared_ptr< observation_models::ObservationAncilliarySimulationSettings > modifiedAncilliarySettings;
@@ -227,6 +232,7 @@ void testObservationPartials(
 
         if ( runSimulation )
         {
+
             // Evaluate nominal observation values
             std::vector<Eigen::Vector6d> vectorOfStates;
             std::vector<double> vectorOfTimes;
@@ -256,7 +262,7 @@ void testObservationPartials(
 
                 for (unsigned int i = 0; i < analyticalObservationPartials.size(); i++)
                 {
-                    if (observableType == two_way_doppler)
+                    if (observableType == two_way_doppler || observableType == doppler_measured_frequency )
                     {
                         std::vector<double> currentTimes = expectedPartialTimes.at( i );
                         if (currentTimes.size() == 2)
@@ -421,8 +427,16 @@ void testObservationPartials(
                             currentParameterPartial += analyticalObservationPartials[i + numberOfEstimatedBodies].at( j ).first;
 
                         }
+                        std::cout<<"Current double partial "<<i<<" "<<std::setprecision( 16 )<<analyticalObservationPartials[i + numberOfEstimatedBodies].size()<<" "<<currentParameterPartial<<" "<<numericalPartialsWrtDoubleParameters.at( i )<<" "
+                        <<( currentParameterPartial( 0 ) - numericalPartialsWrtDoubleParameters.at( i )( 0 ) ) / numericalPartialsWrtDoubleParameters.at( i )( 0 )<<std::endl;
+
+                        double toleranceToUse = tolerance;
+                        if( i == 2 )
+                        {
+                            toleranceToUse *= gammaToleranceWeakening;
+                        }
                         TUDAT_CHECK_MATRIX_CLOSE_FRACTION(
-                                    currentParameterPartial, (numericalPartialsWrtDoubleParameters.at( i )), tolerance);
+                                    currentParameterPartial, (numericalPartialsWrtDoubleParameters.at( i )), toleranceToUse);
                     }
                 }
 
@@ -462,6 +476,8 @@ void testObservationPartials(
                             currentParameterPartial += analyticalObservationPartials[i + startIndex].at( j ).first;
 
                         }
+
+                        std::cout<<"Current vector partial "<<i<<" "<<currentParameterPartial<<" "<<numericalPartialsWrtVectorParameters.at( i )<<std::endl;
 
                         TUDAT_CHECK_MATRIX_CLOSE_FRACTION(
                                     (currentParameterPartial), (numericalPartialsWrtVectorParameters.at( i )), tolerance);

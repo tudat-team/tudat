@@ -83,7 +83,13 @@ TUDAT_ADD_TEST_CASE(RelativeAngularPositionPartials
         ${Tudat_ESTIMATION_LIBRARIES}
         )
 
-TUDAT_ADD_TEST_CASE(DsnNWayAveragedDopplerPartials
+ TUDAT_ADD_TEST_CASE(ClockPartials
+         PRIVATE_LINKS
+         tudat_test_support
+         ${Tudat_ESTIMATION_LIBRARIES}
+         )
+
+ TUDAT_ADD_TEST_CASE(DsnNWayAveragedDopplerPartials
         PRIVATE_LINKS
         tudat_test_support
         ${Tudat_ESTIMATION_LIBRARIES}
@@ -93,3 +99,15 @@ TUDAT_ADD_TEST_CASE(RelativePositionPartials
      tudat_test_support
      ${Tudat_ESTIMATION_LIBRARIES}
      )
+ TUDAT_ADD_TEST_CASE(TimeBiasPartials
+         PRIVATE_LINKS
+         tudat_test_support
+         ${Tudat_ESTIMATION_LIBRARIES}
+ )
+
+ TUDAT_ADD_TEST_CASE(ObservedFrequencyPartials
+         PRIVATE_LINKS
+         tudat_test_support
+         ${Tudat_ESTIMATION_LIBRARIES}
+ )
+

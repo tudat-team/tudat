@@ -22,11 +22,10 @@ void checkObservationDependentVariableEnvironment(
         const SystemOfBodies& bodies,
         const std::shared_ptr< StationAngleObservationDependentVariableSettings > variableSettings )
 {
-    if( isObservationDependentVariableGroundStationProperty( variableSettings ) )
+    if( isObservationDependentVariableGroundStationProperty( variableSettings->variableType_ ) && variableSettings->isLinkEndDefined_ )
     {
-      
-        std::string bodyName = variableSettings->relevantLinkEnd_.bodyName_;
-        std::string stationName = variableSettings->relevantLinkEnd_.stationName_;
+        std::string bodyName = variableSettings->linkEndId_.bodyName_;
+        std::string stationName = variableSettings->linkEndId_.stationName_;
 
         if( bodies.count( bodyName ) == 0 )
         {
@@ -108,6 +107,12 @@ std::pair< int, int > getLinkEndStateTimeIndices(
         currentStateTimeIndex = stateTimeIndex;
     }
 
+    if ( currentStateTimeIndex.size( ) == 0 )
+    {
+        throw std::runtime_error( "Error when getting link end state and time indices for observation dependent variable calculation, "
+                                  "no indices could be found for required relevant and originating link ends (must be inconsistent)." );
+    }
+
     // Check if observation is integrated
     if( observation_models::isObservableOfIntegratedType( observableType ) )
     {
@@ -151,13 +156,35 @@ ObservationDependentVariableFunction getStationObservationAngleFunction(
     checkObservationDependentVariableEnvironment( bodies, variableSettings );
 
     // Retrieve link-end ID for station
-    std::string bodyName = variableSettings->relevantLinkEnd_.bodyName_;
-    std::string stationName = variableSettings->relevantLinkEnd_.stationName_;
+
+    observation_models::LinkEndId linkEndIdToUse;
+    if( variableSettings->isLinkEndDefined_ )
+    {
+        linkEndIdToUse = variableSettings->linkEndId_;
+    }
+    else
+    {
+        linkEndIdToUse = linkEnds.at( variableSettings->linkEndType_ );
+    }
+
+    std::string bodyName = linkEndIdToUse.bodyName_;
+    std::string stationName = linkEndIdToUse.stationName_;
+
+    if( bodies.count( bodyName ) == 0 )
+    {
+        throw std::runtime_error( "Error when getting station angle function, body " + bodyName + " does not exist " );
+    }
+
+    if( bodies.at( bodyName )->getGroundStationMap( ).count( stationName ) == 0 )
+    {
+        throw std::runtime_error( "Error when getting station angle function, station " + stationName + " does not exist on body " + bodyName );
+    }
 
     std::pair< int, int > linkEndIndicesToUse = getLinkEndStateTimeIndices(
-        observableType, linkEnds, variableSettings->relevantLinkEnd_,
-        variableSettings->linkEndRole_, variableSettings->originatingLinkEndRole_,
+        observableType, linkEnds, linkEndIdToUse,
+        variableSettings->linkEndType_, variableSettings->originatingLinkEndType_,
         variableSettings->integratedObservableHandling_ );
+
 
     // Retrieve pointing angles calculator for station, and setup output function
     std::shared_ptr< ground_stations::PointingAnglesCalculator > pointingAnglesCalculator =
@@ -197,9 +224,9 @@ ObservationDependentVariableFunction getInterlinkObservationVariableFunction(
     const observation_models::LinkDefinition linkEnds )
 {
     std::pair< int, int > linkEndIndicesToUse = getLinkEndStateTimeIndices(
-        observableType, linkEnds, linkEnds.at( variableSettings->startLinkEnd_ ),
-        variableSettings->startLinkEnd_, variableSettings->endLinkEnd_,
-        variableSettings->integratedObservableHandling_ );
+            observableType, linkEnds, linkEnds.at( variableSettings->linkEndType_ ),
+            variableSettings->linkEndType_, variableSettings->originatingLinkEndType_,
+            variableSettings->integratedObservableHandling_ );
 
     ObservationDependentVariableFunction outputFunction;
 
@@ -218,8 +245,7 @@ ObservationDependentVariableFunction getInterlinkObservationVariableFunction(
                                 const std::shared_ptr<observation_models::ObservationAncilliarySimulationSettings> ancilliarySimulationSettings )
         {
             return ( Eigen::VectorXd( 1 ) << ( linkEndStates.at( linkEndIndicesToUse.first ).segment( 0, 3 ) -
-                                               linkEndStates.at( linkEndIndicesToUse.second ).segment( 0,
-                                                                                                       3 )).norm( )).finished( );
+                                               linkEndStates.at( linkEndIndicesToUse.second ).segment( 0, 3 )).norm( )).finished( );
         };
         break;
     }
@@ -465,7 +491,7 @@ ObservationDependentVariableFunction getObservationVectorDependentVariableFuncti
             bodies, linkSettings, observableType, linkEnds );
         break;
     }
-    case doppler_integration_time_dependent_variable:
+    case integration_time_dependent_variable:
     {
         if( !observation_models::isObservableOfIntegratedType( observableType ) )
         {
@@ -491,21 +517,21 @@ ObservationDependentVariableFunction getObservationVectorDependentVariableFuncti
                 observableType, linkEnds.size( ) ) );
         }
 
-        int numberOfLinkEnds = linkEnds.size( );
-        Eigen::VectorXd zeroDelay = Eigen::VectorXd::Zero( numberOfLinkEnds - 1 );
-
         outputFunction = [ = ]( const std::vector<double> &linkEndTimes,
                                 const std::vector<Eigen::Matrix<double, 6, 1> > &linkEndStates,
                                 const Eigen::VectorXd &observationValue,
                                 const std::shared_ptr<observation_models::ObservationAncilliarySimulationSettings> ancilliarySimulationSettings )
         {
-            std::vector< double > retransmissionDelays = ancilliarySimulationSettings->getAncilliaryDoubleVectorData( observation_models::doppler_integration_time, false );
+            int numberOfLinkEnds = linkEnds.size( );
+            Eigen::VectorXd zeroDelay = Eigen::VectorXd::Zero( numberOfLinkEnds - 2 );
+
+            std::vector< double > retransmissionDelays = ancilliarySimulationSettings->getAncilliaryDoubleVectorData( observation_models::link_ends_delays, false );
             if( retransmissionDelays.size( ) > 0 )
             {
-                if( static_cast< int >( retransmissionDelays.size( ) ) != numberOfLinkEnds - 1 )
+                if( static_cast< int >( retransmissionDelays.size( ) ) != numberOfLinkEnds - 2 )
                 {
                     throw std::runtime_error( "Error in observation dependent variables, retransmission time size for observable " + observation_models::getObservableName(
-                        observableType, linkEnds.size( ) ) + " is of inconsistent size. Should be " + std::to_string( numberOfLinkEnds - 1 ) +
+                        observableType, linkEnds.size( ) ) + " is of inconsistent size. Should be " + std::to_string( numberOfLinkEnds - 2 ) +
                         " but is " + std::to_string( retransmissionDelays.size( ) ) );
                 }
 
@@ -530,12 +556,11 @@ void ObservationDependentVariableCalculator::addDependentVariable(
         const SystemOfBodies& bodies )
 {
     // Check if the requested dependent variable can be used for given link
-    if( doesObservationDependentVariableExistForGivenLink(
-                observableType_, linkEnds_.linkEnds_, variableSettings ) )
+    if( doesObservationDependentVariableExistForGivenLink( observableType_, linkEnds_.linkEnds_, variableSettings ) )
     {
         // Retrieve the current index in list of dependent variables and size of new parameter
         int currentIndex = totalDependentVariableSize_;
-        int parameterSize = getObservationDependentVariableSize( variableSettings );
+        int parameterSize = getObservationDependentVariableSize( variableSettings, linkEnds_.linkEnds_ );
 
         // Create function to compute dependent variable
         ObservationDependentVariableFunction observationDependentVariableFunction =
@@ -575,9 +600,24 @@ void ObservationDependentVariableCalculator::addDependentVariables(
         const std::vector< std::shared_ptr< ObservationDependentVariableSettings > > settingsList,
         const SystemOfBodies& bodies )
 {
-    for( unsigned int i = 0; i < settingsList.size( ); i++ )
+    // Parse all settings to be added and check if they are already included
+    for ( auto settingsToAdd : settingsList )
     {
-        addDependentVariable( settingsList.at( i ), bodies );
+        // Check if settings already exist for given observation set
+        bool settingsDetected = false;
+        for ( auto existingSettings : settingsList_ )
+        {
+            if ( existingSettings->areSettingsCompatible( settingsToAdd ) )
+            {
+                settingsDetected = true;
+            }
+        }
+
+        // Add required dependent variable if not yet included
+        if ( !settingsDetected )
+        {
+            addDependentVariable( settingsToAdd, bodies );
+        }
     }
 }
 
@@ -587,8 +627,7 @@ std::pair< int, int > ObservationDependentVariableCalculator::getDependentVariab
     std::pair< int, int > startAndSizePair = std::make_pair( 0, 0 );
     for( unsigned int i = 0; i < settingsList_.size( ); i++ )
     {
-        if( getObservationDependentVariableId( settingsList_.at( i ) ) ==
-                getObservationDependentVariableId( dependentVariables ) )
+        if( settingsList_.at( i )->areSettingsCompatible( dependentVariables ) )
         {
             if( startAndSizePair.second == 0 )
             {
