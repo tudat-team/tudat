@@ -1649,6 +1649,7 @@ public:
                                    const TimeType& initialTime,
                                    const std::shared_ptr< numerical_integrators::IntegratorSettings< TimeType > > integratorSettings,
                                    const std::shared_ptr< PropagationTerminationSettings > terminationSettings,
+                                   const std::string bodyName = "",
                                    const std::vector< std::shared_ptr< SingleDependentVariableSaveSettings > > dependentVariablesToSave =
                                            std::vector< std::shared_ptr< SingleDependentVariableSaveSettings > >( ),
                                    const std::shared_ptr< SingleArcPropagatorProcessingSettings > outputSettings =
@@ -1660,7 +1661,7 @@ public:
                                                                   terminationSettings,
                                                                   dependentVariablesToSave,
                                                                   outputSettings ),
-        stateDerivativeFunction_( stateDerivativeFunction ), stateSize_( initialState.rows( ) )
+        stateDerivativeFunction_( stateDerivativeFunction ), bodyName_( bodyName ), stateSize_( initialState.rows( ) )
     { }
 
     //! Destructor
@@ -1668,6 +1669,8 @@ public:
 
     //! Function to compute the state derivative, as a function of current time and state.
     std::function< StateVectorType( const TimeType, const StateVectorType& ) > stateDerivativeFunction_;
+
+    std::string bodyName_ = "";
 
     //! Size of the state that is propagated.
     int stateSize_;
@@ -1708,6 +1711,7 @@ inline std::shared_ptr< CustomStatePropagatorSettings< StateScalarType, TimeType
         const TimeType& initialTime,
         const std::shared_ptr< numerical_integrators::IntegratorSettings< TimeType > > integratorSettings,
         const std::shared_ptr< PropagationTerminationSettings > terminationSettings,
+        const std::string& bodyName = "",
         const std::vector< std::shared_ptr< SingleDependentVariableSaveSettings > > dependentVariablesToSave =
                 std::vector< std::shared_ptr< SingleDependentVariableSaveSettings > >( ),
         const std::shared_ptr< SingleArcPropagatorProcessingSettings > outputSettings =
@@ -2433,7 +2437,7 @@ std::map< IntegratedStateType, std::vector< std::tuple< std::string, std::string
             }
 
             std::vector< std::tuple< std::string, std::string, PropagatorType > > customList;
-            customList.push_back( std::make_tuple( "", "", PropagatorType( customPropagatorSettings->stateSize_ ) ) );
+            customList.push_back( std::make_tuple( customPropagatorSettings->bodyName_, "", PropagatorType( customPropagatorSettings->stateSize_ ) ) );
             integratedStateList[ custom_state ] = customList;
             break;
         }

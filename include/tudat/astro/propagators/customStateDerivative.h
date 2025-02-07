@@ -35,9 +35,11 @@ public:
      * \param stateSize Size of the custom state that is propagated.
      */
     CustomStateDerivative( const std::function< StateVectorType( const TimeType, const StateVectorType& ) > stateDerivativeModel,
-                           const int stateSize ):
+                           const int stateSize,
+                           const std::string bodyName = "" ):
         SingleStateTypeDerivative< StateScalarType, TimeType >( custom_state ), stateDerivativeModel_( stateDerivativeModel ),
-        stateSize_( stateSize )
+        stateSize_( stateSize ),
+        bodyName_( bodyName )
     { }
 
     //! Calculates the custom state derivative
@@ -104,6 +106,9 @@ private:
 
     //! Size of the custom state that is propagated.
     int stateSize_;
+
+    std::string bodyName_ = "";
+
 };
 
 }  // namespace propagators

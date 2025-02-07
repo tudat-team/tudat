@@ -272,13 +272,14 @@ BOOST_AUTO_TEST_CASE( testMultiTypeCustomStatePropagation )
             initialMass,
             std::make_shared< PropagationTimeTerminationSettings >( simulationEndEpoch ) );
 
+
     // Create custom state derivative model settings
     double initialCustomState = 500.0;
     std::shared_ptr< SingleArcPropagatorSettings< double > > customPropagatorSettings =
             std::make_shared< CustomStatePropagatorSettings< double > >(
                     std::bind( &getDummyCustomState1, std::placeholders::_1, std::placeholders::_2 ),
                     initialCustomState,
-                    std::make_shared< PropagationTimeTerminationSettings >( 1000.0 ) );
+                    std::make_shared< PropagationTimeTerminationSettings >( 1000.0 ), "Earth" );
 
     // Create total propagator settings, depending on current case.
     std::shared_ptr< PropagatorSettings< double > > propagatorSettings;
@@ -288,8 +289,11 @@ BOOST_AUTO_TEST_CASE( testMultiTypeCustomStatePropagation )
     propagatorSettingsList.push_back( massPropagatorSettings );
     propagatorSettingsList.push_back( customPropagatorSettings );
 
+    std::vector< std::shared_ptr< SingleDependentVariableSaveSettings > > dependentVariables;
+    dependentVariables.push_back( customDependentVariable( [=]( ){ return bodies.at( "Earth" )->getCurrentCustomState( ); }, 1 ) );
+
     propagatorSettings = std::make_shared< MultiTypePropagatorSettings< double > >(
-            propagatorSettingsList, std::make_shared< PropagationTimeTerminationSettings >( simulationEndEpoch ) );
+            propagatorSettingsList, std::make_shared< PropagationTimeTerminationSettings >( simulationEndEpoch ), dependentVariables );
 
     std::shared_ptr< IntegratorSettings<> > integratorSettings =
             std::make_shared< IntegratorSettings<> >( rungeKutta4, 0.0, fixedStepSize );

@@ -1183,6 +1183,40 @@ void checkRotationalStatesFeasibility( const std::vector< std::string >& bodiesT
     }
 }
 
+
+template< typename StateScalarType, typename TimeType >
+void checkMassStatesFeasibility( const std::vector< std::string >& bodiesToIntegrate,
+                                       const simulation_setup::SystemOfBodies& bodies,
+                                       const bool setIntegratedResult )
+{
+    // Check whether each integrated body exists, and whether it has a TabulatedEphemeris
+    for( unsigned int i = 0; i < bodiesToIntegrate.size( ); i++ )
+    {
+        std::string bodyToIntegrate = bodiesToIntegrate.at( i );
+
+        if( bodies.count( bodyToIntegrate ) == 0 )
+        {
+            throw std::runtime_error( "Error when checking mass dynamics feasibility of body " + bodyToIntegrate +
+                                      " no such body found" );
+        }
+        else
+        {
+            if( setIntegratedResult )
+            {
+                if( bodies.at( bodyToIntegrate )->getMassProperties( ) == nullptr )
+                {
+                    addEmptyTabulatedRotationalEphemeris< StateScalarType, TimeType >( bodies, bodyToIntegrate );
+                }
+                else if( !ephemerides::isTabulatedRotationalEphemeris( bodies.at( bodyToIntegrate )->getRotationalEphemeris( ) ) )
+                {
+                    throw std::runtime_error( "Error when checking rotational dynamics feasibility of body " + bodyToIntegrate +
+                                              " rotational ephemeris exists, but is not tabulated." );
+                }
+            }
+        }
+    }
+}
+
 template< typename StateScalarType, typename TimeType >
 void checkTranslationalStatesFeasibility( const std::vector< std::string >& bodiesToIntegrate,
                                           const std::vector< std::string >& centralBodies,
@@ -1335,7 +1369,10 @@ void checkPropagatedStatesFeasibility( const std::shared_ptr< SingleArcPropagato
             {
                 throw std::runtime_error( "Error, input type for mass dynamics is inconsistent when checking dynamics feasibility" );
             }
-
+            checkMassStatesFeasibility< StateScalarType, TimeType >(
+                massPropagatorSettings->bodiesWithMassToPropagate_,
+                bodies,
+                massPropagatorSettings->getOutputSettings( )->getSetIntegratedResult( ) );
             break;
         }
         case custom_state: {

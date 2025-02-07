@@ -1781,6 +1781,16 @@ public:
         bodyName_ = bodyName;
     }
 
+    Eigen::VectorXd getCurrentCustomState( )
+    {
+        return currentCustomState_;
+    }
+
+    void setCurrentCustomState( const Eigen::VectorXd& currentCustomState )
+    {
+        currentCustomState_ = currentCustomState;
+    }
+
 protected:
 private:
     //! Variable denoting whether this body is the global frame origin (1 if true, 0 if false, -1 if not yet set)
@@ -1828,6 +1838,8 @@ private:
 
     //    //! Body scaled mean moment of inertia
     //    double scaledMeanMomentOfInertia_;
+
+    Eigen::VectorXd currentCustomState_;
 
     //! Ephemeris of body.
     std::shared_ptr< ephemerides::Ephemeris > bodyEphemeris_;

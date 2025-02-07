@@ -414,7 +414,7 @@ std::shared_ptr< SingleStateTypeDerivative< StateScalarType, TimeType > > create
             else
             {
                 stateDerivativeModel = std::make_shared< CustomStateDerivative< StateScalarType, TimeType > >(
-                        customPropagatorSettings->stateDerivativeFunction_, customPropagatorSettings->stateSize_ );
+                        customPropagatorSettings->stateDerivativeFunction_, customPropagatorSettings->stateSize_, customPropagatorSettings->bodyName_ );
             }
             break;
         }

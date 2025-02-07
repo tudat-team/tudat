@@ -166,7 +166,19 @@ private:
                     }
                     break;
                 }
-                case custom_state: {
+                case custom_state:
+                {
+                    std::vector< std::tuple< std::string, std::string, PropagatorType > > bodiesWithIntegratedCustomState =
+                        integratedStates_.at( custom_state );
+
+                    for( unsigned int i = 0; i < bodiesWithIntegratedCustomState.size( ); i++ )
+                    {
+                        if( std::get< 0 >( bodiesWithIntegratedCustomState[ i ] ) != "" )
+                        {
+                            bodyList_.at( std::get<0>( bodiesWithIntegratedCustomState[ i ] ))
+                                ->setCurrentCustomState( integratedStateIterator_->second );
+                        }
+                    }
                     break;
                 }
                 default:
