@@ -388,7 +388,7 @@ BOOST_AUTO_TEST_CASE( testJakowskiIonosphericCorrectionGodot )
 
     std::shared_ptr< ObservationAncilliarySimulationSettings > dummyAncillarySettings =
             std::make_shared< ObservationAncilliarySimulationSettings >( );
-    dummyAncillarySettings->setAncilliaryDoubleVectorData( frequency_bands, { TUDAT_NAN } );
+//    dummyAncillarySettings->setAncilliaryDoubleVectorData( frequency_bands, { TUDAT_NAN } );
 
     // Corrections computed for Doppler observations (i.e. they should be negative)
 
@@ -463,6 +463,8 @@ BOOST_AUTO_TEST_CASE( testJakowskiIonosphericCorrectionGodot )
                                                      true,
                                                      earthEquatorialRadius );
 
+            dummyAncillarySettings->setIntermediateDoubleData( transmitter_frequency_intermediate, frequencies.at( j ) );
+
             BOOST_CHECK_CLOSE_FRACTION( ionosphericCorrection.calculateLightTimeCorrectionWithMultiLegLinkEndStates(
                                                 { Eigen::Vector6d::Zero( ), Eigen::Vector6d::Zero( ) },
                                                 { times.at( j ), times.at( j ) },
@@ -530,7 +532,8 @@ BOOST_AUTO_TEST_CASE( testTabulatedAndJakowskiIonosphericCorrectionsConsistency 
 
     std::shared_ptr< ObservationAncilliarySimulationSettings > ancillarySettings =
             std::make_shared< ObservationAncilliarySimulationSettings >( );
-    ancillarySettings->setAncilliaryDoubleVectorData( frequency_bands, { TUDAT_NAN } );
+//    ancillarySettings->setAncilliaryDoubleVectorData( frequency_bands, { TUDAT_NAN } );
+    ancillarySettings->setIntermediateDoubleData( transmitter_frequency_intermediate, frequency );
 
     double time = initialTime - timeStep;
     for( unsigned int i = 0; i < numberOfPoints; ++i )
@@ -600,9 +603,9 @@ BOOST_AUTO_TEST_CASE( testMediaCorrectionDerivatives )
 
     // Set transmitting frequency calculator
     double frequency = 8e9;
-    bodies.getBody( "Earth" )
-        ->getGroundStation( "DSS-26" )
-        ->setTransmittingFrequencyCalculator( std::make_shared< ground_stations::ConstantFrequencyInterpolator >( frequency ) );
+//    bodies.getBody( "Earth" )
+//        ->getGroundStation( "DSS-26" )
+//        ->setTransmittingFrequencyCalculator( std::make_shared< ground_stations::ConstantFrequencyInterpolator >( frequency ) );
 
 
     // Create link ends
@@ -613,7 +616,8 @@ BOOST_AUTO_TEST_CASE( testMediaCorrectionDerivatives )
 
     std::shared_ptr< ObservationAncilliarySimulationSettings > ancillarySettings =
         std::make_shared< ObservationAncilliarySimulationSettings >( );
-    ancillarySettings->setAncilliaryDoubleVectorData( frequency_bands, { TUDAT_NAN } );
+//    ancillarySettings->setAncilliaryDoubleVectorData( frequency_bands, { TUDAT_NAN } );
+    ancillarySettings->setIntermediateDoubleData( transmitter_frequency_intermediate, frequency );
 
     // Create Saastamoinen corrections
     for( int test = 0; test < 2 ; test++ )
