@@ -603,9 +603,9 @@ BOOST_AUTO_TEST_CASE( testMediaCorrectionDerivatives )
 
     // Set transmitting frequency calculator
     double frequency = 8e9;
-//    bodies.getBody( "Earth" )
-//        ->getGroundStation( "DSS-26" )
-//        ->setTransmittingFrequencyCalculator( std::make_shared< ground_stations::ConstantFrequencyInterpolator >( frequency ) );
+    bodies.getBody( "Earth" )
+        ->getGroundStation( "DSS-26" )
+        ->setTransmittingFrequencyCalculator( std::make_shared< ground_stations::ConstantFrequencyInterpolator >( frequency ) );
 
 
     // Create link ends
@@ -688,20 +688,20 @@ BOOST_AUTO_TEST_CASE( testMediaCorrectionDerivatives )
             delaysWrtTransmitter.push_back(
                 mediaCorrectionModel->calculateLightTimeCorrectionPartialDerivativeWrtLinkEndPosition(
                     linkEndsStates.at( 0 ), linkEndsStates.at( 1 ),
-                    linkEndsTimes.at( 0 ), linkEndsTimes.at( 1 ), transmitter ));
+                    linkEndsTimes.at( 0 ), linkEndsTimes.at( 1 ), transmitter, ancillarySettings ));
 
             delaysWrtReceiver.push_back(
                 mediaCorrectionModel->calculateLightTimeCorrectionPartialDerivativeWrtLinkEndPosition(
                     linkEndsStates.at( 0 ), linkEndsStates.at( 1 ),
-                    linkEndsTimes.at( 0 ), linkEndsTimes.at( 1 ), receiver ));
+                    linkEndsTimes.at( 0 ), linkEndsTimes.at( 1 ), receiver, ancillarySettings ));
 
             delaysWrtTime.push_back(
                 mediaCorrectionModel->calculateLightTimeCorrectionPartialDerivativeWrtLinkEndTime(
                     linkEndsStates.at( 0 ), linkEndsStates.at( 1 ),
-                    linkEndsTimes.at( 0 ), linkEndsTimes.at( 1 ), transmitter ) +
+                    linkEndsTimes.at( 0 ), linkEndsTimes.at( 1 ), transmitter, ancillarySettings  ) +
                 mediaCorrectionModel->calculateLightTimeCorrectionPartialDerivativeWrtLinkEndTime(
                     linkEndsStates.at( 0 ), linkEndsStates.at( 1 ),
-                    linkEndsTimes.at( 0 ), linkEndsTimes.at( 1 ), receiver ) );
+                    linkEndsTimes.at( 0 ), linkEndsTimes.at( 1 ), receiver, ancillarySettings ) );
 
             transmitterVelocities.push_back( linkEndsStates.at( 0 ).segment( 3, 3 ));
             receiverVelocities.push_back( linkEndsStates.at( 1 ).segment( 3, 3 ));
@@ -731,7 +731,7 @@ BOOST_AUTO_TEST_CASE( testMediaCorrectionDerivatives )
                 double absoluteError = std::fabs(
                     numericalDerivativesWrtTime.at( counter ) - reconstructedDerivativesWrtTime.at( counter ));
 
-                std::cout<<delays.at( i )<<" "<<absoluteError<<" "<<elevationAngles.at( i )<<" "<<numericalDerivativesWrtTime.at( counter )<<" "<<reconstructedDerivativesWrtTime.at( counter )<<std::endl;
+//                std::cout<<delays.at( i )<<" "<<absoluteError<<" "<<elevationAngles.at( i )<<" "<<numericalDerivativesWrtTime.at( counter )<<" "<<reconstructedDerivativesWrtTime.at( counter )<<std::endl;
                 BOOST_CHECK_SMALL( absoluteError, 5.0E-14 * ( test == 0 ? 1.0 : 1.0E-4 ) );
 
                 double relativeError =  absoluteError / numericalDerivativesWrtTime.at( counter );

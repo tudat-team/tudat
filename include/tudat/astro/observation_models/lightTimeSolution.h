@@ -589,7 +589,8 @@ public:
                                                          receiverState.template cast< double >( ),
                                                          transmitterTime,
                                                          receiverTime,
-                                                         isPartialWrtReceiver ? receiver : transmitter )
+                                                         isPartialWrtReceiver ? receiver : transmitter,
+                                                         ancillarySettings )
                                                  .template cast< ObservationScalarType >( ) *
                     physical_constants::SPEED_OF_LIGHT;
         }
@@ -620,7 +621,7 @@ public:
                                                  receiverState.template cast< double >( ),
                                                  transmitterTime,
                                                  receiverTime,
-                                                 isPartialWrtReceiver ? receiver : transmitter ) *
+                                                 isPartialWrtReceiver ? receiver : transmitter, ancillarySettings ) *
                                          physical_constants::SPEED_OF_LIGHT;
         }
         return partialWrtLinkEndTime;
