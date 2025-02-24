@@ -215,7 +215,7 @@ public:
         default:
             throw std::runtime_error(
                 "Error when setting double intermediate observation "
-                "data; could not set type " +  variableType );
+                "data; could not set type " + static_cast< int >( variableType ) );
         }
     }
 
@@ -235,7 +235,7 @@ public:
                 {
                     throw std::runtime_error(
                         "Error when getting double intermediate observation "
-                        "data; could not retrieve type " + variableType );
+                        "data; could not retrieve type " + static_cast< int >( variableType ) );
                 }
                 break;
             }
