@@ -99,6 +99,7 @@ void addGravityFieldModel( const SystemOfBodies& bodies,
                            const std::shared_ptr< GravityFieldSettings > gravityFieldSettings,
                            const std::vector< std::shared_ptr< GravityFieldVariationSettings > >& gravityFieldVariationSettings )
 {
+    std::cout<<"Adding gravity field to body "<<bodyName<<" "<<bodies.at( bodyName )<<std::endl;
     if( bodies.count( bodyName ) == 0 )
     {
         throw std::runtime_error( "Error when setting gravity field model for body " + bodyName +
@@ -106,6 +107,8 @@ void addGravityFieldModel( const SystemOfBodies& bodies,
     }
     bodies.at( bodyName )
             ->setGravityFieldModel( createGravityFieldModel( gravityFieldSettings, bodyName, bodies, gravityFieldVariationSettings ) );
+    std::cout<<"Added gravity field to body "<<bodyName<<" "<<bodies.at( bodyName )<<", at address "<<bodies.at( bodyName )->getGravityFieldModel( )<<std::endl;
+
 
     if( gravityFieldVariationSettings.size( ) > 0 )
     {

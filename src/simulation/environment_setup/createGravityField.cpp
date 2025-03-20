@@ -280,6 +280,7 @@ std::shared_ptr< gravitation::GravityFieldModel > createGravityFieldModel(
 
     // Declare return object.
     std::shared_ptr< GravityFieldModel > gravityFieldModel;
+    std::cout<<"Creating gravity field of type "<<gravityFieldSettings->getGravityFieldType( )<<" for body "<<body<<" "<<bodies.at( body )<<std::endl;
 
     // Check which type of gravity field model is to be created.
     switch( gravityFieldSettings->getGravityFieldType( ) )
@@ -317,6 +318,8 @@ std::shared_ptr< gravitation::GravityFieldModel > createGravityFieldModel(
             break;
         }
         case spherical_harmonic: {
+            std::cout<<"Creating spherical harmonic gravity field for body "<<body<<" "<<bodies.at( body )<<std::endl;
+
             // Check whether settings for spherical harmonic gravity field model are consistent with
             // its type.
             std::shared_ptr< SphericalHarmonicsGravityFieldSettings > sphericalHarmonicFieldSettings =
@@ -357,6 +360,8 @@ std::shared_ptr< gravitation::GravityFieldModel > createGravityFieldModel(
 
                     if( gravityFieldVariationSettings.size( ) == 0 && sphericalHarmonicFieldSettings->getCreateTimeDependentField( ) == 0 )
                     {
+                        std::cout<<"Creating spherical harmonic gravity field for body (no variations) "<<std::endl;
+
                         // Create and initialize spherical harmonic gravity field model.
                         gravityFieldModel = std::make_shared< SphericalHarmonicsGravityField >(
                                 sphericalHarmonicFieldSettings->getGravitationalParameter( ),
@@ -375,6 +380,8 @@ std::shared_ptr< gravitation::GravityFieldModel > createGravityFieldModel(
                             throw std::runtime_error( errorMessage );
                         }
 
+                        std::cout<<"Creating spherical harmonic gravity field for body (with variations) "<<std::endl;
+
                         // Create preliminary TimeDependentSphericalHarmonicsGravityField, without actual variation settings.
                         gravityFieldModel = std::make_shared< TimeDependentSphericalHarmonicsGravityField >(
                                 sphericalHarmonicFieldSettings->getGravitationalParameter( ),
@@ -385,6 +392,7 @@ std::shared_ptr< gravitation::GravityFieldModel > createGravityFieldModel(
                                 sphericalHarmonicFieldSettings->getScaledMeanMomentOfInertia( ) );
                     }
                 }
+
             }
             break;
         }

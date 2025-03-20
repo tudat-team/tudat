@@ -359,9 +359,14 @@ std::shared_ptr< gravitation::SphericalHarmonicsGravitationalAccelerationModel >
     }
     else
     {
+        std::cout<<"Creating spherical harmonic gravity acceleration exerted by "<<nameOfBodyExertingAcceleration<<" on "<<nameOfBodyUndergoingAcceleration<<std::endl;
+        std::cout<<"Body exerting acceleration address: "<<bodyExertingAcceleration<<std::endl;
         // Get pointer to gravity field of central body and cast to required type.
         std::shared_ptr< SphericalHarmonicsGravityField > sphericalHarmonicsGravityField =
                 std::dynamic_pointer_cast< SphericalHarmonicsGravityField >( bodyExertingAcceleration->getGravityFieldModel( ) );
+
+        std::cout<<"Body gravity field address: "<<bodyExertingAcceleration->getGravityFieldModel( )<<std::endl;
+        std::cout<<"Body spherical harmonic gravity field address: "<<bodyExertingAcceleration->getGravityFieldModel( )<<std::endl;
 
         std::shared_ptr< RotationalEphemeris > rotationalEphemeris = bodyExertingAcceleration->getRotationalEphemeris( );
         if( sphericalHarmonicsGravityField == nullptr )
