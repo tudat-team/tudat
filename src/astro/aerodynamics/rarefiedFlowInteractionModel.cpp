@@ -57,7 +57,7 @@ Eigen::Vector3d RarefiedFlowInteractionModel::computePanelForceCoefficientVector
     Eigen::Vector3d panelForceCoefficientVector = Eigen::Vector3d::Zero();
 
     if (cosineOfNormalDragAngle > 0){ // check if panel is pointing into the flow
-        for (int j_species = 0; j_species < nrlmsise00SpeciesAtomicMasses.size(); j_species++) {
+        for (unsigned int j_species = 0; j_species < nrlmsise00SpeciesAtomicMasses.size(); j_species++) {
             double Cdij = get_Cd_ij(
                 freestreamVelocity, atmosphericTemperature, nrlmsise00SpeciesAtomicMasses[j_species], 
                 cosineOfNormalDragAngle, panelSurfaceArea, panelTemperature, referenceArea) * numberDensities[j_species] / totalNumberDensity;

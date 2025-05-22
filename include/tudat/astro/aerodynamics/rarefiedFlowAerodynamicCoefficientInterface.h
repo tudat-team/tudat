@@ -53,7 +53,7 @@ public:
      * \param dataPointsOfInclinationsForShading Data points of inclinations for shading
      */
     RarefiedFlowAerodynamicCoefficientInterface(
-        std::shared_ptr<tudat::system_models::VehicleSystems> vehicle,
+        std::map< std::string, std::vector< std::shared_ptr< tudat::system_models::VehicleExteriorPanel > > > vehicleExteriorPanels,
         const double referenceLength,
         const double referenceArea,
         const Eigen::Vector3d& momentReferencePoint,
@@ -77,20 +77,15 @@ public:
     ): 
         AerodynamicCoefficientInterface(
             referenceLength, referenceLength, momentReferencePoint, independentVariableNames, forceCoefficientsFrame, momentCoefficientsFrame
-            ), 
-        vehicle_( vehicle ),
-        referenceLength_( referenceLength ), referenceArea_( referenceArea ),
-        momentReferencePoint_( momentReferencePoint ), 
-        independentVariableNames_( independentVariableNames ), 
-        forceCoefficientsFrame_( forceCoefficientsFrame ),
-        momentCoefficientsFrame_( momentCoefficientsFrame ), accountForShadedPanels_( accountForShadedPanels )
+            ),
+        vehicleExteriorPanels_( vehicleExteriorPanels ),
+        accountForShadedPanels_( accountForShadedPanels )
         // dataPointsOfInclinationsForShading_( dataPointsOfInclinationsForShading)
         {
             // initializing total aerodynamic coefficient vector with zeros
             totalAerodynamicCoefficients_ = Eigen::Vector6d::Zero();
             currentForceCoefficients_ = Eigen::Vector3d::Zero();
             currentMomentCoefficients_ = Eigen::Vector3d::Zero();
-            vehicleExteriorPanels_ = vehicle_->getVehicleExteriorPanels();
             // vehiclePartOrientations_ = vehicle_->getVehiclePartOrientations();
         }
 
@@ -127,9 +122,6 @@ private:
     
     // Declaration of member variables
 
-    //! Vehicle
-    std::shared_ptr<tudat::system_models::VehicleSystems> vehicle_;
-
     //! Vehicle panels
     std::map< std::string, std::vector< std::shared_ptr< tudat::system_models::VehicleExteriorPanel > > > vehicleExteriorPanels_;
 
@@ -153,21 +145,6 @@ private:
 
     //! Total aerodynamic coefficient vector
     Eigen::Vector6d totalAerodynamicCoefficients_;
-
-    //! Reference length
-    double referenceLength_;
-    //! Reference area
-    double referenceArea_;
-    //! Moment reference point
-    Eigen::Vector3d momentReferencePoint_;
-
-    //! Independent variable names
-    std::vector< AerodynamicCoefficientsIndependentVariables > independentVariableNames_;
-
-    //! Force coefficients frame
-    AerodynamicCoefficientFrames forceCoefficientsFrame_;
-    //! Moment coefficients frame
-    AerodynamicCoefficientFrames momentCoefficientsFrame_;
 
     //! Account for shaded panels
     bool accountForShadedPanels_;

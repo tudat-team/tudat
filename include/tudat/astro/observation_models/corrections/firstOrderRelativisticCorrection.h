@@ -38,10 +38,9 @@ namespace observation_models
  *  respectively, are used to evaluate this perturbing body's state when computing the correction. For all other bodies,
  *  the mid-way point of the light time is used.
  */
-class FirstOrderLightTimeCorrectionCalculator: public LightTimeCorrection
+class FirstOrderLightTimeCorrectionCalculator : public LightTimeCorrection
 {
 public:
-
     //! Constructor, takes and sets gravitating body properties.
     /*!
      *  Constructor, takes and sets gravitating body properties.
@@ -54,6 +53,7 @@ public:
      *  \param receivingBody Name of receiving body
      *  \param ppnParameterGammaFunction Function returning the parametric post-Newtonian parameter gamma, a measure
      *  for the space-time curvature due to a unit rest mass (default 1.0; value from GR)
+     *  \param useBending Boolean flag to determine if light bending should be included.
      */
     FirstOrderLightTimeCorrectionCalculator(
             const std::vector< std::function< Eigen::Vector6d( const double ) > >& perturbingBodyStateFunctions,
@@ -61,12 +61,11 @@ public:
             const std::vector< std::string > perturbingBodyNames,
             const std::string transmittingBody,
             const std::string receivingBody,
-            const std::function< double( ) >& ppnParameterGammaFunction = [ ]( ){ return 1.0; } ):
-        LightTimeCorrection( first_order_relativistic ),
-        perturbingBodyStateFunctions_( perturbingBodyStateFunctions ),
+            const std::function< double( ) >& ppnParameterGammaFunction = []( ) { return 1.0; },
+            const bool useBending = false ):
+        LightTimeCorrection( first_order_relativistic ), perturbingBodyStateFunctions_( perturbingBodyStateFunctions ),
         perturbingBodyGravitationalParameterFunctions_( perturbingBodyGravitationalParameterFunctions ),
-        perturbingBodyNames_( perturbingBodyNames ),
-        ppnParameterGammaFunction_( ppnParameterGammaFunction )
+        perturbingBodyNames_( perturbingBodyNames ), ppnParameterGammaFunction_( ppnParameterGammaFunction ), useBending_( useBending )
     {
         currentTotalLightTimeCorrection_ = 0.0;
         currentLighTimeCorrectionComponents_.resize( perturbingBodyNames_.size( ) );
@@ -90,7 +89,7 @@ public:
     }
 
     //! Destructor
-    ~FirstOrderLightTimeCorrectionCalculator( ){ }
+    ~FirstOrderLightTimeCorrectionCalculator( ) { }
 
     //! Function to calculate first-order relativistic light time correction due to set of gravitating point masses.
     /*!
@@ -127,8 +126,8 @@ public:
             const Eigen::Vector6d& receiverState,
             const double transmissionTime,
             const double receptionTime,
-            const LinkEndType fixedLinkEnd,
-            const LinkEndType linkEndAtWhichPartialIsEvaluated ) override
+            const LinkEndType linkEndAtWhichPartialIsEvaluated,
+            const std::shared_ptr< observation_models::ObservationAncilliarySimulationSettings > ancillarySettings ) override
     {
         return 0.0;
     }
@@ -148,7 +147,8 @@ public:
             const Eigen::Vector6d& receiverState,
             const double transmissionTime,
             const double receptionTime,
-            const LinkEndType linkEndAtWhichPartialIsEvaluated ) override;
+            const LinkEndType linkEndAtWhichPartialIsEvaluated,
+            const std::shared_ptr< observation_models::ObservationAncilliarySimulationSettings > ancillarySettings = nullptr ) override;
 
     //! Function to get the names of bodies causing light-time correction.
     /*!
@@ -204,8 +204,17 @@ public:
         return ppnParameterGammaFunction_;
     }
 
-private:
+    //! Function to get the bending flag
+    /*!
+     * Function to get the bending flag
+     * \return Bending flag
+     */
+    bool getBendingFlag( )
+    {
+        return useBending_;
+    }
 
+private:
     //! Set of function returning the state of the gravitating bodies as a function of time.
     std::vector< std::function< Eigen::Vector6d( const double ) > > perturbingBodyStateFunctions_;
 
@@ -231,9 +240,12 @@ private:
 
     //! Total light-time correction, as computed by last call to calculateLightTimeCorrection.
     double currentTotalLightTimeCorrection_;
+
+    //! Boolean flag to determine if light bending should be included.
+    bool useBending_;
 };
 
-} // namespace observation_models
+}  // namespace observation_models
 
-} // namespace tudat
-#endif // TUDAT_FIRSTORDERRELATIVISTICLIGHTTIMECORRECTION_H
+}  // namespace tudat
+#endif  // TUDAT_FIRSTORDERRELATIVISTICLIGHTTIMECORRECTION_H

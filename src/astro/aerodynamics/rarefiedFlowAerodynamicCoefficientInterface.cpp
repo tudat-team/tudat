@@ -210,7 +210,7 @@ void RarefiedFlowAerodynamicCoefficientInterface::determinePanelForceCoefficient
 
 void RarefiedFlowAerodynamicCoefficientInterface::determinePanelMomentCoefficientVectors(double secondsSinceEpoch){
     
-    Eigen::Vector3d partPositionVector = Eigen::Vector3d::Zero();
+//    Eigen::Vector3d partPositionVector = Eigen::Vector3d::Zero();
 
     // Loop over all vehicle part names in vehicleExteriorPanels_
     for (auto& vehiclePartEntry : vehicleExteriorPanels_) {
