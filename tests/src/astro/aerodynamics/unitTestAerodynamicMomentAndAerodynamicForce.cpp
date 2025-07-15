@@ -156,7 +156,6 @@ BOOST_AUTO_TEST_CASE( testAerodynamicForceAndAcceleration )
     }
     // Test 5: Test the acceleration model class without inverted coefficients.
     {
-        
         // Set initial state
         Eigen::Vector6d initialState = Eigen::Vector6d::Zero( );
 
@@ -177,6 +176,69 @@ BOOST_AUTO_TEST_CASE( testAerodynamicForceAndAcceleration )
         std::shared_ptr< AerodynamicCoefficientSettings > aerodynamicCoefficientSettings =
                 std::make_shared< ConstantAerodynamicCoefficientSettings >(
                         referenceArea, forceCoefficients, positive_aerodynamic_frame_coefficients );
+        
+        // Set constant density and constant rotation models to TreasurePlanet
+        DensityFunction densityFunction = [=](double a, double b, double c, double d) { return density; };                
+        bodies.at( "TreasurePlanet" )->setAtmosphereModel( 
+                createAtmosphereModel( std::make_shared< simulation_setup::CustomConstantTemperatureAtmosphereSettings >( densityFunction, 300.0 ),
+                                       "TreasurePlanet" ) );
+        bodies.at( "TreasurePlanet" )
+                    ->setRotationalEphemeris( createRotationModel(
+                            constantRotationModelSettings( "ECLIPJ2000", "TreasurePlanetFixed", Eigen::Matrix3d::Identity( ) ),
+                            "TreasurePlanet",
+                            bodies ) );
+        // Create and set aerodynamic coefficients object
+        bodies.at( "Legacy" )
+                ->setAerodynamicCoefficientInterface(
+                        createAerodynamicCoefficientInterface( aerodynamicCoefficientSettings, "Legacy", bodies ) );
+        bodies.at( "Legacy" )
+                    ->setRotationalEphemeris( createRotationModel(
+                            constantRotationModelSettings( "ECLIPJ2000", "LegacyFixed", Eigen::Matrix3d::Identity( ) ),
+                            "Legacy",
+                            bodies ) );
+
+        std::shared_ptr< AtmosphericFlightConditions > bodyFlightConditions = createAtmosphericFlightConditions(
+                bodies.at( "Legacy" ), bodies.at( "TreasurePlanet" ), "Legacy", "TreasurePlanet" );
+        bodies.at( "Legacy" )->setFlightConditions( bodyFlightConditions );
+
+        AerodynamicAcceleration aerodynamicAcceleration( bodyFlightConditions, std::bind( &Body::getBodyMass, bodies.at( "Legacy" ) ) );
+        
+        //update environment
+        bodies.at( "TreasurePlanet" )->setCurrentRotationalStateToLocalFrameFromEphemeris( 0.0 );
+        bodies.at( "Legacy" )->setCurrentRotationalStateToLocalFrameFromEphemeris( 0.0 );
+        bodies.at( "TreasurePlanet" )->setState( Eigen::Vector6d::Zero( ) );
+        bodies.at( "Legacy" )->setState( initialState );
+        bodyFlightConditions->updateConditions( 0.0 );
+        aerodynamicAcceleration.updateMembers( );
+
+        Eigen::Vector3d force = aerodynamicAcceleration.getAcceleration( ) * mass;   
+        // Check if computed force matches expected.
+
+        TUDAT_CHECK_MATRIX_CLOSE_FRACTION( expectedForce, force, tolerance );
+    }
+
+    // Test 6: Test the acceleration model class with inverted coefficients.
+    {
+        // Set initial state
+        Eigen::Vector6d initialState = Eigen::Vector6d::Zero( );
+
+        initialState( 0 ) = 6.8E6;
+        initialState( 3 ) = airSpeed;
+
+        SystemOfBodies bodies = SystemOfBodies( "SSB", "ECLIPJ2000" );
+
+        bodies.createEmptyBody( "TreasurePlanet" );
+        std::shared_ptr< basic_astrodynamics::OblateSpheroidBodyShapeModel > oblateSpheroidModel =
+            std::make_shared< basic_astrodynamics::OblateSpheroidBodyShapeModel >( 6E6, 0.0 );
+        bodies.at( "TreasurePlanet" )->setShapeModel( oblateSpheroidModel );
+        bodies.at( "TreasurePlanet" )->setEphemeris( std::make_shared< ephemerides::ConstantEphemeris >( Eigen::Vector6d::Zero( ) ) );
+        bodies.createEmptyBody( "Legacy" );
+        bodies.at( "Legacy" )->setConstantBodyMass( mass );
+        bodies.at( "Legacy" )->setEphemeris( std::make_shared< ephemerides::ConstantEphemeris >( initialState ) );
+
+        std::shared_ptr< AerodynamicCoefficientSettings > aerodynamicCoefficientSettings =
+                std::make_shared< ConstantAerodynamicCoefficientSettings >(
+                        referenceArea, -forceCoefficients, negative_aerodynamic_frame_coefficients );
         
         // Set constant density and constant rotation models to TreasurePlanet
         DensityFunction densityFunction = [=](double a, double b, double c, double d) { return density; };                
@@ -1186,7 +1248,7 @@ BOOST_AUTO_TEST_CASE( test_panelled_coefficients )
                                 newtonModel.setIncomingDirection( incomingDirection );
                                 forceCoefficients = newtonModel.computeAerodynamicCoefficients( );
                                 
-                                panelNormal = panelNormal = localFrameSurfaceNormal( );
+                                panelNormal = localFrameSurfaceNormal( );
                                 cosineDelta = panelNormal.dot( -incomingDirection );
                                 cosineDelta = cosineDelta > 0 ? cosineDelta : 0.0;
                                 Cp = 2 * cosineDelta * cosineDelta;
@@ -1319,6 +1381,158 @@ BOOST_AUTO_TEST_CASE( test_panelled_coefficients )
                                         BOOST_CHECK_SMALL( std::fabs( forceCoefficients( k ) - actualForceCoefficients( k ) ), tolerance );
                                 }
                         } 
+                }
+        }
+}
+
+BOOST_AUTO_TEST_CASE( test_panelled_coefficients_propagation )
+{  
+        const double tolerance = std::numeric_limits< double >::epsilon( );
+
+        SystemOfBodies bodies = SystemOfBodies( "SSB", "ECLIPJ2000" );
+        std::vector< std::string > centralBodies = { "TreasurePlanet" };
+        std::vector< std::string > bodiesToPropagate = { "Legacy" };
+
+        // create central body
+        bodies.createEmptyBody( "TreasurePlanet" );
+        std::shared_ptr< basic_astrodynamics::OblateSpheroidBodyShapeModel > oblateSpheroidModel =
+            std::make_shared< basic_astrodynamics::OblateSpheroidBodyShapeModel >( 6E6, 0.0 );
+        bodies.at( "TreasurePlanet" )->setShapeModel( oblateSpheroidModel );
+        bodies.at( "TreasurePlanet" )->setEphemeris( std::make_shared< ephemerides::ConstantEphemeris >( Eigen::Vector6d::Zero( ) ) );
+        const double density = 3.5e-5;
+        bodies.at( "TreasurePlanet" )
+                    ->setRotationalEphemeris( createRotationModel(
+                            constantRotationModelSettings( "ECLIPJ2000", "TreasurePlanetFixed", Eigen::Matrix3d::Identity( ) ),
+                            "TreasurePlanet",
+                            bodies ) );
+        DensityFunction densityFunction = [=](double a, double b, double c, double d) { return density; };                
+        bodies.at( "TreasurePlanet" )->setAtmosphereModel( 
+                createAtmosphereModel( std::make_shared< simulation_setup::CustomConstantTemperatureAtmosphereSettings >( densityFunction, 300.0 ),
+                                       "TreasurePlanet" ) );
+        double gravitationalParameter = 4e14;
+        bodies.at( "TreasurePlanet" )->setGravityFieldModel( std::make_shared< gravitation::GravityFieldModel >( gravitationalParameter ) );
+
+        // create spacecraft
+        Eigen::Vector6d systemInitialState = Eigen::Vector6d::Zero( );
+        systemInitialState( 0 ) = 6.8E6;
+        systemInitialState( 4 ) = 7.5E3;
+
+        double referenceArea = 1.0;
+        bodies.createEmptyBody( "Legacy" );
+        bodies.at( "Legacy" )->setConstantBodyMass( 1000 );
+        bodies.at( "Legacy" )->setEphemeris( std::make_shared< ephemerides::ConstantEphemeris >( systemInitialState ) );
+        bodies.at( "Legacy" )
+                    ->setRotationalEphemeris( createRotationModel(
+                            std::make_shared< SynchronousRotationModelSettings >( "TreasurePlanet", "ECLIPJ2000", "" ),
+                            "Legacy",
+                            bodies ) );
+
+        // add panel (always perpendicular to relative velocity vector)
+        std::function< Eigen::Vector3d( ) > localFrameSurfaceNormal = [ = ]( ){ 
+            Eigen::Vector3d normal( 0.0, 1.0, 0.0); 
+            return normal; };
+        std::function< Eigen::Vector3d( ) > localFramePositionVector = [ = ]( ){ 
+            Eigen::Vector3d position( 0.0, 0.0, 0.0); 
+            return position; };
+        Eigen::Vector3d frameOrigin( 0.0, 0.0, 0.0 );
+        Eigen::Vector3d vertexA( 0.0, 0.0, 0.0 );
+        Eigen::Vector3d vertexB( 1.0, 0.0, 0.0 );
+        Eigen::Vector3d vertexC( 0.0, 0.0, 1.0 );
+        Triangle3d triangle3d( vertexA, vertexB, vertexC );
+
+        std::shared_ptr< system_models::VehicleExteriorPanel > exteriorPanel = std::make_shared< system_models::VehicleExteriorPanel >(
+            localFrameSurfaceNormal, localFramePositionVector, 0.5, 500.0, "", nullptr,
+            triangle3d, frameOrigin, true );
+        
+        exteriorPanel->setEnergyAccomodationCoefficient( 1.0 );
+        exteriorPanel->setNormalAccomodationCoefficient( 1.0 );
+        exteriorPanel->setTangentialAccomodationCoefficient( 1.0 );
+        exteriorPanel->setNormalVelocityAtWallRatio( 1.0 );
+        
+        std::vector< std::shared_ptr< system_models::VehicleExteriorPanel > > allPanels = { exteriorPanel };
+        std::map< std::string, std::vector< std::shared_ptr< VehicleExteriorPanel > > > vehicleExteriorPanelsMap;
+        vehicleExteriorPanelsMap[ "" ] = allPanels;
+
+        // add vehicle system
+        std::shared_ptr< system_models::VehicleSystems > vehicleSystem = std::make_shared< system_models::VehicleSystems>( 1000 );
+        vehicleSystem->setVehicleExteriorPanels( vehicleExteriorPanelsMap );
+        bodies.at( "Legacy" )->setVehicleSystems( vehicleSystem );
+
+        // create aerodynamic coefficient interface
+        std::shared_ptr< AerodynamicCoefficientSettings > aerodynamicCoefficientSettings =
+                std::make_shared< PanelledAerodynamicCoefficientSettings >(
+                        aerodynamics::newton, 
+                        referenceArea, 
+                        0,
+                        false,
+                        body_fixed_frame_coefficients );
+        bodies.at( "Legacy" )
+                ->setAerodynamicCoefficientInterface(
+                        createAerodynamicCoefficientInterface( aerodynamicCoefficientSettings, "Legacy", bodies ) );
+
+        // acceleration map
+        SelectedAccelerationMap accelerationMap;
+
+        std::map< std::string, std::vector< std::shared_ptr< AccelerationSettings > > > accelerationsOfLegacy;
+        accelerationsOfLegacy[ "TreasurePlanet" ].push_back( std::make_shared< AccelerationSettings >( point_mass_gravity ) );
+        accelerationsOfLegacy[ "TreasurePlanet" ].push_back( std::make_shared< AccelerationSettings >( aerodynamic ) );
+        accelerationMap[ "Legacy" ] = accelerationsOfLegacy;
+
+        // dependent variables
+        std::vector< std::shared_ptr< SingleDependentVariableSaveSettings > > dependentVariables;
+        dependentVariables.push_back(
+                std::make_shared< SingleDependentVariableSaveSettings >( body_fixed_airspeed_based_velocity_variable, "Legacy" ) );
+        dependentVariables.push_back(
+                std::make_shared< SingleDependentVariableSaveSettings >( aerodynamic_coefficients, "Legacy", "TreasurePlanet" ) );
+
+        // create acceleration models and propagation settings.
+        basic_astrodynamics::AccelerationMap accelerationModelMap =
+                createAccelerationModelsMap( bodies, accelerationMap, bodiesToPropagate, centralBodies );
+        
+        // integrator settings
+        const double simulationStartEpoch = 0.0;
+        const double fixedStepSize = 10.0;
+        const double simulationEndEpoch = 100.0;
+
+        std::shared_ptr< IntegratorSettings<> > integratorSettings =
+                std::make_shared< IntegratorSettings<> >( rungeKutta4, simulationStartEpoch, fixedStepSize );
+
+        auto terminationSettings = std::make_shared< propagators::PropagationTimeTerminationSettings >( simulationEndEpoch );
+        std::shared_ptr< TranslationalStatePropagatorSettings< double > > translationalPropagatorSettings =
+                std::make_shared< TranslationalStatePropagatorSettings< double > >( centralBodies,
+                                                                                    accelerationModelMap,
+                                                                                    bodiesToPropagate,
+                                                                                    systemInitialState,
+                                                                                    simulationStartEpoch,
+                                                                                    integratorSettings,
+                                                                                    terminationSettings,
+                                                                                    cowell,
+                                                                                    dependentVariables );
+        // create simulation object and propagate dynamics
+        SingleArcDynamicsSimulator<> dynamicsSimulator( bodies, translationalPropagatorSettings );
+
+        std::map< double, Eigen::Matrix< double, Eigen::Dynamic, 1 > > dependentVariableOutput =
+                dynamicsSimulator.getDependentVariableHistory( );
+
+        // check dependent variables (aerodynamic coefficients)
+        Eigen::Vector3d incomingDirection, bodyFixedAirspeed, aerodynamicCoefficients, actualAerodynamicCoefficients, panelNormal;
+        double cosineDelta, Cp;
+        for( auto it: dependentVariableOutput )
+        {
+                bodyFixedAirspeed = it.second.segment( 0, 3 );
+                aerodynamicCoefficients = it.second.segment( 3, 3 );
+
+                // newton
+                incomingDirection = bodyFixedAirspeed.normalized( );
+                panelNormal = localFrameSurfaceNormal( );
+                cosineDelta = panelNormal.dot( -incomingDirection );
+                cosineDelta = cosineDelta > 0 ? cosineDelta : 0.0;
+                Cp = 2 * cosineDelta * cosineDelta;
+                actualAerodynamicCoefficients = -Cp * panelNormal * 0.5 / referenceArea;
+
+                for( int k=0; k<3; k++ )
+                {
+                        BOOST_CHECK_SMALL( std::fabs( aerodynamicCoefficients( k ) - actualAerodynamicCoefficients( k ) ), tolerance );
                 }
         }
 }
