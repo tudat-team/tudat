@@ -67,7 +67,8 @@ enum AvailableAcceleration {
     momentum_wheel_desaturation_acceleration,
     custom_acceleration,
     einstein_infeld_hoffmann_acceleration,
-    yarkovsky_acceleration
+    yarkovsky_acceleration,
+    rtg_acceleration
 };
 
 // Function to get a string representing a 'named identification' of an acceleration type

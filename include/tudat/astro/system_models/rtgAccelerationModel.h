@@ -1,0 +1,133 @@
+/*    Copyright (c) 2010-2023, Delft University of Technology
+ *    All rigths reserved
+ *
+ *    This file is part of the Tudat. Redistribution and use in source and
+ *    binary forms, with or without modification, are permitted exclusively
+ *    under the terms of the Modified BSD license. You should have received
+ *    a copy of the license with this file. If not, please or visit:
+ *    http://tudat.tudelft.nl/LICENSE.
+ *
+ *    References:
+ *          Precise computation of acceleration due to uniform ring or disk, Toshio Fukushima (2010), Celestial Mechanics
+ *          and Dynamical Astronomy, 108:339–356.
+ */
+
+#ifndef TUDAT_RTGACCELERATIONMODEL_H
+#define TUDAT_RTGACCELERATIONMODEL_H
+
+#include <memory>
+#include <cmath>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <vector>
+#include <iostream>
+
+#include "tudat/astro/basic_astro/accelerationModel.h"
+#include "tudat/astro/gravitation/ringGravityField.h"
+
+namespace tudat
+{
+namespace system_models
+{
+
+class RTGAccelerationModel : public basic_astrodynamics::AccelerationModel< Eigen::Vector3d >
+{
+protected:
+    //! Typedef for a position-returning function.
+    //! (not necessary?) typedef std::function< void( Eigen::Vector3d& ) > StateFunction;
+
+public:
+    //! Constructor taking constant parameters for force decay process and rotation/mass functions for bodies.
+    /*!
+     *  \param bodyFixedForceVectorAtReferenceEpoch Pointer to vector 1x3 with force values along body-fixed frame axes at reference epoch.
+     *  \param decayScaleFactor Scale factor value for modelling of force decay process.
+     *  \param referenceEpoch Reference epoch for modelling of force decay process.
+     *  \param rotationFromBodyFixedToIntegrationFrameFunction Function returning (undergoing) body rotational ephemeris.
+     *  \param rotationFromBodyFixedToIntegrationFrameFunction Function returning (undergoing) body current mass.
+     *  \return RTG acceleration model.
+     */
+    RTGAccelerationModel(
+            const Eigen::Vector3d& bodyFixedForceVectorAtReferenceEpoch,
+            const double decayScaleFactor,
+            const double referenceEpoch,
+            const std::function< Eigen::Quaterniond( ) > rotationFromBodyFixedToIntegrationFrameFunction,
+            const std::function< double( ) > bodyMassFunction):
+
+        bodyFixedForceVectorAtReferenceEpoch_( bodyFixedForceVectorAtReferenceEpoch ),
+        decayScaleFactor_( decayScaleFactor ),
+        referenceEpoch_( referenceEpoch ),
+        rotationFromBodyFixedToIntegrationFrameFunction_( rotationFromBodyFixedToIntegrationFrameFunction ),
+        bodyMassFunction_( bodyMassFunction )
+
+    { }
+
+    ~RTGAccelerationModel( ) { }
+
+    //! Update class members.
+    /*!
+     * Updates all the base class members to their current values and also updates the class members of this class.
+     * The potential and laplacian of potential are only updated if the associated flags indicate so.
+     * \param currentTime Time at which acceleration model is to be updated.
+     */
+    void updateMembers( const double currentTime = TUDAT_NAN )
+    {
+        if( !( this->currentTime_ == currentTime ) )
+        {
+            rotationToIntegrationFrame_ = rotationFromBodyFixedToIntegrationFrameFunction_( );
+
+            currentTimeDelta_ = this->currentTime_ - referenceEpoch_;
+            currentBodyFixedForceVector_ = bodyFixedForceVectorAtReferenceEpoch_ * std::exp(-decayScaleFactor_ * currentTimeDelta_);
+
+            currentAcceleration_ = rotationToIntegrationFrame_ * currentBodyFixedForceVector_ / bodyMassFunction_();
+        }
+    }
+
+    //! Function to retrieve the current rotation from body-fixed frame to integration frame, in the form of a quaternion.
+    Eigen::Quaterniond getCurrentRotationToIntegrationFrame( )
+    {
+        return rotationToIntegrationFrame_;
+    }
+
+    //! Function to retrieve the current rotation from body-fixed frame to integration frame, as a rotation matrix.
+    Eigen::Matrix3d getCurrentRotationToIntegrationFrameMatrix( )
+    {
+        return rotationToIntegrationFrame_.toRotationMatrix( );
+    }
+
+
+private:
+
+    //! Function returning the current rotation from body-fixed frame to integration frame.
+    std::function< Eigen::Quaterniond( ) > rotationFromBodyFixedToIntegrationFrameFunction_;
+
+    //! Current rotation from body-fixed frame to integration frame.
+    Eigen::Quaterniond rotationToIntegrationFrame_;
+
+    //! Current acceleration in frame fixed to body undergoing acceleration, as computed by last call to updateMembers function
+    Eigen::Vector3d currentAccelerationInBodyFixedFrame_;
+
+    //! Reference epoch for modelled force decay process
+    TimeType reference_epoch_;
+
+    //! Scale Factor for force decay process
+    double decayScaleFactor_;
+
+    //! Force vector in body-fixed frame at reference epoch
+    Eigen::Vector3d bodyFixedForceVectorAtReferenceEpoch_;
+
+    //! Body mass function
+    std::function< double > bodyMassFunction_;
+
+    //! Delta between current time and reference epoch
+    double currentTimeDelta_;
+
+    //! Body fixed force vector at current epoch incl effect of decay law
+    Eigen::Vector3d currentBodyFixedForceVector_;
+
+};
+
+}  // namespace gravitation
+
+}  // namespace tudat
+
+#endif  // TUDAT_RINGGRAVITYMODEL_H

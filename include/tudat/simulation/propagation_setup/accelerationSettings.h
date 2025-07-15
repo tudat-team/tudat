@@ -615,6 +615,23 @@ inline std::shared_ptr< AccelerationSettings > customAccelerationSettings(
     }
 }
 
+
+//! @get_docstring(CustomAccelerationSettings.__docstring__)
+class RTGAccelerationSettings : public AccelerationSettings
+{
+public:
+    RTGAccelerationSettings( const Eigen::Vector3d& bodyFixedForceVectorAtReferenceEpoch,
+                             const double decayScaleFactor,
+                             const double referenceEpoch):
+        AccelerationSettings( basic_astrodynamics::rtg_acceleration ), bodyFixedForceVectorAtReferenceEpoch_( bodyFixedForceVectorAtReferenceEpoch ),
+        decayScaleFactor_( decayScaleFactor ), referenceEpoch_( referenceEpoch )
+    { }
+
+    const Eigen::Vector3d& bodyFixedForceVectorAtReferenceEpoch_;
+    const double decayScaleFactor_;
+    const double referenceEpoch_;
+};
+
 // Class for providing settings for a direct tidal acceleration model, with approach of Lainey et al. (2007, 2009, ..)
 /*
  *  Class for providing settings for a direct tidal acceleration model, with approach of Lainey et al. (2007, 2009, ..).
