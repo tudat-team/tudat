@@ -26,6 +26,7 @@
 #include "tudat/astro/basic_astro/empiricalAcceleration.h"
 #include "tudat/astro/ephemerides/frameManager.h"
 #include "tudat/astro/gravitation/directTidalDissipationAcceleration.h"
+#include "tudat/astro/system_models/rtgAccelerationModel.h"
 #include "tudat/astro/relativity/einsteinInfeldHoffmannEquations.h"
 #include "tudat/astro/relativity/einsteinInfeldHoffmannAcceleration.h"
 #include "tudat/astro/relativity/metric.h"

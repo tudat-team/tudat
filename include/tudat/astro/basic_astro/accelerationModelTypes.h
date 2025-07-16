@@ -23,6 +23,7 @@
 #include "tudat/astro/aerodynamics/aerodynamicAcceleration.h"
 #include "tudat/astro/basic_astro/massRateModel.h"
 #include "tudat/astro/propulsion/thrustAccelerationModel.h"
+#include "tudat/astro/system_models/rtgAccelerationModel.h"
 #include "tudat/astro/propulsion/massRateFromThrust.h"
 #include "tudat/astro/relativity/relativisticAccelerationCorrection.h"
 #include "tudat/astro/relativity/einsteinInfeldHoffmannAcceleration.h"

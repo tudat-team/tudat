@@ -20,10 +20,10 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <vector>
+#include <functional>
 #include <iostream>
 
 #include "tudat/astro/basic_astro/accelerationModel.h"
-#include "tudat/astro/gravitation/ringGravityField.h"
 
 namespace tudat
 {
@@ -97,26 +97,27 @@ public:
 
 private:
 
+    //! Force vector in body-fixed frame at reference epoch
+    Eigen::Vector3d bodyFixedForceVectorAtReferenceEpoch_;
+
+    //! Scale Factor for force decay process
+    double decayScaleFactor_;
+
+    //! Reference epoch for modelled force decay process
+    double referenceEpoch_;
+
     //! Function returning the current rotation from body-fixed frame to integration frame.
     std::function< Eigen::Quaterniond( ) > rotationFromBodyFixedToIntegrationFrameFunction_;
+
+    //! Body mass function
+    const std::function< double() > bodyMassFunction_;
+
 
     //! Current rotation from body-fixed frame to integration frame.
     Eigen::Quaterniond rotationToIntegrationFrame_;
 
     //! Current acceleration in frame fixed to body undergoing acceleration, as computed by last call to updateMembers function
     Eigen::Vector3d currentAccelerationInBodyFixedFrame_;
-
-    //! Reference epoch for modelled force decay process
-    TimeType reference_epoch_;
-
-    //! Scale Factor for force decay process
-    double decayScaleFactor_;
-
-    //! Force vector in body-fixed frame at reference epoch
-    Eigen::Vector3d bodyFixedForceVectorAtReferenceEpoch_;
-
-    //! Body mass function
-    std::function< double > bodyMassFunction_;
 
     //! Delta between current time and reference epoch
     double currentTimeDelta_;
