@@ -586,7 +586,7 @@ createTranslationalEquationsOfMotionEnvironmentUpdaterSettings( const basic_astr
                         break;
                     }
                     case rtg_acceleration: {
-                        singleAccelerationUpdateNeeds[ body_rotational_state_update ].push_back( accelerationModelIterator->first );
+                        singleAccelerationUpdateNeeds[ body_rotational_state_update ].push_back( acceleratedBodyIterator->first );
                         singleAccelerationUpdateNeeds[ body_mass_update ].push_back( acceleratedBodyIterator->first );
 
                         break;
