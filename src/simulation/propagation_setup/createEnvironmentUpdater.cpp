@@ -585,6 +585,12 @@ createTranslationalEquationsOfMotionEnvironmentUpdaterSettings( const basic_astr
 
                         break;
                     }
+                    case rtg_acceleration: {
+                        singleAccelerationUpdateNeeds[ body_rotational_state_update ].push_back( accelerationModelIterator->first );
+                        singleAccelerationUpdateNeeds[ body_mass_update ].push_back( acceleratedBodyIterator->first );
+
+                        break;
+                    }
                     case relativistic_correction_acceleration: {
                         std::shared_ptr< relativity::RelativisticAccelerationCorrection > accelerationCorrection =
                                 std::dynamic_pointer_cast< relativity::RelativisticAccelerationCorrection >(
