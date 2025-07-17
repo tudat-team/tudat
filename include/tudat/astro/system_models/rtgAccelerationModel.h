@@ -54,6 +54,8 @@ public:
             const std::function< double( ) > bodyMassFunction):
 
         bodyFixedForceVectorAtReferenceEpoch_( bodyFixedForceVectorAtReferenceEpoch ),
+        forceVectorMagnitudeAtReferenceEpoch_(bodyFixedForceVectorAtReferenceEpoch.norm( )),
+        bodyFixedForceUnitVectorAtReferenceEpoch_(bodyFixedForceVectorAtReferenceEpoch/bodyFixedForceVectorAtReferenceEpoch.norm( )),
         decayScaleFactor_( decayScaleFactor ),
         referenceEpoch_( referenceEpoch ),
         rotationFromBodyFixedToIntegrationFrameFunction_( rotationFromBodyFixedToIntegrationFrameFunction ),
@@ -76,7 +78,8 @@ public:
             rotationToIntegrationFrame_ = rotationFromBodyFixedToIntegrationFrameFunction_( );
 
             currentTimeDelta_ = currentTime - referenceEpoch_;
-            currentBodyFixedForceVector_ = bodyFixedForceVectorAtReferenceEpoch_ * std::exp(-decayScaleFactor_ * currentTimeDelta_);
+            currentDecayTerm_ = std::exp(-decayScaleFactor_ * currentTimeDelta_);
+            currentBodyFixedForceVector_ = bodyFixedForceVectorAtReferenceEpoch_ * currentDecayTerm_;
 
             currentAcceleration_ = rotationToIntegrationFrame_ * currentBodyFixedForceVector_ / bodyMassFunction_();
         }
@@ -109,9 +112,40 @@ public:
         bodyFixedForceVectorAtReferenceEpoch_ = newForceVectorAtReferenceEpoch;
     }
 
+    void resetForceMagnitudeAtReferenceEpoch(const double newForceVectorMagnitudeAtReferenceEpoch)
+    {
+        forceVectorMagnitudeAtReferenceEpoch_ = newForceVectorMagnitudeAtReferenceEpoch;
+        updateBodyFixedForceVectorAtReferenceEpoch( );
+    }
+
+    void updateBodyFixedForceVectorAtReferenceEpoch( )
+    {
+        bodyFixedForceVectorAtReferenceEpoch_ = forceVectorMagnitudeAtReferenceEpoch_ * bodyFixedForceUnitVectorAtReferenceEpoch_;
+    }
+
+    void updateBodyFixedForceUnitVectorAtReferenceEpoch( )
+    {
+        bodyFixedForceUnitVectorAtReferenceEpoch_ = bodyFixedForceUnitVectorAtReferenceEpoch_ / bodyFixedForceUnitVectorAtReferenceEpoch_.norm();
+    }
+
     Eigen::Vector3d getbodyFixedForceVectorAtReferenceEpoch( ) const
     {
         return bodyFixedForceVectorAtReferenceEpoch_;
+    }
+
+    double getForceVectorMagnitudeAtReferenceEpoch( ) const
+    {
+        return forceVectorMagnitudeAtReferenceEpoch_;
+    }
+
+    Eigen::Vector3d getBodyFixedForceUnitVectorAtReferenceEpoch( ) const
+    {
+        return bodyFixedForceUnitVectorAtReferenceEpoch_;
+    }
+
+    double getCurrentDecayTerm( ) const
+    {
+        return currentDecayTerm_;
     }
 
 
@@ -119,6 +153,12 @@ private:
 
     //! Force vector in body-fixed frame at reference epoch
     Eigen::Vector3d bodyFixedForceVectorAtReferenceEpoch_;
+
+    //! Force vector in body-fixed frame at reference epoch
+    Eigen::Vector3d bodyFixedForceUnitVectorAtReferenceEpoch_;
+
+    //! Force vector magnitude at reference epoch
+    double forceVectorMagnitudeAtReferenceEpoch_;
 
     //! Scale Factor for force decay process
     double decayScaleFactor_;
@@ -140,6 +180,9 @@ private:
 
     //! Delta between current time and reference epoch
     double currentTimeDelta_;
+
+    //! Exponential term (handy for partials computation)
+    double currentDecayTerm_;
 
     //! Body fixed force vector at current epoch incl effect of decay law
     Eigen::Vector3d currentBodyFixedForceVector_;
