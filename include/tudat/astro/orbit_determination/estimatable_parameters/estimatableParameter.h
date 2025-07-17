@@ -88,7 +88,8 @@ enum EstimatebleParametersEnum {
     nominal_rotation_pole_position,
     rotation_pole_position_rate,
     rotation_longitudinal_libration_terms,
-    rtg_force_vector
+    rtg_force_vector,
+    rtg_force_vector_magnitude
 
 };
 
