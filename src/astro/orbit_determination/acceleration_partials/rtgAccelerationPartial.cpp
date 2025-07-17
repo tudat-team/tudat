@@ -8,16 +8,17 @@
  *    http://tudat.tudelft.nl/LICENSE.
  */
 
-#include "tudat/astro/orbit_determination/acceleration_partials/empiricalAccelerationPartial.h"
-#include "tudat/astro/orbit_determination/estimatable_parameters/empiricalAccelerationCoefficients.h"
+#include "tudat/astro/orbit_determination/acceleration_partials/rtgAccelerationPartial.h"
+#include "tudat/astro/orbit_determination/estimatable_parameters/rtgForceVector.h"
 
 namespace tudat
 {
 
 namespace acceleration_partials
 {
-
+/*
 using namespace gravitation;
+
 
 //! Function determine the numerical partial derivative of the true anomaly wrt the elements of the Cartesian state
 Eigen::Matrix< double, 1, 6 > calculateNumericalPartialOfTrueAnomalyWrtState( const Eigen::Vector6d& cartesianElements,
@@ -75,8 +76,10 @@ Eigen::Matrix< double, 1, 6 > calculateNumericalPartialOfTrueAnomalyWrtState( co
     return partial;
 }
 
+ */
+
 //! Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.
-std::pair< std::function< void( Eigen::MatrixXd& ) >, int > EmpiricalAccelerationPartial::getParameterPartialFunction(
+std::pair< std::function< void( Eigen::MatrixXd& ) >, int > RTGAccelerationPartial::getParameterPartialFunction(
         std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > parameter )
 {
     using namespace tudat::estimatable_parameters;
@@ -88,26 +91,26 @@ std::pair< std::function< void( Eigen::MatrixXd& ) >, int > EmpiricalAcceleratio
     {
         switch( parameter->getParameterName( ).first )
         {
-            case empirical_acceleration_coefficients: {
+            case rtg_force_vector: {
                 if( parameter->getParameterName( ).second.second == acceleratingBody_ )
                 {
                     partialFunction =
-                            std::bind( &EmpiricalAccelerationPartial::wrtEmpiricalAccelerationCoefficientFromIndices,
+                            std::bind( &RTGAccelerationPartial::wrtRTGForceVector,
                                        this,
                                        parameter->getParameterSize( ),
-                                       std::dynamic_pointer_cast< EmpiricalAccelerationCoefficientsParameter >( parameter )->getIndices( ),
+                                       std::dynamic_pointer_cast< RTGForceVector >( parameter )->getIndices( ),
                                        std::placeholders::_1 );
                     numberOfRows = parameter->getParameterSize( );
                 }
                 break;
             }
-            case arc_wise_empirical_acceleration_coefficients: {
+            case rtg_force_vector_magnitude: {
                 if( parameter->getParameterName( ).second.second == acceleratingBody_ )
                 {
                     partialFunction =
-                            std::bind( &EmpiricalAccelerationPartial::wrtArcWiseEmpiricalAccelerationCoefficient,
+                            std::bind( &RTGAccelerationPartial::wrtRTGForceVectorMagnitude,
                                        this,
-                                       std::dynamic_pointer_cast< ArcWiseEmpiricalAccelerationCoefficientsParameter >( parameter ),
+                                       std::dynamic_pointer_cast< RTGForceVectorMagnitude >( parameter ),
                                        std::placeholders::_1 );
                     numberOfRows = parameter->getParameterSize( );
                 }
@@ -122,15 +125,18 @@ std::pair< std::function< void( Eigen::MatrixXd& ) >, int > EmpiricalAcceleratio
 }
 
 //! Function for updating common blocks of partial to current state.
-void EmpiricalAccelerationPartial::update( const double currentTime )
+void RTGAccelerationPartial::update( const double currentTime )
 {
     if( !( currentTime_ == currentTime ) )
     {
         using namespace tudat::basic_mathematics;
         using namespace tudat::linear_algebra;
 
+        // reduced to doing nothing, since partials are const 0
+
+        /*
         // Get current state and associated data.
-        Eigen::Vector6d currentState = empiricalAcceleration_->getCurrentState( );
+        Eigen::Vector6d currentState = rtgAcceleration_->getCurrentState( );
         Eigen::Vector3d angularMomentumVector =
                 Eigen::Vector3d( currentState.segment( 0, 3 ) ).cross( Eigen::Vector3d( currentState.segment( 3, 3 ) ) );
         Eigen::Vector3d crossVector = angularMomentumVector.cross( Eigen::Vector3d( currentState.segment( 0, 3 ) ) );
@@ -160,6 +166,7 @@ void EmpiricalAccelerationPartial::update( const double currentTime )
         currentVelocityPartial_ =
                 localAcceleration.y( ) * normCrossVectorWrtVelocity + localAcceleration.z( ) * normAngularMomentumWrtVelocity;
 
+
         // Compute partial derivative contribution of derivative of true anomaly
         Eigen::Matrix< double, 1, 6 > localTrueAnomalyPartial =
                 calculateNumericalPartialOfTrueAnomalyWrtState( empiricalAcceleration_->getCurrentState( ),
@@ -178,6 +185,7 @@ void EmpiricalAccelerationPartial::update( const double currentTime )
                                        empiricalAcceleration_->getCurrentAccelerationComponent( basic_astrodynamics::cosine_empirical ) *
                                                std::sin( empiricalAcceleration_->getCurrentTrueAnomaly( ) ) ) ) *
                 trueAnomalyPartial.block( 0, 3, 1, 3 );
+         */
         currentTime_ = currentTime;
 
         // Check output.
@@ -192,74 +200,29 @@ void EmpiricalAccelerationPartial::update( const double currentTime )
     }
 }
 
-//! Function to compute the partial w.r.t. arcwise empirical acceleration components
-void EmpiricalAccelerationPartial::wrtArcWiseEmpiricalAccelerationCoefficient(
-        std::shared_ptr< estimatable_parameters::ArcWiseEmpiricalAccelerationCoefficientsParameter > parameter,
+//! Function to compute the partial w.r.t. reference force vector
+void RTGAccelerationPartial::wrtRTGForceVector(
+        std::shared_ptr< estimatable_parameters::RTGForceVector > parameter,
         Eigen::MatrixXd& partialDerivativeMatrix )
 {
-    // Compute partial derivatives for current arc
-    int singleArcParameterSize = parameter->getSingleArcParameterSize( );
-    Eigen::MatrixXd partialWrtCurrentArcAccelerations;
-    wrtEmpiricalAccelerationCoefficientFromIndices( singleArcParameterSize, parameter->getIndices( ), partialWrtCurrentArcAccelerations );
+    // Compute partial derivative w.r.t. reference force vector
+    double partialWrtReferenceForceVector;
+    partialWrtReferenceForceVector = rtgAcceleration_->getCurrentDecayTerm( );
+    partialDerivativeMatrix = partialWrtReferenceForceVector * Eigen::Matrix3d::Identity();
 
-    partialDerivativeMatrix = Eigen::MatrixXd::Zero( 3, parameter->getParameterSize( ) );
-
-    // Retrieve arc of current time.
-    std::shared_ptr< interpolators::LookUpScheme< double > > currentArcIndexLookUp = parameter->getArcTimeLookupScheme( );
-    if( currentArcIndexLookUp->getMinimumValue( ) <= currentTime_ )
-    {
-        int currentArc = currentArcIndexLookUp->findNearestLowerNeighbour( currentTime_ );
-
-        // Set current partial matrix
-        partialDerivativeMatrix.block( 0, currentArc * singleArcParameterSize, 3, singleArcParameterSize ) =
-                partialWrtCurrentArcAccelerations;
-    }
 }
 
-//! Function to compute the partial w.r.t. time-independent empirical acceleration components
-void EmpiricalAccelerationPartial::wrtEmpiricalAccelerationCoefficientFromIndices(
-        const int numberOfAccelerationComponents,
-        const std::map< basic_astrodynamics::EmpiricalAccelerationFunctionalShapes, std::vector< int > >& accelerationIndices,
-        Eigen::MatrixXd& partial )
+
+//! Function to compute the partial w.r.t. magnitude of reference force vector
+void RTGAccelerationPartial::wrtRTGForceVectorMagnitude(
+        std::shared_ptr< estimatable_parameters::RTGForceVectorMagnitude > parameter,
+        Eigen::MatrixXd& partialDerivativeMatrix )
 {
-    // Retrieve rotation matrix to inertial frame
-    Eigen::Matrix3d rotationMatrix = Eigen::Matrix3d( empiricalAcceleration_->getCurrentToInertialFrame( ) );
+    // Compute partial derivative w.r.t. magnitude of reference force vector
+    Eigen::Vector3d partialWrtReferenceForceMagnitude;
+    partialWrtReferenceForceMagnitude = rtgAcceleration_->getCurrentDecayTerm( ) * rtgAcceleration_->getBodyFixedForceUnitVectorAtReferenceEpoch( ) ;
+    partialDerivativeMatrix = partialWrtReferenceForceMagnitude;
 
-    // Initialize partial derivatives
-    partial = Eigen::Matrix< double, 3, Eigen::Dynamic >::Zero( 3, numberOfAccelerationComponents );
-
-    // Iterate over all terms, and set partial
-    int currentIndex = 0;
-    double multiplier = 0.0;
-    for( std::map< basic_astrodynamics::EmpiricalAccelerationFunctionalShapes, std::vector< int > >::const_iterator indexIterator =
-                 accelerationIndices.begin( );
-         indexIterator != accelerationIndices.end( );
-         indexIterator++ )
-    {
-        // Get multiplier associated with functional shape of empirical acceleration
-        switch( indexIterator->first )
-        {
-            case basic_astrodynamics::constant_empirical:
-                multiplier = 1.0;
-                break;
-            case basic_astrodynamics::sine_empirical:
-                multiplier = std::sin( empiricalAcceleration_->getCurrentTrueAnomaly( ) );
-                break;
-            case basic_astrodynamics::cosine_empirical:
-                multiplier = std::cos( empiricalAcceleration_->getCurrentTrueAnomaly( ) );
-                break;
-            default:
-                throw std::runtime_error(
-                        "Error when calculating partial w.r.t. empirical accelerations, could not find functional shape " );
-        }
-
-        // Set partial value for current component and shape
-        for( unsigned int i = 0; i < indexIterator->second.size( ); i++ )
-        {
-            partial.block( 0, currentIndex, 3, 1 ) = multiplier * rotationMatrix.block( 0, indexIterator->second.at( i ), 3, 1 );
-            currentIndex++;
-        }
-    }
 }
 
 }  // namespace acceleration_partials

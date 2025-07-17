@@ -16,15 +16,16 @@
 #include <memory>
 
 #include "tudat/astro/orbit_determination/acceleration_partials/accelerationPartial.h"
-#include "tudat/astro/orbit_determination/estimatable_parameters/empiricalAccelerationCoefficients.h"
+#include "tudat/astro/orbit_determination/estimatable_parameters/rtgForceVector.h"
 #include "tudat/math/basic/linearAlgebra.h"
-#include "tudat/astro/basic_astro/empiricalAcceleration.h"
+#include "tudat/astro/system_models/rtgAccelerationModel.h"
 
 namespace tudat
 {
 
 namespace acceleration_partials
 {
+
 //! Function determine the numerical partial derivative of the true anomaly wrt the elements of the Cartesian state
 /*!
  *  unction determine the numerical partial derivative of the true anomaly wrt the elements of the Cartesian state,
@@ -35,20 +36,24 @@ namespace acceleration_partials
  *  \param cartesianStateElementPerturbations Numerical perturbations of Cartesian state that are to be used
  *  \return Partial of Cartesian state wrt true anomaly of orbit.
  */
+/*
 Eigen::Matrix< double, 1, 6 > calculateNumericalPartialOfTrueAnomalyWrtState( const Eigen::Vector6d& cartesianElements,
                                                                               const double gravitationalParameter,
                                                                               const Eigen::Vector6d& cartesianStateElementPerturbations );
+*/
 
-class EmpiricalAccelerationPartial : public AccelerationPartial
+class RTGAccelerationPartial : public AccelerationPartial
 {
 public:
     using AccelerationPartial::getParameterPartialFunction;
 
-    EmpiricalAccelerationPartial( std::shared_ptr< basic_astrodynamics::EmpiricalAcceleration > empiricalAcceleration,
+    RTGAccelerationPartial( std::shared_ptr< system_models::RTGAccelerationModel > rtgAcceleration,
                                   std::string acceleratedBody,
                                   std::string acceleratingBody ):
-        AccelerationPartial( acceleratedBody, acceleratingBody, basic_astrodynamics::empirical_acceleration ),
-        empiricalAcceleration_( empiricalAcceleration )
+        AccelerationPartial( acceleratedBody, acceleratingBody, basic_astrodynamics::rtg_acceleration ),
+        rtgAcceleration_( rtgAcceleration ),
+        currentPositionPartial_(Eigen::Matrix3d::Zero( )),    // RTG Acceleration position and velocity independent
+        currentVelocityPartial_(Eigen::Matrix3d::Zero( ))    // pos/vel partials declared to be const
     {
         cartesianStateElementPerturbations << 0.1, 0.1, 0.1, 0.001, 0.001, 0.001;
     }
@@ -167,6 +172,26 @@ public:
     std::pair< std::function< void( Eigen::MatrixXd& ) >, int > getParameterPartialFunction(
             std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > parameter );
 
+
+    //! Function to compute the partial w.r.t. time-independent empirical acceleration components
+    /*!
+     * Function to compute the partial w.r.t. time-independent empirical acceleration components from list of components and
+     * functional shapes.
+     * \param numberOfAccelerationComponents Total number of empirical acceleration components w.r.t. which partials are to
+     * be computed.
+     * \param accelerationIndices Map denoting list of components of accelerations that are to be computed. Key: functional
+     * shape of empirical accelerations. Value: list of acceleration vaector entries that are to be used (0: radial (R),
+     * 1: along-track (S), 2: cross-track (W)).
+     * \param partialDerivativeMatrix Matrix of partial derivatives of accelerations w.r.t. empirical accelerations (returned
+     * by reference)
+     */
+     //void wrtEmpiricalAccelerationCoefficientFromIndices(
+     //       const int numberOfAccelerationComponents,
+     //       const std::map< basic_astrodynamics::EmpiricalAccelerationFunctionalShapes, std::vector< int > >& accelerationIndices,
+     //       Eigen::MatrixXd& partialDerivativeMatrix );
+
+
+
     //! Function for updating common blocks of partial to current state.
     /*!
      *  Function for updating common blocks of partial to current state. Position and velocity partials are computed and set.
@@ -181,8 +206,12 @@ public:
      * \param partialDerivativeMatrix Matrix of partial derivatives of accelerations w.r.t. empirical accelerations (returned
      * by reference)
      */
-    void wrtArcWiseEmpiricalAccelerationCoefficient(
-            std::shared_ptr< estimatable_parameters::ArcWiseEmpiricalAccelerationCoefficientsParameter > parameter,
+    void wrtRTGForceVector(
+            std::shared_ptr< estimatable_parameters::RTGForceVector > parameter,
+            Eigen::MatrixXd& partialDerivativeMatrix );
+
+    void wrtRTGForceVectorMagnitude(
+            std::shared_ptr< estimatable_parameters::RTGForceVectorMagnitude > parameter,
             Eigen::MatrixXd& partialDerivativeMatrix );
 
     //! Function to compute the partial w.r.t. time-independent empirical acceleration components
@@ -219,13 +248,13 @@ public:
 
 private:
     //! Acceleration w.r.t. which partials are to be computed.
-    std::shared_ptr< basic_astrodynamics::EmpiricalAcceleration > empiricalAcceleration_;
+    std::shared_ptr< system_models::RTGAccelerationModel > rtgAcceleration_;
 
     //! Current partial of empirical acceleration w.r.t. position of body undergoing acceleration.
-    Eigen::Matrix3d currentPositionPartial_;
+    const Eigen::Matrix3d currentPositionPartial_;
 
     //! Current partial of empirical acceleration w.r.t. velocity of body undergoing acceleration.
-    Eigen::Matrix3d currentVelocityPartial_;
+    const Eigen::Matrix3d currentVelocityPartial_;
 
     //! Perturbations to use on Cartesian state elements when computing partial of true anomaly w.r.t. state.
     Eigen::Matrix< double, 1, 6 > cartesianStateElementPerturbations;
