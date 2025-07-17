@@ -1345,7 +1345,7 @@ inline std::shared_ptr< EstimatableParameterSettings > arcWiseEmpiricalAccelerat
             associatedBody, centralBody, componentsToEstimate, arcStartTimes );
 }
 
-inline std::shared_ptr< EstimatableParameterSettings > rtgForceVector( const std::string associatedBody )
+inline std::shared_ptr< EstimatableParameterSettings > rtgForceVector( const std::string& associatedBody )
 {
     return std::make_shared< EstimatableParameterSettings >( associatedBody, rtg_force_vector );
 }

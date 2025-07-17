@@ -47,6 +47,7 @@
 #include "tudat/astro/orbit_determination/estimatable_parameters/referencePointPosition.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/gravityFieldVariationParameters.h"
 #include "tudat/astro/orbit_determination/estimatable_parameters/iauRotationModelParameters.h"
+#include "tudat/astro/orbit_determination/estimatable_parameters/rtgForceVector.h"
 #include "tudat/astro/relativity/metric.h"
 #include "tudat/simulation/estimation_setup/estimatableParameterSettings.h"
 #include "tudat/simulation/propagation_setup/dynamicsSimulator.h"
@@ -1776,6 +1777,47 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd >
                 }
                 break;
             }
+            case rtg_force_vector: {
+                if( propagatorSettings == nullptr )
+                {
+                    throw std::runtime_error(
+                            "Error when creating rtg_force_vector parameter, no propagatorSettings provided." );
+                }
+
+
+                /*// Check input consistency --> redundant, no dynamic casting to be done, since rtg force vector settings object is of base class EstimatableParameterSettings type
+                std::shared_ptr< EstimatableParameterSettings > rtgAccelerationSettings =
+                        std::dynamic_pointer_cast< EstimatableParameterSettings >( vectorParameterName );
+                if( empiricalAccelerationSettings == nullptr )
+                {
+                    throw std::runtime_error(
+                            "Error when trying to make constant empirical acceleration coefficients parameter, settings type "
+                            "inconsistent" );
+                }
+                else
+                {*/
+
+                std::shared_ptr< basic_astrodynamics::AccelerationModel3d > associatedAccelerationModel =
+                        getAccelerationModelsListForParametersFromBase< InitialStateParameterType, TimeType >( propagatorSettings,
+                                                                                                               vectorParameterName );
+
+                // Create parameter object
+                std::shared_ptr< system_models::RTGAccelerationModel > rtgAccelerationModel =
+                  std::dynamic_pointer_cast< system_models::RTGAccelerationModel > (associatedAccelerationModel);
+
+                if (rtgAccelerationModel == nullptr)
+                {
+                    throw std::runtime_error(
+                            "Error, expected RTGAccelerationModel when creating rtg_force_vector parameter" );
+                }
+
+                    // Create rtg force vector parameter
+                    vectorParameterToEstimate = std::make_shared< RTGForceVector >(
+                            associatedAccelerationModel,
+                            vectorParameterName->parameterType_.second.first);
+                }
+                break;
+
             case arc_wise_radiation_pressure_coefficient: {
                 // Check input consistency
                 std::shared_ptr< ArcWiseRadiationPressureCoefficientEstimatableParameterSettings > radiationPressureCoefficientSettings =
