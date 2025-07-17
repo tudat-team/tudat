@@ -104,6 +104,11 @@ public:
         return currentBodyFixedForceVector_;
     }
 
+    void resetForceVectorAtReferenceEpoch(const Eigen::Vector3d& newForceVectorAtReferenceEpoch)
+    {
+        bodyFixedForceVectorAtReferenceEpoch_ = newForceVectorAtReferenceEpoch;
+    }
+
     Eigen::Vector3d getbodyFixedForceVectorAtReferenceEpoch( ) const
     {
         return bodyFixedForceVectorAtReferenceEpoch_;
