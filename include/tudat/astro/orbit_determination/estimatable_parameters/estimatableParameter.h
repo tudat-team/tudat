@@ -87,7 +87,8 @@ enum EstimatebleParametersEnum {
     mode_coupled_tidal_love_numbers,
     nominal_rotation_pole_position,
     rotation_pole_position_rate,
-    rotation_longitudinal_libration_terms
+    rotation_longitudinal_libration_terms,
+    rtg_force_vector
 
 };
 

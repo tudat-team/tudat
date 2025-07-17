@@ -183,6 +183,9 @@ std::string getParameterTypeString( const EstimatebleParametersEnum parameterTyp
         case rotation_longitudinal_libration_terms:
             parameterDescription = "longitudinal libration terms ";
             break;
+        case rtg_force_vector:
+            parameterDescription = "force vector from anisotropic RTG radiation in body-fixed frame ";
+            break;
         default:
             std::string errorMessage =
                     "Error when getting parameter string, did not recognize parameter " + std::to_string( parameterType );
@@ -373,6 +376,9 @@ bool isDoubleParameter( const EstimatebleParametersEnum parameterType )
             isDoubleParameter = false;
             break;
         case rotation_longitudinal_libration_terms:
+            isDoubleParameter = false;
+            break;
+        case rtg_force_vector:
             isDoubleParameter = false;
             break;
         default:
