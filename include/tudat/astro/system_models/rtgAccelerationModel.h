@@ -75,7 +75,7 @@ public:
         {
             rotationToIntegrationFrame_ = rotationFromBodyFixedToIntegrationFrameFunction_( );
 
-            currentTimeDelta_ = this->currentTime_ - referenceEpoch_;
+            currentTimeDelta_ = currentTime - referenceEpoch_;
             currentBodyFixedForceVector_ = bodyFixedForceVectorAtReferenceEpoch_ * std::exp(-decayScaleFactor_ * currentTimeDelta_);
 
             currentAcceleration_ = rotationToIntegrationFrame_ * currentBodyFixedForceVector_ / bodyMassFunction_();
@@ -92,6 +92,21 @@ public:
     Eigen::Matrix3d getCurrentRotationToIntegrationFrameMatrix( )
     {
         return rotationToIntegrationFrame_.toRotationMatrix( );
+    }
+
+    double getCurrentTimeDelta( ) const
+    {
+        return currentTimeDelta_;
+    }
+
+    Eigen::Vector3d getCurrentBodyFixedForceVector( ) const
+    {
+        return currentBodyFixedForceVector_;
+    }
+
+    Eigen::Vector3d getbodyFixedForceVectorAtReferenceEpoch( ) const
+    {
+        return bodyFixedForceVectorAtReferenceEpoch_;
     }
 
 
@@ -111,7 +126,6 @@ private:
 
     //! Body mass function
     const std::function< double() > bodyMassFunction_;
-
 
     //! Current rotation from body-fixed frame to integration frame.
     Eigen::Quaterniond rotationToIntegrationFrame_;

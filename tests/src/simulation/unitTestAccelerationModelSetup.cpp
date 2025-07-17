@@ -820,7 +820,7 @@ BOOST_AUTO_TEST_CASE( test_rtgAccelerationModelSetup )
     double referenceEpoch = 0.0;
     double initialVehicleMass = 5000;
 
-    // Define function describing rotational ephemeris of vehicle
+    // Define function describing mass function of vehicle
     std::function<double(double)> vehicleMassFunction =
         [=](double epoch) {
             double delta_epoch = epoch - referenceEpoch;
@@ -846,15 +846,18 @@ BOOST_AUTO_TEST_CASE( test_rtgAccelerationModelSetup )
     double decayScaleFactor = 2.5E-10;
 
     // Define origin of integration
-    std::map< std::string, std::string > centralBodies;
-    centralBodies[ "Vehicle" ] = "Earth";
+    std::vector< std::string > bodiesToPropagate;
+    std::vector< std::string > centralBodies;
+
+    bodiesToPropagate.push_back( "Vehicle" );
+    centralBodies.push_back( "Earth" );
 
 
     accelerationSettingsMap[ "Vehicle" ][ "Vehicle" ].push_back(
                         std::make_shared< RTGAccelerationSettings >(rtgForceVector, decayScaleFactor, referenceEpoch));
 
     // Create accelerations
-    AccelerationMap accelerationsMap = createAccelerationModelsMap( bodies, accelerationSettingsMap, centralBodies );
+    AccelerationMap accelerationsMap = createAccelerationModelsMap( bodies, accelerationSettingsMap, bodiesToPropagate, centralBodies );
     std::shared_ptr< AccelerationModel3d > accelerationModel = accelerationsMap[ "Vehicle"] ["Vehicle"][ 0 ];
     BOOST_CHECK_EQUAL( accelerationModel != nullptr, true );
 }
