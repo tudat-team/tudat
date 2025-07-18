@@ -998,10 +998,7 @@ std::shared_ptr< aerodynamics::AerodynamicAcceleration > createAerodynamicAccele
         throw std::runtime_error( "Error when making aerodynamic acceleration, found flight conditions that are not atmospheric." );
     }
     // Create acceleration model.
-    return std::make_shared< AerodynamicAcceleration >(
-            bodyFlightConditions,
-            std::bind( &Body::getBodyMass, bodyUndergoingAcceleration ) );
-    
+    return std::make_shared< AerodynamicAcceleration >( bodyFlightConditions, std::bind( &Body::getBodyMass, bodyUndergoingAcceleration ) );
 }
 
 std::shared_ptr< RadiationPressureAcceleration > createRadiationPressureAccelerationModel(
