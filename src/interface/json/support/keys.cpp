@@ -9,10 +9,11 @@
  *
  */
 
+#include "tudat/interface/json/support/keys.h"
+
 #include <boost/regex.hpp>
 
 #include "tudat/interface/json/support/utilities.h"
-#include "tudat/interface/json/support/keys.h"
 
 namespace tudat
 {
@@ -28,29 +29,17 @@ const std::string SpecialKeys::up = "<-";
 const std::string SpecialKeys::rootObject = "#root";
 const std::string SpecialKeys::keyPath = "#keypath";
 
-const std::vector< std::string > SpecialKeys::objectContaining =
-{
-    SpecialKeys::rootObject,
-    SpecialKeys::keyPath
-};
+const std::vector< std::string > SpecialKeys::objectContaining = { SpecialKeys::rootObject, SpecialKeys::keyPath };
 
-const std::vector< std::string > SpecialKeys::all =
-{
-    SpecialKeys::root,
-    SpecialKeys::up,
-    SpecialKeys::rootObject,
-    SpecialKeys::keyPath
-};
-
+const std::vector< std::string > SpecialKeys::all = { SpecialKeys::root, SpecialKeys::up, SpecialKeys::rootObject, SpecialKeys::keyPath };
 
 // Keys recognised by json_interface.
 
- const std::string Keys::simulationType = "simulationType";
+const std::string Keys::simulationType = "simulationType";
 const std::string Keys::initialEpoch = "initialEpoch";
 const std::string Keys::finalEpoch = "finalEpoch";
 const std::string Keys::globalFrameOrigin = "globalFrameOrigin";
 const std::string Keys::globalFrameOrientation = "globalFrameOrientation";
-
 
 //  Spice
 const std::string Keys::spice = "spice";
@@ -60,7 +49,6 @@ const std::string Keys::Spice::kernels = "kernels";
 const std::string Keys::Spice::preloadEphemeris = "preloadEphemeris";
 const std::string Keys::Spice::interpolationOffsets = "interpolationOffsets";
 const std::string Keys::Spice::interpolationStep = "interpolationStep";
-
 
 //  Body
 const std::string Keys::bodies = "bodies";
@@ -109,7 +97,6 @@ const std::string Keys::Body::State::speed = "speed";
 const std::string Keys::Body::State::flightPathAngle = "flightPathAngle";
 const std::string Keys::Body::State::headingAngle = "headingAngle";
 
-
 // //  Body::aerodynamics
 const std::string Keys::Body::aerodynamics = "aerodynamics";
 const std::string Keys::Body::Aerodynamics::coefficientsType = "coefficientsType";
@@ -129,7 +116,6 @@ const std::string Keys::Body::Aerodynamics::momentCoefficients = "momentCoeffici
 const std::string Keys::Body::Aerodynamics::independentVariableValues = "independentVariableValues";
 // Tabulated< 1 >
 const std::string Keys::Body::Aerodynamics::interpolator = "interpolator";
-
 
 // //  Body::Atmosphere
 const std::string Keys::Body::atmosphere = "atmosphere";
@@ -204,14 +190,12 @@ const std::string Keys::Body::RotationModel::rotationRate = "rotationRate";
 const std::string Keys::Body::RotationModel::precessionNutationTheory = "precessionNutationTheory";
 const std::string Keys::Body::RotationModel::centralBodyName = "centralBodyName";
 
-
 // //  Body::ShapeModel
 const std::string Keys::Body::shapeModel = "shapeModel";
 const std::string Keys::Body::ShapeModel::type = "type";
 const std::string Keys::Body::ShapeModel::radius = "radius";
 const std::string Keys::Body::ShapeModel::equatorialRadius = "equatorialRadius";
 const std::string Keys::Body::ShapeModel::flattening = "flattening";
-
 
 // //  Body::GravityFieldVariation
 const std::string Keys::Body::gravityFieldVariation = "gravityFieldVariation";
@@ -240,10 +224,10 @@ const std::string Keys::Variable::componentIndices = "componentIndices";
 const std::string Keys::Variable::useAccelerationNorm = "useAccelerationNorm";
 const std::string Keys::Variable::relativeToBody = "relativeToBody";
 const std::string Keys::Variable::accelerationType = "accelerationType";
-//const std::string Keys::Variable::bodyUndergoingAcceleration = "bodyUndergoingAcceleration";
+// const std::string Keys::Variable::bodyUndergoingAcceleration = "bodyUndergoingAcceleration";
 const std::string Keys::Variable::bodyExertingAcceleration = "bodyExertingAcceleration";
 const std::string Keys::Variable::torqueType = "torqueType";
-//const std::string Keys::Variable::bodyUndergoingTorque = "bodyUndergoingTorque";
+// const std::string Keys::Variable::bodyUndergoingTorque = "bodyUndergoingTorque";
 const std::string Keys::Variable::bodyExertingTorque = "bodyExertingTorque";
 const std::string Keys::Variable::baseFrame = "baseFrame";
 const std::string Keys::Variable::targetFrame = "targetFrame";
@@ -252,7 +236,6 @@ const std::string Keys::Variable::deformationType = "deformationType";
 const std::string Keys::Variable::identifier = "identifier";
 const std::string Keys::Variable::derivativeWrtBody = "derivativeWrtBody";
 const std::string Keys::Variable::thirdBody = "thirdBody";
-
 
 // Parameter
 const std::string Keys::parametersToEstimate = "parametersToEstimate";
@@ -312,7 +295,7 @@ const std::string Keys::Observation::receiverProperTimeRateSettings = "receiverP
 
 const std::string Keys::Observation::constantIntegrationTime = "constantIntegrationTime";
 
-const std::string Keys::Observation::oneWayRangeObsevationSettings = "oneWayRangeObsevation";
+const std::string Keys::Observation::oneWayRangeObservationSettings = "oneWayRangeObsevation";
 const std::string Keys::Observation::retransmissionTimes = "retransmissionTimes";
 
 const std::string Keys::Observation::uplinkOneWayDopplerSettings = "uplinkOneWayDoppler";
@@ -332,7 +315,6 @@ const std::string Keys::Observation::associatedLinkEnd = "associatedLinkEnd";
 const std::string Keys::Observation::doubleParameter = "doubleParameter";
 const std::string Keys::Observation::stringParameter = "stringParameter";
 
-
 // ObservationBias
 const std::string Keys::ObservationBias::biasType = "biasType";
 const std::string Keys::ObservationBias::multipleBiasesList = "multipleBiasesList";
@@ -341,7 +323,6 @@ const std::string Keys::ObservationBias::constantBias = "constantBias";
 const std::string Keys::ObservationBias::arcWiseBiasList = "arcWiseBiasList";
 const std::string Keys::ObservationBias::arcStartTimes = "arcStartTimes";
 const std::string Keys::ObservationBias::referenceLinkEnd = "referenceLinkEnd";
-
 
 //  Propagator
 const std::string Keys::propagators = "propagators";
@@ -397,19 +378,15 @@ const std::string Keys::Propagator::Acceleration::Thrust::specificImpulse = "spe
 const std::string Keys::Propagator::Acceleration::Thrust::frame = "frame";
 const std::string Keys::Propagator::Acceleration::Thrust::centralBody = "centralBody";
 
-
 // //  Mass rate model
 const std::string Keys::Propagator::massRateModels = "massRateModels";
 const std::string Keys::Propagator::MassRateModel::type = "type";
 const std::string Keys::Propagator::MassRateModel::useAllThrustModels = "useAllThrustModels";
 const std::string Keys::Propagator::MassRateModel::associatedThrustSource = "associatedThrustSource";
 
-
 // //  Torque
 const std::string Keys::Propagator::torques = "torques";
 const std::string Keys::Propagator::Torque::type = "type";
-
-
 
 // Termination
 const std::string Keys::termination = "termination";
@@ -418,7 +395,6 @@ const std::string Keys::Termination::allOf = "allOf";
 const std::string Keys::Termination::variable = "variable";
 const std::string Keys::Termination::lowerLimit = "lowerLimit";
 const std::string Keys::Termination::upperLimit = "upperLimit";
-
 
 //  Integrator
 const std::string Keys::integrator = "integrator";
@@ -470,7 +446,6 @@ const std::string Keys::Interpolation::ModelInterpolation::finalTime = "finalTim
 const std::string Keys::Interpolation::ModelInterpolation::timeStep = "timeStep";
 const std::string Keys::Interpolation::ModelInterpolation::interpolator = "interpolator";
 
-
 //  Export
 const std::string Keys::xport = "export";
 const std::string Keys::Export::file = "file";
@@ -492,7 +467,6 @@ const std::string Keys::Options::unusedKey = "unusedKey";
 const std::string Keys::Options::fullSettingsFile = "fullSettingsFile";
 const std::string Keys::Options::tagOutputFilesIfPropagationFails = "tagOutputFilesIfPropagationFails";
 
-
 // KEYPATH
 
 //! Get the int-value of an int-convertible key.
@@ -500,26 +474,27 @@ int indexFromKey( const std::string& key )
 {
     boost::cmatch groups;
     boost::regex_match( key.c_str( ), groups, boost::regex( R"(\@(\d+))" ) );
-    if ( groups[ 1 ].matched )
+    if( groups[ 1 ].matched )
     {
         try
         {
             return std::stoi( groups[ 1 ] );
         }
-        catch ( ... ) { }
+        catch( ... )
+        { }
     }
     return -1;
 }
 
 //! Constructor with a single key path string representation.
-KeyPath::KeyPath( const std::string& keyPathStringRepresentation ) : std::vector< std::string >( )
+KeyPath::KeyPath( const std::string& keyPathStringRepresentation ): std::vector< std::string >( )
 {
     const std::vector< std::string > keys = split( keyPathStringRepresentation, SpecialKeys::dot );
-    for ( const std::string key : keys )
+    for( const std::string key: keys )
     {
         boost::cmatch groups;
         boost::regex_match( key.c_str( ), groups, boost::regex( R"((.+?)\[(\d+?)\])" ) );
-        if ( groups[ 1 ].matched && groups[ 2 ].matched )
+        if( groups[ 1 ].matched && groups[ 2 ].matched )
         {
             const std::string arrayKey( groups[ 1 ] );
             const std::string arrayIndex( groups[ 2 ] );
@@ -534,22 +509,22 @@ KeyPath::KeyPath( const std::string& keyPathStringRepresentation ) : std::vector
 }
 
 //! String representation for `KeyPath`, as key.subkey.vectorIndex.subsubkey ...
-std::ostream& operator << ( std::ostream& stringRepresentation, const KeyPath& keyPath )
+std::ostream& operator<<( std::ostream& stringRepresentation, const KeyPath& keyPath )
 {
     bool somethingAdded = false;
-    for ( unsigned int i = 0; i < keyPath.size( ); ++i )
+    for( unsigned int i = 0; i < keyPath.size( ); ++i )
     {
         const std::string key = keyPath.at( i );
-        if ( key != SpecialKeys::root )
+        if( key != SpecialKeys::root )
         {
             const int intKey = indexFromKey( key );
-            if ( intKey >= 0 )
+            if( intKey >= 0 )
             {
                 stringRepresentation << '[' << intKey << ']';
             }
             else
             {
-                if ( somethingAdded )
+                if( somethingAdded )
                 {
                     stringRepresentation << SpecialKeys::dot;
                 }
@@ -568,7 +543,7 @@ KeyPath KeyPath::canonical( const KeyPath& basePath ) const
     KeyPath compoundKeyPath;
 
     // Check absolute paths
-    if ( ! this->isAbsolute( ) && basePath.isAbsolute( ) )
+    if( !this->isAbsolute( ) && basePath.isAbsolute( ) )
     {
         compoundKeyPath = basePath / *this;
     }
@@ -579,11 +554,11 @@ KeyPath KeyPath::canonical( const KeyPath& basePath ) const
 
     // Remove ..
     KeyPath canonicalKeyPath = { };
-    for ( std::string key : compoundKeyPath )
+    for( std::string key: compoundKeyPath )
     {
-        if ( key == SpecialKeys::up )
+        if( key == SpecialKeys::up )
         {
-            if ( canonicalKeyPath.size( ) > 0 )
+            if( canonicalKeyPath.size( ) > 0 )
             {
                 canonicalKeyPath.pop_back( );
             }
@@ -597,7 +572,6 @@ KeyPath KeyPath::canonical( const KeyPath& basePath ) const
     return canonicalKeyPath;
 }
 
+}  // namespace json_interface
 
-} // namespace json_interface
-
-} // namespace tudat
+}  // namespace tudat

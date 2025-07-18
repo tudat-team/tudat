@@ -23,8 +23,7 @@ namespace ground_stations
 {
 
 //! Function to generate unit vectors of topocentric frame.
-std::vector< Eigen::Vector3d > getGeocentricLocalUnitVectors(
-        const Eigen::Matrix3d& toPlanetFixedFrameMatrix )
+std::vector< Eigen::Vector3d > getGeocentricLocalUnitVectors( const Eigen::Matrix3d& toPlanetFixedFrameMatrix )
 {
     std::vector< Eigen::Vector3d > geocentricUnitVectors;
     geocentricUnitVectors.resize( 3 );
@@ -34,61 +33,55 @@ std::vector< Eigen::Vector3d > getGeocentricLocalUnitVectors(
     return geocentricUnitVectors;
 }
 
-
 //! Function to generate unit vectors of topocentric frame.
-std::vector< Eigen::Vector3d > getGeocentricLocalUnitVectors(
-        const double latitude, const double longitude )
+std::vector< Eigen::Vector3d > getGeocentricLocalUnitVectors( const double latitude, const double longitude )
 {
-    return getGeocentricLocalUnitVectors(
-                Eigen::Matrix3d( reference_frames::getEnuLocalVerticalToRotatingPlanetocentricFrameTransformationQuaternion(
-                                     longitude, latitude ) ) );
+    return getGeocentricLocalUnitVectors( Eigen::Matrix3d(
+            reference_frames::getEnuLocalVerticalToRotatingPlanetocentricFrameTransformationQuaternion( longitude, latitude ) ) );
 }
 
 //! Constructor
-GroundStationState::GroundStationState(
-        const Eigen::Vector3d& stationPosition,
-        const coordinate_conversions::PositionElementTypes inputElementType,
-        const std::shared_ptr< basic_astrodynamics::BodyShapeModel > bodySurface,
-        const std::shared_ptr< StationMotionModel > stationMotionModel ):
-    bodyShapeModel_( bodySurface ),
-    stationMotionModel_( stationMotionModel )
+GroundStationState::GroundStationState( const Eigen::Vector3d& stationPosition,
+                                        const coordinate_conversions::PositionElementTypes inputElementType,
+                                        const std::shared_ptr< basic_astrodynamics::BodyShapeModel > bodySurface,
+                                        const std::shared_ptr< StationMotionModel > stationMotionModel ):
+    bodyShapeModel_( bodySurface ), stationMotionModel_( stationMotionModel )
 {
     resetGroundStationPositionAtEpoch( stationPosition, inputElementType );
 }
 
 //! Function to obtain the Cartesian state of the ground station in the local frame at a given time.
-Eigen::Vector6d GroundStationState::getCartesianStateInTime(
-        const double secondsSinceEpoch )
+Eigen::Vector6d GroundStationState::getCartesianStateInTime( const double secondsSinceEpoch, const std::string& targetFrameOrigin )
 {
-    Eigen::Vector6d currentStationState =
-            ( stationMotionModel_ != nullptr ) ? ( nominalCartesianState_ + stationMotionModel_->getBodyFixedStationMotion(
-                                                       secondsSinceEpoch, shared_from_this( )  ) ) : nominalCartesianState_;
+    Eigen::Vector6d currentStationState = ( stationMotionModel_ != nullptr )
+            ? ( nominalCartesianState_ +
+                stationMotionModel_->getBodyFixedStationMotion( secondsSinceEpoch, shared_from_this( ), targetFrameOrigin ) )
+            : nominalCartesianState_;
 
     return currentStationState;
 }
 
 //! Function to (re)set the nominal state of the station
-void GroundStationState::resetGroundStationPositionAtEpoch(
-        const Eigen::Vector3d stationPosition,
-        const coordinate_conversions::PositionElementTypes inputElementType )
+void GroundStationState::resetGroundStationPositionAtEpoch( const Eigen::Vector3d stationPosition,
+                                                            const coordinate_conversions::PositionElementTypes inputElementType )
 {
     using namespace coordinate_conversions;
     using mathematical_constants::PI;
 
     // Set Cartesian and spherical position
     cartesianPosition_ = coordinate_conversions::convertPositionElements(
-                stationPosition, inputElementType, coordinate_conversions::cartesian_position, bodyShapeModel_ );
+            stationPosition, inputElementType, coordinate_conversions::cartesian_position, bodyShapeModel_ );
     nominalCartesianState_.segment( 0, 3 ) = cartesianPosition_;
     nominalCartesianState_.segment( 3, 3 ).setZero( );
 
     sphericalPosition_ = coordinate_conversions::convertPositionElements(
-                stationPosition, inputElementType, coordinate_conversions::spherical_position, bodyShapeModel_ );
+            stationPosition, inputElementType, coordinate_conversions::spherical_position, bodyShapeModel_ );
 
     // If possible, set geodetic position, otherwise, set to NaN.
     try
     {
         geodeticPosition = coordinate_conversions::convertPositionElements(
-                    stationPosition, inputElementType, coordinate_conversions::geodetic_position, bodyShapeModel_ );
+                stationPosition, inputElementType, coordinate_conversions::geodetic_position, bodyShapeModel_ );
     }
     catch( std::runtime_error const& )
     {
@@ -96,7 +89,6 @@ void GroundStationState::resetGroundStationPositionAtEpoch(
     }
 
     setTransformationAndUnitVectors( );
-
 }
 
 //! Function to reset the rotation from the body-fixed to local topocentric frame, and associated unit vectors
@@ -104,7 +96,7 @@ void GroundStationState::setTransformationAndUnitVectors( )
 {
     geocentricUnitVectors_ = getGeocentricLocalUnitVectors( getNominalLatitude( ), getNominalLongitude( ) );
     bodyFixedToTopocentricFrameRotation_ = getRotationQuaternionFromBodyFixedToTopocentricFrame(
-                bodyShapeModel_, getNominalLatitude( ), getNominalLongitude( ), cartesianPosition_  );
+            bodyShapeModel_, getNominalLatitude( ), getNominalLongitude( ), cartesianPosition_ );
 }
 
 //! Function to calculate the rotation from a body-fixed to a topocentric frame.
@@ -123,8 +115,7 @@ Eigen::Quaterniond getRotationQuaternionFromBodyFixedToTopocentricFrame(
     if( std::dynamic_pointer_cast< basic_astrodynamics::SphericalBodyShapeModel >( bodyShapeModel ) != nullptr )
     {
         // For a sphere the topocentric and geocentric frames are equal.
-        topocentricUnitVectors = getGeocentricLocalUnitVectors(
-                    geocentricLatitude, geocentricLongitude );
+        topocentricUnitVectors = getGeocentricLocalUnitVectors( geocentricLatitude, geocentricLongitude );
     }
     else if( std::dynamic_pointer_cast< basic_astrodynamics::OblateSpheroidBodyShapeModel >( bodyShapeModel ) != nullptr )
     {
@@ -134,17 +125,15 @@ Eigen::Quaterniond getRotationQuaternionFromBodyFixedToTopocentricFrame(
         // Calculate geodetic latitude.
         double flattening = oblateSphericalShapeModel->getFlattening( );
         double equatorialRadius = oblateSphericalShapeModel->getEquatorialRadius( );
-        double geodeticLatitude = coordinate_conversions::calculateGeodeticLatitude(
-                    localPoint, equatorialRadius, flattening, 1.0E-4 );
+        double geodeticLatitude = coordinate_conversions::calculateGeodeticLatitude( localPoint, equatorialRadius, flattening, 1.0E-4 );
 
         // Calculte unit vectors of topocentric frame.
         topocentricUnitVectors = getGeocentricLocalUnitVectors( geodeticLatitude, geocentricLongitude );
     }
     else
     {
-        isSurfaceModelRecognized = 0;
-        std::cerr<<"Error when making transformation to topocentric frame, shape model not recognized"<<std::endl;
-        //        throw std::runtime_error( "Error when making transformation to topocentric frame, shape model not recognized" );
+        // Assume spherical shape
+        topocentricUnitVectors = getGeocentricLocalUnitVectors( geocentricLatitude, geocentricLongitude );
     }
 
     // Create rotation matrix
@@ -162,35 +151,60 @@ Eigen::Quaterniond getRotationQuaternionFromBodyFixedToTopocentricFrame(
         bodyFixedToTopocentricFrame = Eigen::Matrix3d::Identity( );
     }
 
-
-
     // Convert to quaternion and return.
     return Eigen::Quaterniond( bodyFixedToTopocentricFrame );
 }
 
 Eigen::Vector6d PiecewiseConstantStationMotionModel::getBodyFixedStationMotion(
         const double time,
-        const std::shared_ptr< ground_stations::GroundStationState > groundStationState )
+        const std::shared_ptr< ground_stations::GroundStationState > groundStationState,
+        const std::string& targetFrameOrigin )
 {
-    timeLookupScheme_ = std::make_shared< interpolators::BinarySearchLookupScheme< double > >(
-                displacementTimes_ );
+    timeLookupScheme_ = std::make_shared< interpolators::BinarySearchLookupScheme< double > >( displacementTimes_ );
     Eigen::Vector6d stationMotion = Eigen::Vector6d::Zero( );
     if( !( time < firstDisplacementTime_ ) )
     {
         if( time >= finalDisplacementTime_ )
         {
-            stationMotion.segment( 0, 3 ) += displacementVectors_.at(
-                        displacementVectors_.size( ) - 1 );
+            stationMotion.segment( 0, 3 ) += displacementVectors_.at( displacementVectors_.size( ) - 1 );
         }
         else
         {
-            stationMotion.segment( 0, 3 ) += displacementVectors_.at(
-                        timeLookupScheme_->findNearestLowerNeighbour( time ) );
+            stationMotion.segment( 0, 3 ) += displacementVectors_.at( timeLookupScheme_->findNearestLowerNeighbour( time ) );
         }
     }
     return stationMotion;
 }
 
-}
+Eigen::Vector6d BodyCentricToBarycentricRelativisticStationMotion::getBodyFixedStationMotion(
+        const double time,
+        const std::shared_ptr< ground_stations::GroundStationState > groundStationState,
+        const std::string& targetFrameOrigin )
+{
+    Eigen::Vector6d stationMotion = Eigen::Vector6d::Zero( );
 
+    if( targetFrameOrigin == "SSB" )
+    {
+        currentRotationToBodyFixedFrame_ = inertialToBodyFixedRotationFunction_( time );
+        inertialNominalStationPosition_ = currentRotationToBodyFixedFrame_.inverse( ) * groundStationState->getNominalCartesianPosition( );
+
+        centralBodyBarycentricState_ = bodyBarycentricStateFunction_( time );
+        stationMotion.segment( 0, 3 ) += ( centralBodyBarycentricState_.segment( 3, 3 ).dot( inertialNominalStationPosition_ ) ) *
+                centralBodyBarycentricState_.segment( 3, 3 );
+
+        if( useGeneralRelativisticCorrection_ )
+        {
+            stationMotion.segment( 0, 3 ) +=
+                    ( centralBodyGravitationalParameterFunction_( ) /
+                      ( centralBodyBarycentricState_.segment( 0, 3 ) - centralBodyBarycentricPositionFunction_( time ) ).norm( ) ) *
+                    inertialNominalStationPosition_;
+        }
+
+        stationMotion.segment( 0, 3 ) *= physical_constants::INVERSE_SQUARE_SPEED_OF_LIGHT;
+        stationMotion.segment( 0, 3 ) = currentRotationToBodyFixedFrame_ * stationMotion.segment( 0, 3 );
+    }
+    return stationMotion;
 }
+}  // namespace ground_stations
+
+}  // namespace tudat

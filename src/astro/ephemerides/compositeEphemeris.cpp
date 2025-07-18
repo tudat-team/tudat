@@ -6,9 +6,8 @@ namespace tudat
 namespace ephemerides
 {
 
-//template class CompositeEphemeris< double, double >;
+////template class CompositeEphemeris< double, double >;
 
+}  // namespace ephemerides
 
-} // namespace ephemerides
-
-} // namespace tudat
+}  // namespace tudat

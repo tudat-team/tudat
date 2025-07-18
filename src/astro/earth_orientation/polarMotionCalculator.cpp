@@ -19,11 +19,14 @@ namespace tudat
 namespace earth_orientation
 {
 
+Eigen::Vector2d getSecularPolePositionInMas( const double time )
+{
+    double timeInYears = time / physical_constants::JULIAN_YEAR;
+    return ( Eigen::Vector2d( ) << 55.0 + 1.677 * timeInYears, 320.5 + 3.460 * timeInYears ).finished( );
+}
 
 //! Calculate the position of the Celestial Intermediate Pole in the ITRS
-Eigen::Vector2d PolarMotionCalculator::getPositionOfCipInItrs(
-        const double ttSinceEpoch,
-        const double utcSinceEpoch )
+Eigen::Vector2d PolarMotionCalculator::getPositionOfCipInItrs( const double ttSinceEpoch, const double utcSinceEpoch )
 {
     // Initialize offset to zero.
     Eigen::Vector2d poleOffsetsInItrs = Eigen::Vector2d::Zero( );
@@ -32,16 +35,13 @@ Eigen::Vector2d PolarMotionCalculator::getPositionOfCipInItrs(
     poleOffsetsInItrs += dailyIersValueInterpolator_->interpolate( utcSinceEpoch );
 
     // Add short period motion
-    poleOffsetsInItrs += shortPeriodPolarMotionCalculator_->getCorrections(
-                ttSinceEpoch );
+    poleOffsetsInItrs += shortPeriodPolarMotionCalculator_->getCorrections( ttSinceEpoch );
 
     return poleOffsetsInItrs;
 }
 
 //! Calculate the position of the Celestial Intermediate Pole in the ITRS
-Eigen::Vector2d PolarMotionCalculator::getPositionOfCipInItrs(
-        Eigen::Vector6d fundamentalArguments,
-        const double utcSinceEpoch )
+Eigen::Vector2d PolarMotionCalculator::getPositionOfCipInItrs( Eigen::Vector6d fundamentalArguments, const double utcSinceEpoch )
 {
     // Initialize offset to zero.
     Eigen::Vector2d poleOffsetsInItrs = Eigen::Vector2d::Zero( );
@@ -50,12 +50,11 @@ Eigen::Vector2d PolarMotionCalculator::getPositionOfCipInItrs(
     poleOffsetsInItrs += dailyIersValueInterpolator_->interpolate( utcSinceEpoch );
 
     // Add short period motion
-    poleOffsetsInItrs += shortPeriodPolarMotionCalculator_->getCorrectionsFromFundamentalArgument(
-                fundamentalArguments );
+    poleOffsetsInItrs += shortPeriodPolarMotionCalculator_->getCorrectionsFromFundamentalArgument( fundamentalArguments );
 
     return poleOffsetsInItrs;
 }
 
-}
+}  // namespace earth_orientation
 
-}
+}  // namespace tudat

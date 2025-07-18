@@ -22,15 +22,16 @@ namespace observation_models
 {
 
 //! Enum defining different types of light time corrections.
-enum LightTimeCorrectionType
-{
+enum LightTimeCorrectionType {
     first_order_relativistic,
     function_wrapper_light_time_correction,
     tabulated_tropospheric,
     saastamoinen_tropospheric,
+    vmf3_tropospheric,
     tabulated_ionospheric,
     jakowski_vtec_ionospheric,
-    inverse_power_series_solar_corona
+    inverse_power_series_solar_corona,
+    ionex_vtec_ionospheric
 };
 
 bool requiresMultiLegIterations( const LightTimeCorrectionType& lightTimeCorrectionType );
@@ -45,17 +46,17 @@ std::string getLightTimeCorrectionName( const LightTimeCorrectionType& lightTime
 class LightTimeCorrection
 {
 public:
-
     //! Constructor
     /*!
      * Constructor
      * \param lightTimeCorrectionType Type of light-time correction represented by instance of class.
      */
     LightTimeCorrection( const LightTimeCorrectionType lightTimeCorrectionType ):
-        lightTimeCorrectionType_( lightTimeCorrectionType ){ }
+        lightTimeCorrectionType_( lightTimeCorrectionType ), timePerturbation_( 15.0 ), positionRelativePerturbation_( 1.0E-4 )
+    { }
 
     //! Destructor
-    virtual ~LightTimeCorrection( ){ }
+    virtual ~LightTimeCorrection( ) { }
 
     //! Pure virtual function to compute the light-time correction
     /*!
@@ -79,20 +80,19 @@ public:
         std::vector< Eigen::Vector6d > linkEndsStates = { transmitterState, receiverState };
         std::vector< double > linkEndsTimes = { transmissionTime, receptionTime };
 
-        return calculateLightTimeCorrectionWithMultiLegLinkEndStates( linkEndsStates, linkEndsTimes, 0,
-                                                                      ancillarySettings );
+        return calculateLightTimeCorrectionWithMultiLegLinkEndStates( linkEndsStates, linkEndsTimes, 0, ancillarySettings );
     }
 
-     //! Pure virtual function to compute the light-time correction
-     /*!
-      * Pure virtual function to compute the light-time correction, function is to be implemented in derived class
-      * for specific correction model.
-      * @param linkEndsStates List of states at each link end during observation.
-      * @param linkEndsTimes List of times at each link end during observation.
-      * @param currentMultiLegTransmitterIndex Index in the linkEndsStates and linkEndsTimes of the transmitter in the current link.
-      * @param ancillarySettings Observation ancillary simulation settings.
-      * @return
-      */
+    //! Pure virtual function to compute the light-time correction
+    /*!
+     * Pure virtual function to compute the light-time correction, function is to be implemented in derived class
+     * for specific correction model.
+     * @param linkEndsStates List of states at each link end during observation.
+     * @param linkEndsTimes List of times at each link end during observation.
+     * @param currentMultiLegTransmitterIndex Index in the linkEndsStates and linkEndsTimes of the transmitter in the current link.
+     * @param ancillarySettings Observation ancillary simulation settings.
+     * @return
+     */
     virtual double calculateLightTimeCorrectionWithMultiLegLinkEndStates(
             const std::vector< Eigen::Vector6d >& linkEndsStates,
             const std::vector< double >& linkEndsTimes,
@@ -116,8 +116,8 @@ public:
             const Eigen::Vector6d& receiverState,
             const double transmissionTime,
             const double receptionTime,
-            const LinkEndType fixedLinkEnd,
-            const LinkEndType linkEndAtWhichPartialIsEvaluated ) = 0;
+            const LinkEndType linkEndAtWhichPartialIsEvaluated,
+            const std::shared_ptr< observation_models::ObservationAncilliarySimulationSettings > ancillarySettings );
 
     //! Pure virtual function to compute the partial derivative of the light-time correction w.r.t. link end position
     /*!
@@ -135,38 +135,8 @@ public:
             const Eigen::Vector6d& receiverState,
             const double transmissionTime,
             const double receptionTime,
-            const LinkEndType linkEndAtWhichPartialIsEvaluated ) = 0;
-
-    //! Function to compute the full derivative of the light-time correction w.r.t. observation time
-    /*!
-     * Function to compute the full derivative of the light-time correction w.r.t. observation time. The function as implemented
-     * here combines the position and time partial derivatives into the full time-derivative.
-     * The function is virtual and may be overridden in derived class for specific correction model.
-     * \param transmitterState State of transmitted at transmission time
-     * \param receiverState State of receiver at reception time
-     * \param transmissionTime Time of signal transmission
-     * \param receptionTime Time of singal reception
-     * \param fixedLinkEnd Reference link end for observation
-     * \param linkEndAtWhichPartialIsEvaluated Link end at which the time partial is to be taken
-     * \return Light-time correction w.r.t. observation time
-     */
-    virtual double calculateLightTimeCorrectionDerivativeWrtLinkEndTime(
-            const Eigen::Vector6d& transmitterState,
-            const Eigen::Vector6d& receiverState,
-            const double transmissionTime,
-            const double receptionTime,
-            const LinkEndType fixedLinkEnd,
-            const LinkEndType linkEndAtWhichPartialIsEvaluated )
-    {
-        return calculateLightTimeCorrectionPartialDerivativeWrtLinkEndTime(
-                    transmitterState, receiverState, transmissionTime, receptionTime,
-                    fixedLinkEnd, linkEndAtWhichPartialIsEvaluated ) +
-                ( calculateLightTimeCorrectionPartialDerivativeWrtLinkEndPosition(
-                                    transmitterState, receiverState, transmissionTime, receptionTime,
-                                    linkEndAtWhichPartialIsEvaluated ) *
-                ( ( linkEndAtWhichPartialIsEvaluated == transmitter ) ?
-            ( transmitterState.segment( 3, 3 ) ) : ( receiverState.segment( 3, 3 ) ) ) )( 0 );
-    }
+            const LinkEndType linkEndAtWhichPartialIsEvaluated,
+            const std::shared_ptr< observation_models::ObservationAncilliarySimulationSettings > ancillarySettings );
 
     //! Function to retrieve the type of light-time correction represented by instance of class.
     /*!
@@ -179,19 +149,17 @@ public:
     }
 
 protected:
-
-    void getTransmissionReceptionTimesAndStates(
-            const std::vector< Eigen::Vector6d >& linkEndsStatesInput,
-            const std::vector< double >& linkEndsTimesInput,
-            const unsigned int currentMultiLegTransmitterIndex,
-            Eigen::Vector6d& transmitterStateOutput,
-            Eigen::Vector6d& receiverStateOutput,
-            double& transmissionTimeOutput,
-            double& receptionTimeOutput )
+    void getTransmissionReceptionTimesAndStates( const std::vector< Eigen::Vector6d >& linkEndsStatesInput,
+                                                 const std::vector< double >& linkEndsTimesInput,
+                                                 const unsigned int currentMultiLegTransmitterIndex,
+                                                 Eigen::Vector6d& transmitterStateOutput,
+                                                 Eigen::Vector6d& receiverStateOutput,
+                                                 double& transmissionTimeOutput,
+                                                 double& receptionTimeOutput )
     {
         const unsigned int currentMultiLegReceiverIndex = currentMultiLegTransmitterIndex + 1;
 
-        if ( currentMultiLegReceiverIndex >= linkEndsStatesInput.size( ) || currentMultiLegReceiverIndex >= linkEndsTimesInput.size( ) )
+        if( currentMultiLegReceiverIndex >= linkEndsStatesInput.size( ) || currentMultiLegReceiverIndex >= linkEndsTimesInput.size( ) )
         {
             throw std::runtime_error(
                     "Error when getting receiver and transmitter states and times in LightTimeCorrection: "
@@ -207,10 +175,13 @@ protected:
     //! Type of light-time correction represented by instance of class.
     LightTimeCorrectionType lightTimeCorrectionType_;
 
+    double timePerturbation_;
+
+    double positionRelativePerturbation_;
 };
 
-} // namespace observation_models
+}  // namespace observation_models
 
-} // namespace tudat
+}  // namespace tudat
 
-#endif // TUDAT_LIGHTTIMECORRECTION_H
+#endif  // TUDAT_LIGHTTIMECORRECTION_H

@@ -20,10 +20,11 @@
 #include <functional>
 #include <boost/lambda/lambda.hpp>
 
-
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include "tudat/math/basic/coordinateConversions.h"
+#include "tudat/math/basic/basicMathematicsFunctions.h"
 #include "tudat/math/basic/mathematicalConstants.h"
 #include "tudat/math/basic/legendrePolynomials.h"
 #include "tudat/astro/basic_astro/physicalConstants.h"
@@ -35,6 +36,68 @@ namespace tudat
 
 namespace gravitation
 {
+
+class SphericalHarmonicsBlock
+{
+public:
+    SphericalHarmonicsBlock( const std::function< Eigen::MatrixXd&( ) > matrixUpdateFunction, const int rows, const int columns ):
+        matrixUpdateFunction_( matrixUpdateFunction ), matrix_( &matrixUpdateFunction_( ) ), enablePointMass_( true ), rows_( rows ),
+        columns_( columns )
+    { }
+
+    SphericalHarmonicsBlock( Eigen::MatrixXd& matrix ):
+        matrixUpdateFunction_( nullptr ), matrix_( &matrix ), enablePointMass_( true ), rows_( matrix.rows( ) ), columns_( matrix.cols( ) )
+    { }
+
+    inline double operator( )( int i, int j ) const
+    {
+        return ( i == 0 && j == 0 ) ? getPointMassTerm( ) : ( *matrix_ )( i, j );
+    }
+
+    inline int rows( ) const
+    {
+        return rows_;
+    }
+
+    inline int cols( ) const
+    {
+        return columns_;
+    }
+
+    void update( )
+    {
+        if( matrixUpdateFunction_ != nullptr )
+        {
+            matrix_ = &matrixUpdateFunction_( );
+        }
+    }
+
+    bool getEnablePointMass( )
+    {
+        return enablePointMass_;
+    }
+
+    void setEnablePointMass( const bool enablePointMass )
+    {
+        enablePointMass_ = enablePointMass;
+    }
+
+private:
+    double getPointMassTerm( ) const
+    {
+        return enablePointMass_ ? ( *matrix_ )( 0, 0 ) : 0.0;
+    }
+
+    std::function< Eigen::MatrixXd&( ) > matrixUpdateFunction_;
+
+    Eigen::MatrixXd* matrix_;
+
+    bool enablePointMass_;
+
+    const int rows_;
+
+    const int columns_;
+};
 
 //! Compute gravitational acceleration due to multiple spherical harmonics terms, defined using
 //! geodesy-normalization.
@@ -85,16 +148,108 @@ namespace gravitation
  *           acceleration( 1 ) = y acceleration [m s^-2],
  *           acceleration( 2 ) = z acceleration [m s^-2].
  */
+template< typename CoefficientBlock = Eigen::MatrixXd >
 Eigen::Vector3d computeGeodesyNormalizedGravitationalAccelerationSum(
         const Eigen::Vector3d& positionOfBodySubjectToAcceleration,
         const double gravitationalParameter,
         const double equatorialRadius,
-        const Eigen::MatrixXd& cosineHarmonicCoefficients,
-        const Eigen::MatrixXd& sineHarmonicCoefficients,
-        std::shared_ptr< basic_mathematics::SphericalHarmonicsCache > sphericalHarmonicsCache,
+        const CoefficientBlock& cosineHarmonicCoefficients,
+        const CoefficientBlock& sineHarmonicCoefficients,
+        basic_mathematics::SphericalHarmonicsCache& sphericalHarmonicsCache,
         std::map< std::pair< int, int >, Eigen::Vector3d >& accelerationPerTerm,
         const bool saveSeparateTerms = 0,
-        const Eigen::Matrix3d& accelerationRotation = Eigen::Matrix3d::Identity( ) );
+        const Eigen::Matrix3d& accelerationRotation = Eigen::Matrix3d::Identity( ),
+        const bool checkSphericalHarmonicsConsistency = true )
+{
+    // Set highest degree and order.
+    const int highestDegree = cosineHarmonicCoefficients.rows( );
+    const int highestOrder = cosineHarmonicCoefficients.cols( );
+
+    // Declare spherical position vector.
+    Eigen::Vector3d sphericalpositionOfBodySubjectToAcceleration =
+            coordinate_conversions::convertCartesianToSpherical( positionOfBodySubjectToAcceleration );
+    sphericalpositionOfBodySubjectToAcceleration( 1 ) =
+            mathematical_constants::PI / 2.0 - sphericalpositionOfBodySubjectToAcceleration( 1 );
+
+    double sineOfAngle = std::sin( sphericalpositionOfBodySubjectToAcceleration( 1 ) );
+    sphericalHarmonicsCache.update( sphericalpositionOfBodySubjectToAcceleration( 0 ),
+                                    sineOfAngle,
+                                    sphericalpositionOfBodySubjectToAcceleration( 2 ),
+                                    equatorialRadius,
+                                    checkSphericalHarmonicsConsistency );
+
+    const basic_mathematics::LegendreCache& legendreCacheReference = sphericalHarmonicsCache.getLegendreCache( );
+
+    // Compute gradient premultiplier.
+    const double preMultiplier = gravitationalParameter / equatorialRadius;
+
+    // Initialize gradient vector.
+    Eigen::Vector3d sphericalGradient = Eigen::Vector3d::Zero( );
+
+    Eigen::Matrix3d transformationToCartesianCoordinates =
+            coordinate_conversions::getSphericalToCartesianGradientMatrix( positionOfBodySubjectToAcceleration );
+
+    // Loop through all degrees.
+    double legendrePolynomial = TUDAT_NAN, legendrePolynomialDerivative = TUDAT_NAN;
+    for( int degree = 0; degree < highestDegree; degree++ )
+    {
+        // Loop through all orders.
+        for( int order = 0; ( order <= degree ) && ( order < highestOrder ); order++ )
+        {
+            if( checkSphericalHarmonicsConsistency )
+            {
+                // Compute geodesy-normalized Legendre polynomials.
+                legendrePolynomial = legendreCacheReference.getLegendrePolynomial( degree, order );
+
+                // Compute geodesy-normalized Legendre polynomial derivative.
+                legendrePolynomialDerivative = legendreCacheReference.getLegendrePolynomialDerivative( degree, order );
+            }
+            else
+            {
+                // Compute geodesy-normalized Legendre polynomials.
+                legendrePolynomial = legendreCacheReference.getLegendrePolynomialWithoutCheck( degree, order );
+
+                // Compute geodesy-normalized Legendre polynomial derivative.
+                legendrePolynomialDerivative = legendreCacheReference.getLegendrePolynomialDerivativeWithoutCheck( degree, order );
+            }
+
+            // Compute the potential gradient of a single spherical harmonic term.
+            if( saveSeparateTerms )
+            {
+                accelerationPerTerm[ std::make_pair( degree, order ) ] =
+                        basic_mathematics::computePotentialGradient( sphericalpositionOfBodySubjectToAcceleration,
+                                                                     preMultiplier,
+                                                                     degree,
+                                                                     order,
+                                                                     cosineHarmonicCoefficients( degree, order ),
+                                                                     sineHarmonicCoefficients( degree, order ),
+                                                                     legendrePolynomial,
+                                                                     legendrePolynomialDerivative,
+                                                                     sphericalHarmonicsCache );
+                sphericalGradient += accelerationPerTerm[ std::make_pair( degree, order ) ];
+                accelerationPerTerm[ std::make_pair( degree, order ) ] = accelerationRotation *
+                        ( transformationToCartesianCoordinates * accelerationPerTerm[ std::make_pair( degree, order ) ] );
+            }
+            else
+            {
+                // Compute the potential gradient of a single spherical harmonic term.
+                sphericalGradient += basic_mathematics::computePotentialGradient( sphericalpositionOfBodySubjectToAcceleration,
+                                                                                  preMultiplier,
+                                                                                  degree,
+                                                                                  order,
+                                                                                  cosineHarmonicCoefficients( degree, order ),
+                                                                                  sineHarmonicCoefficients( degree, order ),
+                                                                                  legendrePolynomial,
+                                                                                  legendrePolynomialDerivative,
+                                                                                  sphericalHarmonicsCache );
+            }
+        }
+    }
+
+    // Convert from spherical gradient to Cartesian gradient (which equals acceleration vector) and
+    // return the resulting acceleration vector.
+    return accelerationRotation * ( transformationToCartesianCoordinates * sphericalGradient );
+}
 
 //! Compute gravitational acceleration due to single spherical harmonics term.
 /*!
@@ -145,7 +300,8 @@ Eigen::Vector3d computeSingleGeodesyNormalizedGravitationalAcceleration(
         const int order,
         const double cosineHarmonicCoefficient,
         const double sineHarmonicCoefficient,
-        std::shared_ptr< basic_mathematics::SphericalHarmonicsCache > sphericalHarmonicsCache );
+        basic_mathematics::SphericalHarmonicsCache& sphericalHarmonicsCache,
+        const bool checkSphericalHarmonicsConsistency = true );
 
 //! Function to calculate the gravitational potential from a spherical harmonic field expansion.
 /*!
@@ -163,22 +319,81 @@ Eigen::Vector3d computeSingleGeodesyNormalizedGravitationalAcceleration(
 
  *  \return Gravitational potential at position defined by bodyFixedPosition
  */
-double calculateSphericalHarmonicGravitationalPotential(
-        const Eigen::Vector3d& bodyFixedPosition, const double gravitationalParameter,
-        const double referenceRadius,
-        const Eigen::MatrixXd& cosineCoefficients, const Eigen::MatrixXd& sineCoefficients,
-        std::shared_ptr< basic_mathematics::SphericalHarmonicsCache > sphericalHarmonicsCache,
-        const int minimumumDegree = 0, const int minimumumOrder = 0 );
+template< typename CoefficientBlock = Eigen::MatrixXd >
+double calculateSphericalHarmonicGravitationalPotential( const Eigen::Vector3d& bodyFixedPosition,
+                                                         const double gravitationalParameter,
+                                                         const double referenceRadius,
+                                                         const CoefficientBlock& cosineCoefficients,
+                                                         const CoefficientBlock& sineCoefficients,
+                                                         basic_mathematics::SphericalHarmonicsCache& sphericalHarmonicsCache,
+                                                         const int minimumumDegree = 0,
+                                                         const int minimumumOrder = 0 )
+{
+    // Initialize (distance/reference radius)^n (n=ratioToPowerDegree)
+    double ratioToPowerDegree = 1.0;
+    double radiusRatio = referenceRadius / bodyFixedPosition.norm( );
+
+    // Declare local variables used in calculation
+    double legendrePolynomial = 0.0;
+    double singleDegreeTerm = 0.0;
+
+    // Determine body fixed spherical position of body udnergoing acceleration.
+    Eigen::Vector3d sphericalPositon = coordinate_conversions::convertCartesianToSpherical( bodyFixedPosition );
+    double latitude = mathematical_constants::PI / 2.0 - sphericalPositon.y( );
+    double longitude = sphericalPositon.z( );
+
+    double potential = 0.0;
+    int startDegree = 0;
+
+    // Initialize value of potential to 1 (C_{0,0})
+    if( minimumumDegree == 0 )
+    {
+        potential = 1.0;
+        startDegree = 1;
+    }
+    else
+    {
+        startDegree = minimumumDegree;
+        ratioToPowerDegree *= basic_mathematics::raiseToIntegerPower< double >( radiusRatio, startDegree - 1 );
+    }
+
+    basic_mathematics::LegendreCache& legendreCacheReference = sphericalHarmonicsCache.getLegendreCache( );
+    legendreCacheReference.update( std::sin( latitude ) );
+
+    // Iterate over all degrees
+    for( int degree = startDegree; degree < cosineCoefficients.rows( ); degree++ )
+    {
+        singleDegreeTerm = 0.0;
+
+        // Iterate over all orders in current degree for which coefficients are provided.
+        for( int order = minimumumOrder; ( order < cosineCoefficients.cols( ) && order <= degree ); order++ )
+        {
+            // Calculate legendre polynomial (geodesy-normalized) at current degree and order
+            legendrePolynomial = basic_mathematics::computeGeodesyLegendrePolynomialFromCache( degree, order, legendreCacheReference );
+
+            // Calculate contribution to potential from current degree and order
+            singleDegreeTerm += legendrePolynomial *
+                    ( cosineCoefficients( degree, order ) * std::cos( order * longitude ) +
+                      sineCoefficients( degree, order ) * std::sin( order * longitude ) );
+        }
+
+        // Add potential contributions from current degree to toal value.
+        ratioToPowerDegree *= radiusRatio;
+        potential += singleDegreeTerm * ratioToPowerDegree;
+    }
+
+    // Multiply by central term and return
+    return potential * gravitationalParameter / bodyFixedPosition.norm( );
+}
 
 //! Class to represent a spherical harmonic gravity field expansion.
 /*!
  *  Class to represent a spherical harmonic gravity field expansion of a massive body with
  *  time-independent spherical harmonic gravity field coefficients.
  */
-class SphericalHarmonicsGravityField: public GravityFieldModel, public std::enable_shared_from_this<SphericalHarmonicsGravityField>
+class SphericalHarmonicsGravityField : public GravityFieldModel, public std::enable_shared_from_this< SphericalHarmonicsGravityField >
 {
 public:
-
     //! Class constructor.
     /*!
      *  Class constructor.
@@ -190,30 +405,23 @@ public:
      *  \param updateInertiaTensor Function that is to be called to update the inertia tensor (typicaly in Body class; default
      *  empty)
      */
-    SphericalHarmonicsGravityField(
-            const double gravitationalParameter,
-            const double referenceRadius,
-            const Eigen::MatrixXd& cosineCoefficients = Eigen::MatrixXd::Identity( 1, 1 ),
-            const Eigen::MatrixXd& sineCoefficients = Eigen::MatrixXd::Zero( 1, 1 ),
-            const std::string& fixedReferenceFrame = "",
-            const double scaledMeanMomentOfInertia = TUDAT_NAN )
-        : GravityFieldModel( gravitationalParameter ), referenceRadius_( referenceRadius ),
-          cosineCoefficients_( cosineCoefficients ), sineCoefficients_( sineCoefficients ),
-          fixedReferenceFrame_( fixedReferenceFrame ),
-          scaledMeanMomentOfInertia_( scaledMeanMomentOfInertia),
-          maximumDegree_( cosineCoefficients_.rows( ) - 1 ),
-          maximumOrder_( cosineCoefficients_.cols( ) - 1 )
+    SphericalHarmonicsGravityField( const double gravitationalParameter,
+                                    const double referenceRadius,
+                                    const Eigen::MatrixXd& cosineCoefficients = Eigen::MatrixXd::Identity( 1, 1 ),
+                                    const Eigen::MatrixXd& sineCoefficients = Eigen::MatrixXd::Zero( 1, 1 ),
+                                    const std::string& fixedReferenceFrame = "",
+                                    const double scaledMeanMomentOfInertia = TUDAT_NAN ):
+        GravityFieldModel( gravitationalParameter ), referenceRadius_( referenceRadius ), cosineCoefficients_( cosineCoefficients ),
+        sineCoefficients_( sineCoefficients ), fixedReferenceFrame_( fixedReferenceFrame ),
+        scaledMeanMomentOfInertia_( scaledMeanMomentOfInertia ), maximumDegree_( cosineCoefficients_.rows( ) - 1 ),
+        maximumOrder_( cosineCoefficients_.cols( ) - 1 ), sphericalHarmonicsCache_( basic_mathematics::SphericalHarmonicsCache( ) )
     {
-
-        if( ( cosineCoefficients.rows( ) != sineCoefficients.rows( ) ) ||
-              ( cosineCoefficients.cols( ) != sineCoefficients.cols( ) ) )
+        if( ( cosineCoefficients.rows( ) != sineCoefficients.rows( ) ) || ( cosineCoefficients.cols( ) != sineCoefficients.cols( ) ) )
         {
             throw std::runtime_error( "Error when creating spherical harmonics gravity field; sine and cosine sizes are incompatible" );
         }
 
-        sphericalHarmonicsCache_ = std::make_shared< basic_mathematics::SphericalHarmonicsCache >( );
-        sphericalHarmonicsCache_->resetMaximumDegreeAndOrder( maximumDegree_ + 2,
-                                                              maximumOrder_ + 2 );
+        sphericalHarmonicsCache_.resetMaximumDegreeAndOrder( maximumDegree_ + 2, maximumOrder_ + 2 );
     }
 
     //! Virtual destructor.
@@ -252,6 +460,16 @@ public:
         return sineCoefficients_;
     }
 
+    Eigen::MatrixXd& getCosineCoefficientsReference( )
+    {
+        return cosineCoefficients_;
+    }
+
+    Eigen::MatrixXd& getSineCoefficientsReference( )
+    {
+        return sineCoefficients_;
+    }
+
     //! Function to reset the cosine spherical harmonic coefficients (geodesy normalized)
     /*!
      *  Function to reset the cosine spherical harmonic coefficients (geodesy normalized)
@@ -259,10 +477,10 @@ public:
      */
     void setCosineCoefficients( const Eigen::MatrixXd& cosineCoefficients )
     {
-        if( ( cosineCoefficients.rows( ) != cosineCoefficients_.rows( ) ) ||
-              ( cosineCoefficients.cols( ) != cosineCoefficients_.cols( ) ) )
+        if( ( cosineCoefficients.rows( ) != cosineCoefficients_.rows( ) ) || ( cosineCoefficients.cols( ) != cosineCoefficients_.cols( ) ) )
         {
-            throw std::runtime_error( "Error when resettings spherical harmonics gravity field cosine coefficients; sizes are incompatible" );
+            throw std::runtime_error(
+                    "Error when resettings spherical harmonics gravity field cosine coefficients; sizes are incompatible" );
         }
 
         cosineCoefficients_ = cosineCoefficients;
@@ -279,10 +497,10 @@ public:
      */
     void setSineCoefficients( const Eigen::MatrixXd& sineCoefficients )
     {
-        if( ( sineCoefficients.rows( ) != sineCoefficients_.rows( ) ) ||
-              ( sineCoefficients.cols( ) != sineCoefficients_.cols( ) ) )
+        if( ( sineCoefficients.rows( ) != sineCoefficients_.rows( ) ) || ( sineCoefficients.cols( ) != sineCoefficients_.cols( ) ) )
         {
-            throw std::runtime_error( "Error when resettings spherical harmonics gravity field cosine coefficients; sizes are incompatible" );
+            throw std::runtime_error(
+                    "Error when resettings spherical harmonics gravity field cosine coefficients; sizes are incompatible" );
         }
 
         sineCoefficients_ = sineCoefficients;
@@ -296,21 +514,20 @@ public:
     //! Function to get a cosine spherical harmonic coefficient block (geodesy normalized)
     /*!
      *  Function to get a cosine spherical harmonic coefficient block (geodesy normalized)
-    *   up to a given degree and order
+     *   up to a given degree and order
      *  \param maximumDegree Maximum degree of coefficient block
      *  \param maximumOrder Maximum order of coefficient block
      *  \return Cosine spherical harmonic coefficients (geodesy normalized) up to given
      *  degree and order
      */
-    Eigen::MatrixXd getCosineCoefficientsBlock( const int maximumDegree, const int maximumOrder )
+    Eigen::Block< Eigen::MatrixXd > getCosineCoefficientsBlock( const int maximumDegree, const int maximumOrder )
     {
-        if( maximumDegree > maximumDegree_ || maximumOrder > maximumOrder_ )
-        {
-            throw std::runtime_error( "Error when retrieving cosine spherical harmonic coefficients up to D/O " +
-                                      std::to_string( maximumDegree ) + "/" + std::to_string( maximumOrder ) +
-                                      " maximum D/O is " +
-                                      std::to_string( maximumDegree_ ) + "/" + std::to_string( maximumOrder_ ) );
-        }
+        //        if( maximumDegree > maximumDegree_ || maximumOrder > maximumOrder_ )
+        //        {
+        //            throw std::runtime_error( "Error when retrieving cosine spherical harmonic coefficients up to D/O " +
+        //                                      std::to_string( maximumDegree ) + "/" + std::to_string( maximumOrder ) + " maximum D/O is "
+        //                                      + std::to_string( maximumDegree_ ) + "/" + std::to_string( maximumOrder_ ) );
+        //        }
 
         return cosineCoefficients_.block( 0, 0, maximumDegree + 1, maximumOrder + 1 );
     }
@@ -324,15 +541,14 @@ public:
      *  \return Sine spherical harmonic coefficients (geodesy normalized) up to given
      *  degree and order
      */
-    Eigen::MatrixXd getSineCoefficientsBlock( const int maximumDegree, const int maximumOrder )
+    Eigen::Block< Eigen::MatrixXd > getSineCoefficientsBlock( const int maximumDegree, const int maximumOrder )
     {
-        if( maximumDegree > maximumDegree_ || maximumOrder > maximumOrder_ )
-        {
-            throw std::runtime_error( "Error when retrieving sine spherical harmonic coefficients up to D/O " +
-                                      std::to_string( maximumDegree ) + "/" + std::to_string( maximumOrder ) +
-                                      " maximum D/O is " +
-                                      std::to_string( maximumDegree_ ) + "/" + std::to_string( maximumOrder_ ) );
-        }
+        //        if( maximumDegree > maximumDegree_ || maximumOrder > maximumOrder_ )
+        //        {
+        //            throw std::runtime_error( "Error when retrieving sine spherical harmonic coefficients up to D/O " +
+        //                                      std::to_string( maximumDegree ) + "/" + std::to_string( maximumOrder ) + " maximum D/O is "
+        //                                      + std::to_string( maximumDegree_ ) + "/" + std::to_string( maximumOrder_ ) );
+        //        }
 
         return sineCoefficients_.block( 0, 0, maximumDegree + 1, maximumOrder + 1 );
     }
@@ -368,8 +584,7 @@ public:
      */
     virtual double getGravitationalPotential( const Eigen::Vector3d& bodyFixedPosition )
     {
-        return getGravitationalPotential( bodyFixedPosition, cosineCoefficients_.rows( ) - 1,
-                                          sineCoefficients_.cols( ) - 1 );
+        return getGravitationalPotential( bodyFixedPosition, cosineCoefficients_.rows( ) - 1, sineCoefficients_.cols( ) - 1 );
     }
 
     //! Function to calculate the gravitational potential due to terms up to given degree and
@@ -392,12 +607,14 @@ public:
                                       const double minimumDegree = 0,
                                       const double minimumOrder = 0 )
     {
-        return calculateSphericalHarmonicGravitationalPotential(
-                    bodyFixedPosition, gravitationalParameter_, referenceRadius_,
-                    cosineCoefficients_.block( 0, 0, maximumDegree + 1, maximumOrder + 1 ),
-                    sineCoefficients_.block( 0, 0, maximumDegree + 1, maximumOrder + 1 ),
-                    sphericalHarmonicsCache_,
-                    minimumDegree, minimumOrder );
+        return calculateSphericalHarmonicGravitationalPotential( bodyFixedPosition,
+                                                                 gravitationalParameter_,
+                                                                 referenceRadius_,
+                                                                 cosineCoefficients_.block( 0, 0, maximumDegree + 1, maximumOrder + 1 ),
+                                                                 sineCoefficients_.block( 0, 0, maximumDegree + 1, maximumOrder + 1 ),
+                                                                 sphericalHarmonicsCache_,
+                                                                 minimumDegree,
+                                                                 minimumOrder );
     }
 
     //! Get the gradient of the potential.
@@ -410,8 +627,7 @@ public:
      */
     Eigen::Vector3d getGradientOfPotential( const Eigen::Vector3d& bodyFixedPosition )
     {
-        return getGradientOfPotential( bodyFixedPosition, cosineCoefficients_.rows( ),
-                                       sineCoefficients_.cols( ) );
+        return getGradientOfPotential( bodyFixedPosition, cosineCoefficients_.rows( ), sineCoefficients_.cols( ) );
     }
 
     //! Get the gradient of the potential.
@@ -428,10 +644,13 @@ public:
     {
         std::map< std::pair< int, int >, Eigen::Vector3d > dummyMap;
 
-        return computeGeodesyNormalizedGravitationalAccelerationSum(
-                    bodyFixedPosition, gravitationalParameter_, referenceRadius_,
-                    cosineCoefficients_.block( 0, 0, maximumDegree, maximumOrder ),
-                    sineCoefficients_.block( 0, 0, maximumDegree, maximumOrder ), sphericalHarmonicsCache_, dummyMap );
+        return computeGeodesyNormalizedGravitationalAccelerationSum( bodyFixedPosition,
+                                                                     gravitationalParameter_,
+                                                                     referenceRadius_,
+                                                                     cosineCoefficients_.block( 0, 0, maximumDegree, maximumOrder ),
+                                                                     sineCoefficients_.block( 0, 0, maximumDegree, maximumOrder ),
+                                                                     sphericalHarmonicsCache_,
+                                                                     dummyMap );
     }
 
     //! Get the gradient of the laplacian of potential.
@@ -440,10 +659,11 @@ public:
      * \param bodyFixedPosition Position at which gradient of potential is to be determined.
      * \return Laplacian of potential.
      */
-    double getLaplacianOfPotential ( const Eigen::Vector3d& bodyFixedPosition )
+    double getLaplacianOfPotential( const Eigen::Vector3d& bodyFixedPosition )
     {
-        throw std::runtime_error( "Computation of Laplacian of gravity potential not implemented for spherical "
-                                  "harmonics gravity field." );
+        throw std::runtime_error(
+                "Computation of Laplacian of gravity potential not implemented for spherical "
+                "harmonics gravity field." );
     }
 
     //! Function to retrieve the tdentifier for body-fixed reference frame
@@ -479,10 +699,10 @@ public:
     virtual Eigen::Vector3d getCenterOfMass( )
     {
         return ( Eigen::Vector3d( ) << cosineCoefficients_( 1, 1 ), sineCoefficients_( 1, 1 ), cosineCoefficients_( 1, 0 ) ).finished( ) /
-            referenceRadius_ * std::sqrt( 3.0 );
+                referenceRadius_ * std::sqrt( 3.0 );
     }
 
-    virtual Eigen::Matrix3d getInertiaTensor(  );
+    virtual Eigen::Matrix3d getInertiaTensor( );
 
     double getScaledMeanMomentOfInertia( )
     {
@@ -493,8 +713,8 @@ public:
     {
         scaledMeanMomentOfInertia_ = scaledMeanMomentOfInertia;
     }
-protected:
 
+protected:
     //! Reference radius of spherical harmonic field expansion
     /*!
      *  Reference radius of spherical harmonic field expansion
@@ -526,7 +746,7 @@ protected:
     const int maximumOrder_;
 
     //! Cache object for potential calculations.
-    std::shared_ptr< basic_mathematics::SphericalHarmonicsCache > sphericalHarmonicsCache_;
+    basic_mathematics::SphericalHarmonicsCache sphericalHarmonicsCache_;
 };
 
 //! Function to determine a body's inertia tensor from its degree two unnormalized gravity field coefficients
@@ -543,15 +763,14 @@ protected:
  * \param referenceRadius Reference radius R of the spherical harmonic coefficients
  * \return Inertia tensor of body
  */
-Eigen::Matrix3d getInertiaTensor(
-        const double c20Coefficient,
-        const double c21Coefficient,
-        const double c22Coefficient,
-        const double s21Coefficient,
-        const double s22Coefficient,
-        const double scaledMeanMomentOfInertia,
-        const double bodyMass,
-        const double referenceRadius );
+Eigen::Matrix3d getInertiaTensor( const double c20Coefficient,
+                                  const double c21Coefficient,
+                                  const double c22Coefficient,
+                                  const double s21Coefficient,
+                                  const double s22Coefficient,
+                                  const double scaledMeanMomentOfInertia,
+                                  const double bodyMass,
+                                  const double referenceRadius );
 
 //! Function to determine a body's inertia tensor from its unnormalized gravity field coefficients
 /*!
@@ -564,12 +783,11 @@ Eigen::Matrix3d getInertiaTensor(
  * \param referenceRadius Reference radius R of the spherical harmonic coefficients
  * \return Inertia tensor of body
  */
-Eigen::Matrix3d getInertiaTensor(
-        const Eigen::MatrixXd& unnormalizedCosineCoefficients,
-        const Eigen::MatrixXd& unnormalizedSineCoefficients,
-        const double scaledMeanMomentOfInertia,
-        const double bodyMass,
-        const double referenceRadius );
+Eigen::Matrix3d getInertiaTensor( const Eigen::MatrixXd& unnormalizedCosineCoefficients,
+                                  const Eigen::MatrixXd& unnormalizedSineCoefficients,
+                                  const double scaledMeanMomentOfInertia,
+                                  const double bodyMass,
+                                  const double referenceRadius );
 
 //! Function to determine a body's inertia tensor from its gravity field model
 /*!
@@ -580,9 +798,8 @@ Eigen::Matrix3d getInertiaTensor(
  * reference radius of the gravity field
  * \return Inertia tensor of body
  */
-Eigen::Matrix3d getInertiaTensorFromGravityField(
-        const std::shared_ptr< SphericalHarmonicsGravityField > sphericalHarmonicGravityField,
-        const double scaledMeanMomentOfInertia );
+Eigen::Matrix3d getInertiaTensorFromGravityField( const std::shared_ptr< SphericalHarmonicsGravityField > sphericalHarmonicGravityField,
+                                                  const double scaledMeanMomentOfInertia );
 
 //! Retrieve degree 2 spherical harmonic coefficients from inertia tensor and assiciated parameters
 /*!
@@ -595,17 +812,23 @@ Eigen::Matrix3d getInertiaTensorFromGravityField(
  * \param sineCoefficients Sine coefficients of  of gravity field (returned by reference)
  * \param scaledMeanMomentOfInertia Scaled mean moment of inertia (returned by reference)
  */
-void getDegreeTwoSphericalHarmonicCoefficients(
-        const Eigen::Matrix3d inertiaTensor, const double bodyGravitationalParameter, const double referenceRadius,
-        const bool useNormalizedCoefficients,
-        Eigen::MatrixXd& cosineCoefficients, Eigen::MatrixXd& sineCoefficients, double& scaledMeanMomentOfInertia );
+void getDegreeTwoSphericalHarmonicCoefficients( const Eigen::Matrix3d inertiaTensor,
+                                                const double bodyGravitationalParameter,
+                                                const double referenceRadius,
+                                                const bool useNormalizedCoefficients,
+                                                Eigen::MatrixXd& cosineCoefficients,
+                                                Eigen::MatrixXd& sineCoefficients,
+                                                double& scaledMeanMomentOfInertia );
 
 std::tuple< Eigen::MatrixXd, Eigen::MatrixXd, double > getDegreeTwoSphericalHarmonicCoefficients(
-        const Eigen::Matrix3d inertiaTensor, const double bodyGravitationalParameter, const double referenceRadius,
-        const int maximumCoefficientDegree = 2, const bool useNormalizedCoefficients = true );
+        const Eigen::Matrix3d inertiaTensor,
+        const double bodyGravitationalParameter,
+        const double referenceRadius,
+        const int maximumCoefficientDegree = 2,
+        const bool useNormalizedCoefficients = true );
 
-} // namespace gravitation
+}  // namespace gravitation
 
-} // namespace tudat
+}  // namespace tudat
 
-#endif // TUDAT_SPHERICAL_HARMONICS_GRAVITY_FIELD_H
+#endif  // TUDAT_SPHERICAL_HARMONICS_GRAVITY_FIELD_H

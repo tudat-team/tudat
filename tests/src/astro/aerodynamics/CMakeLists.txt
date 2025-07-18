@@ -67,6 +67,11 @@ TUDAT_ADD_TEST_CASE(AerodynamicCoefficientsFromFile
         ${Tudat_PROPAGATION_LIBRARIES}
         )
 
+#TUDAT_ADD_TEST_CASE(RarefieldFlowGenerator
+#        PRIVATE_LINKS
+#        ${Tudat_PROPAGATION_LIBRARIES}
+#)
+
 TUDAT_ADD_TEST_CASE(WindModel
         PRIVATE_LINKS
         ${Tudat_PROPAGATION_LIBRARIES}
@@ -77,9 +82,7 @@ TUDAT_ADD_TEST_CASE(MarsDtmAtmosphere
         ${Tudat_PROPAGATION_LIBRARIES}
 )
 
-if (TUDAT_BUILD_WITH_NRLMSISE00)
-    TUDAT_ADD_TEST_CASE(NRLMSISE00Atmosphere
-            PRIVATE_LINKS
-            ${Tudat_PROPAGATION_LIBRARIES}
-            )
-endif ()
+TUDAT_ADD_TEST_CASE(NRLMSISE00Atmosphere
+        PRIVATE_LINKS
+        ${Tudat_PROPAGATION_LIBRARIES}
+        )

@@ -37,24 +37,23 @@ namespace simulation_setup
 
 template< typename TimeType = double, typename StateScalarType = double >
 std::pair< std::vector< std::shared_ptr< observation_models::ObservationModelSettings > >,
-std::shared_ptr< observation_models::ObservationCollection< StateScalarType, TimeType > > > simulatePseudoObservations(
-    const SystemOfBodies& bodies,
-    const std::vector< std::string >& bodiesToPropagate,
-    const std::vector< std::string >& centralBodies,
-    const TimeType initialTime,
-    const TimeType finalTime,
-    const TimeType dataPointInterval  )
+           std::shared_ptr< observation_models::ObservationCollection< StateScalarType, TimeType > > >
+simulatePseudoObservations( const SystemOfBodies& bodies,
+                            const std::vector< std::string >& bodiesToPropagate,
+                            const std::vector< std::string >& centralBodies,
+                            const TimeType initialTime,
+                            const TimeType finalTime,
+                            const TimeType dataPointInterval )
 {
     using namespace observation_models;
 
     std::vector< TimeType > observationTimes;
-    double currentTime = initialTime;
-    while( currentTime < finalTime )
+    TimeType currentTime = initialTime + 3600.0;
+    while( currentTime < finalTime - 3600.0 )
     {
         observationTimes.push_back( currentTime );
         currentTime += static_cast< double >( dataPointInterval );
     }
-
 
     std::vector< std::shared_ptr< observation_models::ObservationModelSettings > > observationModelSettingsList;
     std::vector< std::shared_ptr< ObservationSimulationSettings< TimeType > > > measurementSimulationInput;
@@ -69,78 +68,89 @@ std::shared_ptr< observation_models::ObservationCollection< StateScalarType, Tim
         // Create observation model settings
         observationModelSettingsList.push_back( relativePositionObservableSettings( linkEnds ) );
 
-        measurementSimulationInput.push_back(
-            std::make_shared< TabulatedObservationSimulationSettings< TimeType > >(
+        measurementSimulationInput.push_back( std::make_shared< TabulatedObservationSimulationSettings< TimeType > >(
                 relative_position_observable, linkEnds, observationTimes, observed_body ) );
     }
 
-    std::shared_ptr< ObservationSimulatorBase<StateScalarType, TimeType> > observationSimulator =
-        createObservationSimulators< StateScalarType, TimeType >( observationModelSettingsList, bodies ).at( 0 );
+    std::shared_ptr< ObservationSimulatorBase< StateScalarType, TimeType > > observationSimulator =
+            createObservationSimulators< StateScalarType, TimeType >( observationModelSettingsList, bodies ).at( 0 );
 
     std::shared_ptr< observation_models::ObservationCollection< StateScalarType, TimeType > > observationCollection =
-        simulateObservations< StateScalarType, TimeType >( measurementSimulationInput, { observationSimulator }, bodies );
+            simulateObservations< StateScalarType, TimeType >( measurementSimulationInput, { observationSimulator }, bodies );
 
     return std::make_pair( observationModelSettingsList, observationCollection );
 }
 
 template< typename TimeType = double, typename StateScalarType = double >
-std::shared_ptr< EstimationOutput< > > createBestFitToCurrentEphemeris(
-    const SystemOfBodies& bodies,
-    const basic_astrodynamics::AccelerationMap& accelerationModelMap,
-    const std::vector< std::string >& bodiesToPropagate,
-    const std::vector< std::string >& centralBodies,
-    const std::shared_ptr< numerical_integrators::IntegratorSettings< TimeType > >& integratorSettings,
-    const TimeType initialTime,
-    const TimeType finalTime,
-    const TimeType dataPointInterval,
-    const std::vector< std::shared_ptr< estimatable_parameters::EstimatableParameterSettings > > additionalParameterNames =
-    std::vector< std::shared_ptr< estimatable_parameters::EstimatableParameterSettings > >( ),
-    const int numberOfIterations = 3 )
+std::shared_ptr< EstimationOutput< StateScalarType, TimeType > > createBestFitToCurrentEphemeris(
+        const SystemOfBodies& bodies,
+        const basic_astrodynamics::AccelerationMap& accelerationModelMap,
+        const std::vector< std::string >& bodiesToPropagate,
+        const std::vector< std::string >& centralBodies,
+        const std::shared_ptr< numerical_integrators::IntegratorSettings< TimeType > >& integratorSettings,
+        const TimeType initialTime,
+        const TimeType finalTime,
+        const TimeType dataPointInterval,
+        const std::vector< std::shared_ptr< estimatable_parameters::EstimatableParameterSettings > > additionalParameterNames =
+                std::vector< std::shared_ptr< estimatable_parameters::EstimatableParameterSettings > >( ),
+        const int numberOfIterations = 3,
+        const bool reintegrateVariationalEquations = true,
+        const double resultsPrintFrequency = 0.0 )
 {
     using namespace observation_models;
     using namespace estimatable_parameters;
     using namespace propagators;
 
-    double initialPropagationTime = initialTime;
+    TimeType initialPropagationTime = initialTime;
 
-   Eigen::VectorXd initialState = getInitialStatesOfBodies( bodiesToPropagate, centralBodies, bodies, initialPropagationTime );
+    Eigen::Matrix< StateScalarType, Eigen::Dynamic, 1 > initialState =
+            getInitialStatesOfBodies< TimeType, StateScalarType >( bodiesToPropagate, centralBodies, bodies, initialPropagationTime );
 
-    std::shared_ptr< TranslationalStatePropagatorSettings< double > > propagatorSettings =
-        std::make_shared< TranslationalStatePropagatorSettings< double > >
-        ( centralBodies, accelerationModelMap, bodiesToPropagate, initialState, initialPropagationTime, integratorSettings,
-            std::make_shared< PropagationTimeTerminationSettings >( finalTime ) );
+    std::shared_ptr< TranslationalStatePropagatorSettings< StateScalarType, TimeType > > propagatorSettings =
+            std::make_shared< TranslationalStatePropagatorSettings< StateScalarType, TimeType > >(
+                    centralBodies,
+                    accelerationModelMap,
+                    bodiesToPropagate,
+                    initialState,
+                    initialPropagationTime,
+                    integratorSettings,
+                    std::make_shared< PropagationTimeTerminationSettings >( finalTime ) );
+    if( resultsPrintFrequency > 0.0 )
+    {
+        propagatorSettings->getPrintSettings( )->setResultsPrintFrequencyInSteps( resultsPrintFrequency );
+    }
 
     std::vector< std::shared_ptr< EstimatableParameterSettings > > parameterNames =
-        getInitialStateParameterSettings< double >( propagatorSettings, bodies );
-    parameterNames.insert(parameterNames.end(), additionalParameterNames.begin(), additionalParameterNames.end());
+            getInitialStateParameterSettings< StateScalarType, TimeType >( propagatorSettings, bodies );
+    parameterNames.insert( parameterNames.end( ), additionalParameterNames.begin( ), additionalParameterNames.end( ) );
 
     std::shared_ptr< estimatable_parameters::EstimatableParameterSet< StateScalarType > > parametersToEstimate =
-        createParametersToEstimate< StateScalarType, TimeType >( parameterNames, bodies, propagatorSettings );
-
+            createParametersToEstimate< StateScalarType, TimeType >( parameterNames, bodies, propagatorSettings );
+    printEstimatableParameterEntries( parametersToEstimate );
 
     std::pair< std::vector< std::shared_ptr< observation_models::ObservationModelSettings > >,
-        std::shared_ptr< observation_models::ObservationCollection< StateScalarType, TimeType > > >
-        observationCollectionAndModelSettings = simulatePseudoObservations(
-            bodies, bodiesToPropagate, centralBodies, initialTime, finalTime, dataPointInterval  );
-    std::shared_ptr< observation_models::ObservationCollection< > > observationCollection = observationCollectionAndModelSettings.second;
+               std::shared_ptr< observation_models::ObservationCollection< StateScalarType, TimeType > > >
+            observationCollectionAndModelSettings = simulatePseudoObservations< TimeType, StateScalarType >(
+                    bodies, bodiesToPropagate, centralBodies, initialTime, finalTime, dataPointInterval );
+    std::shared_ptr< observation_models::ObservationCollection< StateScalarType, TimeType > > observationCollection =
+            observationCollectionAndModelSettings.second;
 
     std::vector< std::shared_ptr< observation_models::ObservationModelSettings > > observationModelSettingsList =
-        observationCollectionAndModelSettings.first;
+            observationCollectionAndModelSettings.first;
 
-    OrbitDeterminationManager< StateScalarType, TimeType > orbitDeterminationManager = OrbitDeterminationManager< StateScalarType, TimeType >(
-        bodies, parametersToEstimate, observationModelSettingsList, propagatorSettings );
+    OrbitDeterminationManager< StateScalarType, TimeType > orbitDeterminationManager =
+            OrbitDeterminationManager< StateScalarType, TimeType >(
+                    bodies, parametersToEstimate, observationModelSettingsList, propagatorSettings );
 
-    std::shared_ptr< EstimationInput< > > estimationInput = std::make_shared< EstimationInput< > >(
-        observationCollection );
+    std::shared_ptr< EstimationInput< StateScalarType, TimeType > > estimationInput =
+            std::make_shared< EstimationInput< StateScalarType, TimeType > >( observationCollection );
     estimationInput->setConvergenceChecker( std::make_shared< EstimationConvergenceChecker >( numberOfIterations ) );
-    estimationInput->defineEstimationSettings(
-        0, 1, 0, 1, 1, 1 );
-    return  orbitDeterminationManager.estimateParameters( estimationInput );
-
+    estimationInput->defineEstimationSettings( 0, 1, 0, 1, 1, 1 );
+    return orbitDeterminationManager.estimateParameters( estimationInput );
 }
 
-} // namespace observation_models
+}  // namespace simulation_setup
 
-} // namespace tudat
+}  // namespace tudat
 
-#endif // TUDAT_FITORBITTOEPHEMERIS_H
+#endif  // TUDAT_FITORBITTOEPHEMERIS_H

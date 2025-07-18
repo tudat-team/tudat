@@ -67,7 +67,7 @@ bool isOrbitRetrograde( const Eigen::Vector6d& keplerElements );
  * satellite is fully exposed and a value between 0 and 1 if the satellite is in penumbra or antumbra.
  *
  * The point of view is from the satellite. The occulting body (for example the Earth) is the body
- * that blocks the light from the occulting body (for example the Sun).
+ * that blocks the light from the occulted body (for example the Sun).
  *
  * Reference: Section 3.4 from ( Montebruck O, Gill E., 2005) and Fig. 5 from (Zhang et al., 2019).
  *
@@ -95,8 +95,7 @@ double computeShadowFunction( const Eigen::Vector3d& occultedBodyPosition,
  *          to that of central body (i.e. Sun).
  * \return Radius of sphere of influence [m].
  */
-double computeSphereOfInfluence( const double distanceToCentralBody,
-                                 const double ratioOfOrbitingToCentralBodyMass );
+double computeSphereOfInfluence( const double distanceToCentralBody, const double ratioOfOrbitingToCentralBodyMass );
 
 //! Compute the radius of the sphere of influence.
 /*!
@@ -109,12 +108,10 @@ double computeSphereOfInfluence( const double distanceToCentralBody,
  * \param massCentralBody Mass of central body (i.e. Sun) [kg].
  * \return Radius of sphere of influence [m].
  */
-double computeSphereOfInfluence( const double distanceToCentralBody,
-                                 const double massOrbitingBody,
-                                 const double massCentralBody );
+double computeSphereOfInfluence( const double distanceToCentralBody, const double massOrbitingBody, const double massCentralBody );
 
-} // namespace mission_geometry
+}  // namespace mission_geometry
 
-} // namespace tudat
+}  // namespace tudat
 
-#endif // TUDAT_MISSION_GEOMETRY_H
+#endif  // TUDAT_MISSION_GEOMETRY_H

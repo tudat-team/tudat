@@ -44,15 +44,13 @@ namespace solar_activity
  * file, describing "space weather" on each day since October 1957. See reference for details on
  * variables.
  */
-struct SolarActivityData
-{
+struct SolarActivityData {
 public:
-
     //! Default constructor.
     /*!
      * Default constructor.
      */
-    SolarActivityData( );
+    SolarActivityData( const int yearInput = 0, const int monthInput = 0, const int dayInput = 0 );
 
     //! Year.
     unsigned int year;
@@ -71,12 +69,12 @@ public:
 
     //! Sum of the 8 planetary range indices.
     /*! Sum of the 8 planetary range indices (Kp) for the day expressed to the nearest third of a
-    *   unit.
-    */
+     *   unit.
+     */
     unsigned int planetaryRangeIndexSum;
 
     //! Arithmetic average of the 8 planetary equivalent amplitudes (Ap) indices for the day.
-    unsigned int planetaryEquivalentAmplitudeAverage;
+    double planetaryEquivalentAmplitudeAverage;
 
     //! Cp or Planetary Daily Character Figure.
     /*! A qualitative estimate of overall level of magnetic activity for the day determined from
@@ -129,10 +127,10 @@ public:
     double solarRadioFlux107Observed;
 
     //! Centered 81-day arithmetic average of F10.7 (observed).
-    double  centered81DaySolarRadioFlux107Observed;
+    double centered81DaySolarRadioFlux107Observed;
 
     //! Last 81-day arithmetic average of F10.7 (observed).
-    double  last81DaySolarRadioFlux107Observed;
+    double last81DaySolarRadioFlux107Observed;
 
     //! Vector containing 3-hourly planetary range indices (Kp).
     /*! Vector of eight 3-hourly planetary range indices.
@@ -156,11 +154,9 @@ public:
     /*! Overloaded ostream to print class information; prints all converted Solar Activity
      * variables listed in the http://celestrak.com/SpaceData/sw19571001.txt file.
      */
-    friend std::ostream& operator << ( std::ostream& stream,
-                                     SolarActivityData& solarActivityData );
+    friend std::ostream& operator<<( std::ostream& stream, SolarActivityData& solarActivityData );
 
 protected:
-
 private:
 };
 
@@ -168,39 +164,112 @@ private:
 typedef std::shared_ptr< SolarActivityData > SolarActivityDataPtr;
 
 //! Data map of SolarActivityData structure Pointers
-typedef std::map< double , SolarActivityDataPtr >  SolarActivityDataMap ;
+typedef std::map< double, SolarActivityDataPtr > SolarActivityDataMap;
 
-struct SolarActivityContainer
-{
-    SolarActivityContainer(
-            const std::map< double, SolarActivityDataPtr >& solarActivityDataMap ):
-        solarActivityDataMap_( solarActivityDataMap )
+struct SolarActivityContainer {
+    SolarActivityContainer( ): currentJulianDay_( TUDAT_NAN ), nearestJulianDay_( TUDAT_NAN ) { }
+
+    SolarActivityContainer( const std::map< double, SolarActivityDataPtr >& solarActivityDataMap ):
+        solarActivityDataMap_( solarActivityDataMap ), currentJulianDay_( TUDAT_NAN ), nearestJulianDay_( TUDAT_NAN )
     {
-
         lookUpScheme_ = std::make_shared< interpolators::BinarySearchLookupScheme< double > >(
-                    utilities::createVectorFromMapKeys( solarActivityDataMap ) );
+                utilities::createVectorFromMapKeys( solarActivityDataMap ) );
     }
 
-    std::shared_ptr< SolarActivityData > getSolarActivityData( const double time )
+    std::shared_ptr< SolarActivityData > getSolarActivityData( const double time ) const
     {
-        double julianDay = basic_astrodynamics::convertSecondsSinceEpochToJulianDay( time );
-        return getSolarActivityDataAtJulianDay( julianDay );
+        currentJulianDay_ = basic_astrodynamics::convertSecondsSinceEpochToJulianDay( time );
+        return getSolarActivityDataAtJulianDay( );
     }
 
-    std::shared_ptr< SolarActivityData > getSolarActivityDataAtJulianDay( const double julianDay )
+    std::shared_ptr< SolarActivityData > getDelayedSolarActivityData( const double time, const double delayInDays ) const
     {
-        double nearestJulianDay = lookUpScheme_->getIndependentVariableValue(
-                    lookUpScheme_->findNearestLowerNeighbour( julianDay ) );
-        return solarActivityDataMap_.at( nearestJulianDay );
+        currentJulianDay_ = basic_astrodynamics::convertSecondsSinceEpochToJulianDay( time ) - delayInDays;
+        return getSolarActivityDataAtJulianDay( );
     }
 
+    void getDelayedApValues( const double time, std::vector< double >& delayedApValues ) const
+    {
+        std::shared_ptr< SolarActivityData > activityData = getSolarActivityData( time );
+        double julianDayFraction = currentJulianDay_ - nearestJulianDay_;
+        int currentDayApIndex = std::floor( julianDayFraction * 8.0 );
+        delayedApValues[ 0 ] = activityData->planetaryEquivalentAmplitudeVector( currentDayApIndex );
+
+        std::shared_ptr< SolarActivityData > activityDataOneDayOld = getDelayedSolarActivityData( time, 1.0 );
+        for( int i = 1; i < 4; i++ )
+        {
+            int currentIndex = currentDayApIndex - i;
+            if( currentIndex >= 0 )
+            {
+                delayedApValues[ i ] = activityData->planetaryEquivalentAmplitudeVector( currentIndex );
+            }
+            else
+            {
+                delayedApValues[ i ] = activityDataOneDayOld->planetaryEquivalentAmplitudeVector( currentIndex + 8 );
+            }
+        }
+
+        std::shared_ptr< SolarActivityData > activityDataTwoDayOld = getDelayedSolarActivityData( time, 2.0 );
+        std::shared_ptr< SolarActivityData > activityDataThreeDayOld = getDelayedSolarActivityData( time, 3.0 );
+
+        for( int j = 0; j < 2; j++ )
+        {
+            double averagedValue = 0.0;
+            for( int i = 4 + j * 8; i < 12 + j * 8; i++ )
+            {
+                int currentIndex = currentDayApIndex - i;
+                if( currentIndex >= 0 )
+                {
+                    averagedValue += activityData->planetaryEquivalentAmplitudeVector( currentIndex );
+                }
+                else if( currentIndex >= -8 )
+                {
+                    averagedValue += activityDataOneDayOld->planetaryEquivalentAmplitudeVector( currentIndex + 8 );
+                }
+                else if( currentIndex >= -16 )
+                {
+                    averagedValue += activityDataTwoDayOld->planetaryEquivalentAmplitudeVector( currentIndex + 16 );
+                }
+                else
+                {
+                    averagedValue += activityDataThreeDayOld->planetaryEquivalentAmplitudeVector( currentIndex + 24 );
+                }
+            }
+            delayedApValues[ 4 + j ] = averagedValue / 8.0;
+        }
+    }
+
+    std::map< double, SolarActivityDataPtr > getSolarActivityDataMap( ) const
+    {
+        return solarActivityDataMap_;
+    }
 
 private:
+    std::shared_ptr< SolarActivityData > getSolarActivityDataAtJulianDay( ) const
+    {
+        nearestJulianDay_ = lookUpScheme_->getIndependentVariableValue( lookUpScheme_->findNearestLowerNeighbour( currentJulianDay_ ) );
+        if( nearestJulianDay_ > currentJulianDay_ || currentJulianDay_ > nearestJulianDay_ + 1.0 )
+        {
+            if( !hasShownJulianDayWarning_ )
+            {
+                std::cerr << "[WARNING] Solar activity data lookup: Julian day out of bounds. " << "Nearest day = " << nearestJulianDay_
+                          << ", Requested day = " << currentJulianDay_ << ", Difference = " << nearestJulianDay_ - currentJulianDay_
+                          << std::endl;
+                hasShownJulianDayWarning_ = true;
+            }
+        }
+        return solarActivityDataMap_.at( nearestJulianDay_ );
+    }
 
-     std::map< double, SolarActivityDataPtr > solarActivityDataMap_;
+    std::map< double, SolarActivityDataPtr > solarActivityDataMap_;
 
-     std::shared_ptr< interpolators::LookUpScheme< double > > lookUpScheme_;
+    std::shared_ptr< interpolators::LookUpScheme< double > > lookUpScheme_;
 
+    mutable double currentJulianDay_;
+
+    mutable double nearestJulianDay_;
+
+    mutable bool hasShownJulianDayWarning_ = false;
 };
 
 //! Function that reads a SpaceWeather data file
@@ -210,10 +279,10 @@ private:
  * \param filePath std::string
  * \return solarActivityDataMap std::map< double , SolarActivityDataPtr >
  */
-SolarActivityDataMap readSolarActivityData( std::string filePath ) ;
+SolarActivityDataMap readSolarActivityData( std::string filePath );
 
-} // namespace solar_activity
-} // namespace input_output
-} // namespace tudat
+}  // namespace solar_activity
+}  // namespace input_output
+}  // namespace tudat
 
-#endif // TUDAT_SOLAR_ACTIVITY_DATA_H
+#endif  // TUDAT_SOLAR_ACTIVITY_DATA_H

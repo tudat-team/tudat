@@ -12,8 +12,6 @@
 
 #include <functional>
 
-
-
 #include "tudat/simulation/estimation_setup/createObservationModel.h"
 
 namespace tudat
@@ -21,7 +19,6 @@ namespace tudat
 
 namespace observation_models
 {
-
 
 std::vector< LinkDefinition > getObservationModelListLinkEnds(
         const std::vector< std::shared_ptr< ObservationModelSettings > >& observationModelList )
@@ -40,15 +37,100 @@ std::map< ObservableType, std::vector< std::shared_ptr< ObservationModelSettings
     std::map< ObservableType, std::vector< std::shared_ptr< ObservationModelSettings > > > sortedObservationModelSettings;
     for( unsigned int i = 0; i < observationModelSettings.size( ); i++ )
     {
-        sortedObservationModelSettings[ observationModelSettings.at( i )->observableType_ ].push_back(
-                observationModelSettings.at( i ) );
+        sortedObservationModelSettings[ observationModelSettings.at( i )->observableType_ ].push_back( observationModelSettings.at( i ) );
     }
     return sortedObservationModelSettings;
 }
 
+std::function< double( observation_models::FrequencyBands, observation_models::FrequencyBands ) > getTurnaroundFunction(
+        const simulation_setup::SystemOfBodies& bodies,
+        const LinkEnds& linkEnds )
+{
+    std::function< double( observation_models::FrequencyBands, observation_models::FrequencyBands ) > turnaroundRatioFunction;
+    // Check if retransmitter is a body
+    if( linkEnds.at( observation_models::retransmitter ).stationName_ == "" ||
+        !simulation_setup::isReferencePointGroundStation( bodies,
+                                                          linkEnds.at( observation_models::retransmitter ).bodyName_,
+                                                          linkEnds.at( observation_models::retransmitter ).stationName_ ) )
+    {
+        if( bodies.getBody( linkEnds.at( observation_models::retransmitter ).bodyName_ )->getVehicleSystems( ) == nullptr )
+        {
+            throw std::runtime_error(
+                    "Error when retrieving turnaround ratio: vehicle systems are not "
+                    "defined for retransmitter link end body " +
+                    linkEnds.at( observation_models::retransmitter ).bodyName_ + "." );
+        }
+        turnaroundRatioFunction = bodies.getBody( linkEnds.at( observation_models::retransmitter ).bodyName_ )
+                                          ->getVehicleSystems( )
+                                          ->getTransponderTurnaroundRatio( );
+    }
+    // If retransmitter is a ground station of the body
+    else
+    {
+        if( bodies.getBody( linkEnds.at( observation_models::retransmitter ).bodyName_ )
+                    ->getGroundStation( linkEnds.at( observation_models::retransmitter ).stationName_ )
+                    ->getVehicleSystems( ) == nullptr )
+        {
+            throw std::runtime_error(
+                    "Error when retrieving turnaround ratio: vehicle systems are not "
+                    "defined for retransmitter link end ID " +
+                    linkEnds.at( observation_models::retransmitter ).stationName_ + "." );
+        }
+        turnaroundRatioFunction = bodies.getBody( linkEnds.at( observation_models::retransmitter ).bodyName_ )
+                                          ->getGroundStation( linkEnds.at( observation_models::retransmitter ).stationName_ )
+                                          ->getVehicleSystems( )
+                                          ->getTransponderTurnaroundRatio( );
+    }
+    return turnaroundRatioFunction;
+}
 
+std::shared_ptr< ground_stations::StationFrequencyInterpolator > getTransmittingFrequencyInterpolator(
+        const simulation_setup::SystemOfBodies& bodies,
+        const LinkEnds& linkEnds )
+{
+    std::string transmittingBody = linkEnds.at( observation_models::transmitter ).bodyName_;
+    std::string transmittingPoint = linkEnds.at( observation_models::transmitter ).stationName_;
 
-} // namespace observation_models
+    bool transmitterFound = false;
+    std::shared_ptr< ground_stations::StationFrequencyInterpolator > transmitterFrequency;
 
-} // namespace tudat
+    if( bodies.at( transmittingBody )->getVehicleSystems( ) != nullptr )
+    {
+        if( bodies.at( transmittingBody )->getVehicleSystems( )->getTransmittedFrequencyCalculator( ) != nullptr )
+        {
+            transmitterFrequency = bodies.at( transmittingBody )->getVehicleSystems( )->getTransmittedFrequencyCalculator( );
+            transmitterFound = true;
+        }
+    }
 
+    if( bodies.at( transmittingBody )->getGroundStationMap( ).count( transmittingPoint ) != 0 )
+    {
+        if( bodies.getBody( transmittingBody )->getGroundStation( transmittingPoint )->getTransmittingFrequencyCalculator( ) != nullptr )
+        {
+            transmitterFrequency =
+                    bodies.getBody( transmittingBody )->getGroundStation( transmittingPoint )->getTransmittingFrequencyCalculator( );
+            if( transmitterFound == false )
+            {
+                transmitterFound = true;
+            }
+            else
+            {
+                throw std::runtime_error( "Error when finding transmitter, two candidates found (in body station and in body systems)" );
+            }
+        }
+    }
+
+    if( transmitterFound == false )
+    {
+        throw std::runtime_error(
+                "Error when creating observation model: transmitted frequency not  "
+                "defined for link end " +
+                linkEnds.at( observation_models::transmitter ).bodyName_ + ", " +
+                linkEnds.at( observation_models::transmitter ).stationName_ );
+    }
+    return transmitterFrequency;
+}
+
+}  // namespace observation_models
+
+}  // namespace tudat

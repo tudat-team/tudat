@@ -15,7 +15,6 @@
 
 #include <functional>
 
-
 #include <Eigen/Geometry>
 
 #include "tudat/astro/basic_astro/physicalConstants.h"
@@ -23,6 +22,7 @@
 #include "tudat/astro/ephemerides/simpleRotationalEphemeris.h"
 #include "tudat/astro/observation_models/observationModel.h"
 #include "tudat/astro/observation_models/lightTimeSolution.h"
+#include "tudat/astro/observation_models/transmissionFrequencyInterface.h"
 
 namespace tudat
 {
@@ -36,11 +36,10 @@ namespace observation_models
  *  The one-way range is defined as the light time multiplied by speed of light.
  *  The user may add observation biases to model system-dependent deviations between measured and true observation.
  */
-template< typename ObservationScalarType = double,
-          typename TimeType = double >
-class OneWayRangeObservationModel: public ObservationModel< 1, ObservationScalarType, TimeType >
+template< typename ObservationScalarType = double, typename TimeType = double >
+class OneWayRangeObservationModel : public ObservationModel< 1, ObservationScalarType, TimeType >
 {
-public:    
+public:
     typedef Eigen::Matrix< ObservationScalarType, 6, 1 > StateType;
     typedef Eigen::Matrix< ObservationScalarType, 3, 1 > PositionType;
 
@@ -53,15 +52,14 @@ public:
      */
     OneWayRangeObservationModel(
             const LinkEnds& linkEnds,
-            const std::shared_ptr< observation_models::LightTimeCalculator
-            < ObservationScalarType, TimeType > > lightTimeCalculator,
+            const std::shared_ptr< observation_models::LightTimeCalculator< ObservationScalarType, TimeType > > lightTimeCalculator,
             const std::shared_ptr< ObservationBias< 1 > > observationBiasCalculator = nullptr ):
         ObservationModel< 1, ObservationScalarType, TimeType >( one_way_range, linkEnds, observationBiasCalculator ),
-      lightTimeCalculator_( lightTimeCalculator ){ }
+        lightTimeCalculator_( lightTimeCalculator ), frequencyInterpolator_( nullptr )
+    { }
 
     //! Destructor
-    ~OneWayRangeObservationModel( ){ }
-
+    ~OneWayRangeObservationModel( ) { }
 
     //! Function to compute one-way range observable without any corrections.
     /*!
@@ -79,43 +77,41 @@ public:
      *  \return Ideal one-way range observable.
      */
     Eigen::Matrix< ObservationScalarType, 1, 1 > computeIdealObservationsWithLinkEndData(
-                    const TimeType time,
-                    const LinkEndType linkEndAssociatedWithTime,
-                    std::vector< double >& linkEndTimes,
-                    std::vector< Eigen::Matrix< double, 6, 1 > >& linkEndStates,
-            const std::shared_ptr< ObservationAncilliarySimulationSettings > ancilliarySetings = nullptr  )
+            const TimeType time,
+            const LinkEndType linkEndAssociatedWithTime,
+            std::vector< double >& linkEndTimes,
+            std::vector< Eigen::Matrix< double, 6, 1 > >& linkEndStates,
+            const std::shared_ptr< ObservationAncilliarySimulationSettings > ancilliarySetings = nullptr )
     {
         linkEndTimes.clear( );
         linkEndStates.clear( );
 
+        std::shared_ptr< ObservationAncilliarySimulationSettings > ancilliarySetingsToUse;
+        setFrequencyProperties( time, linkEndAssociatedWithTime, ancilliarySetings, ancilliarySetingsToUse );
+
         ObservationScalarType observation = TUDAT_NAN;
         TimeType transmissionTime = TUDAT_NAN, receptionTime = TUDAT_NAN;
-
-        if( ancilliarySetings != nullptr )
-        {
-            throw std::runtime_error( "Error, calling one-way range observable with ancilliary settings, but none are supported." );
-        }
 
         // Check link end associated with input time and compute observable
         switch( linkEndAssociatedWithTime )
         {
-        case receiver:
-            observation = lightTimeCalculator_->calculateLightTimeWithLinkEndsStates(
-                        receiverState, transmitterState, time, 1, ancilliarySetings );
-            transmissionTime = time - observation;
-            receptionTime = time;
-            break;
+            case receiver:
+                observation = lightTimeCalculator_->calculateLightTimeWithLinkEndsStates(
+                        receiverState, transmitterState, time, 1, ancilliarySetingsToUse );
+                transmissionTime = time - observation;
+                receptionTime = time;
+                break;
 
-        case transmitter:
-            observation = lightTimeCalculator_->calculateLightTimeWithLinkEndsStates(
-                        receiverState, transmitterState, time, 0, ancilliarySetings );
-            transmissionTime = time;
-            receptionTime = time + observation;
-            break;
-        default:
-            std::string errorMessage = "Error, cannot have link end type: " +
-                    std::to_string( linkEndAssociatedWithTime ) + "for one-way range";
-            throw std::runtime_error( errorMessage );
+            case transmitter:
+                observation = lightTimeCalculator_->calculateLightTimeWithLinkEndsStates(
+                        receiverState, transmitterState, time, 0, ancilliarySetingsToUse );
+                transmissionTime = time;
+                receptionTime = time + observation;
+                break;
+            default:
+                std::string errorMessage =
+                        "Error, cannot have link end type: " + std::to_string( linkEndAssociatedWithTime ) + "for one-way range";
+                throw std::runtime_error( errorMessage );
         }
 
         // Convert light time to range.
@@ -136,20 +132,61 @@ public:
      * Function to get the object to calculate light time.
      * \return Object to calculate light time.
      */
-    std::shared_ptr< observation_models::LightTimeCalculator< ObservationScalarType, TimeType > >
-    getLightTimeCalculator( )
+    std::shared_ptr< observation_models::LightTimeCalculator< ObservationScalarType, TimeType > > getLightTimeCalculator( )
     {
         return lightTimeCalculator_;
     }
 
-private:
+    void setFrequencyInterpolator( std::shared_ptr< ground_stations::StationFrequencyInterpolator > frequencyInterpolator )
+    {
+        frequencyInterpolator_ = frequencyInterpolator;
+        timeScaleConverter_ = earth_orientation::createDefaultTimeConverter( );
+    }
 
+private:
+    bool setFrequencyProperties( const TimeType time,
+                                 const LinkEndType linkEndAssociatedWithTime,
+                                 const std::shared_ptr< ObservationAncilliarySimulationSettings > inputAncilliarySetings,
+                                 std::shared_ptr< ObservationAncilliarySimulationSettings >& ancilliarySetingsToUse )
+    {
+        if( frequencyInterpolator_ != nullptr )
+        {
+            if( linkEndAssociatedWithTime != receiver )
+            {
+                throw std::runtime_error(
+                        "Error when computing one-way range, frequency interpolator use is only compatible with transmitter reference "
+                        "frrquency at present" );
+            }
+            else
+            {
+                if( inputAncilliarySetings == nullptr )
+                {
+                    ancilliarySetingsToUse = std::make_shared< ObservationAncilliarySimulationSettings >( );
+                }
+                else
+                {
+                    ancilliarySetingsToUse = inputAncilliarySetings;
+                }
+                setTransmissionFrequency( lightTimeCalculator_,
+                                          timeScaleConverter_,
+                                          frequencyInterpolator_,
+                                          time,
+                                          linkEndAssociatedWithTime,
+                                          ancilliarySetingsToUse );
+            }
+            return true;
+        }
+        else
+        {
+            ancilliarySetingsToUse = inputAncilliarySetings;
+            return false;
+        }
+    }
     //! Object to calculate light time.
     /*!
      *  Object to calculate light time, including possible corrections from troposphere, relativistic corrections, etc.
      */
-    std::shared_ptr< observation_models::LightTimeCalculator< ObservationScalarType, TimeType > >
-    lightTimeCalculator_;
+    std::shared_ptr< observation_models::LightTimeCalculator< ObservationScalarType, TimeType > > lightTimeCalculator_;
 
     //! Pre-declared receiver state, to prevent many (de-)allocations
     StateType receiverState;
@@ -157,10 +194,13 @@ private:
     //! Pre-declared transmitter state, to prevent many (de-)allocations
     StateType transmitterState;
 
+    std::shared_ptr< ground_stations::StationFrequencyInterpolator > frequencyInterpolator_;
+
+    std::shared_ptr< earth_orientation::TerrestrialTimeScaleConverter > timeScaleConverter_;
 };
 
-} // namespace observation_models
+}  // namespace observation_models
 
-} // namespace tudat
+}  // namespace tudat
 
-#endif // TUDAT_ONEWAYRANGEOBSERVATIONMODEL_H
+#endif  // TUDAT_ONEWAYRANGEOBSERVATIONMODEL_H

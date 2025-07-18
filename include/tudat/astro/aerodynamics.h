@@ -26,11 +26,11 @@
 #include "aerodynamics/exponentialAtmosphere.h"
 #include "aerodynamics/flightConditions.h"
 #include "aerodynamics/hypersonicLocalInclinationAnalysis.h"
-//#include "aerodynamics/nrlmsise00Atmosphere.h"
-//#include "aerodynamics/nrlmsise00InputFunctions.h"
+#include "aerodynamics/nrlmsise00Atmosphere.h"
+#include "aerodynamics/nrlmsise00InputFunctions.h"
 #include "aerodynamics/standardAtmosphere.h"
 #include "aerodynamics/tabulatedAtmosphere.h"
 #include "aerodynamics/trimOrientation.h"
 #include "aerodynamics/windModel.h"
 
-#endif // TUDATPY_AERODYNAMICS__H
+#endif  // TUDATPY_AERODYNAMICS__H
