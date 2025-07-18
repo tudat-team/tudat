@@ -61,12 +61,11 @@ BOOST_AUTO_TEST_CASE( testFractionAnalytical )
     instantaneousReradiation[ "TO_BE_SHADOWED" ] = true;
     instantaneousReradiation[ "TO_BE_LIT" ] = true;
 
-    std::vector< std::shared_ptr< BodyPanelSettings > > bodyPanelSettingList = bodyPanelSettingsListFromDae( 
-        tudat::paths::getTudatTestDataPath( ) + "selfShadowingUnitTest.dae",
-        Eigen::Vector3d::Zero( ),
-        materialPropertiesMap,
-        instantaneousReradiation
-    );
+    std::vector< std::shared_ptr< BodyPanelSettings > > bodyPanelSettingList =
+            bodyPanelSettingsListFromDae( tudat::paths::getTudatTestDataPath( ) + "selfShadowingUnitTest.dae",
+                                          Eigen::Vector3d::Zero( ),
+                                          materialPropertiesMap,
+                                          instantaneousReradiation );
 
     std::shared_ptr< FullPanelledBodySettings > panelSettings = fullPanelledBodySettings( bodyPanelSettingList );
 
@@ -175,12 +174,11 @@ BOOST_AUTO_TEST_CASE( testComputationalEfficiency )
     instantaneousReradiation[ "TO_BE_SHADOWED" ] = true;
     instantaneousReradiation[ "TO_BE_LIT" ] = true;
 
-    std::vector< std::shared_ptr< BodyPanelSettings > > bodyPanelSettingList = bodyPanelSettingsListFromDae( 
-        tudat::paths::getTudatTestDataPath( ) + "selfShadowingUnitTest.dae",
-        Eigen::Vector3d::Zero( ),
-        materialPropertiesMap,
-        instantaneousReradiation
-    );
+    std::vector< std::shared_ptr< BodyPanelSettings > > bodyPanelSettingList =
+            bodyPanelSettingsListFromDae( tudat::paths::getTudatTestDataPath( ) + "selfShadowingUnitTest.dae",
+                                          Eigen::Vector3d::Zero( ),
+                                          materialPropertiesMap,
+                                          instantaneousReradiation );
 
     std::shared_ptr< FullPanelledBodySettings > panelSettings = fullPanelledBodySettings( bodyPanelSettingList );
     // Create spacecraft object.

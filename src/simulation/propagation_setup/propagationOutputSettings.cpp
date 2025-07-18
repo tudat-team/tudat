@@ -457,7 +457,7 @@ std::string getDependentVariableId( const std::shared_ptr< SingleDependentVariab
             variableId += " w.r.t. body translational state of " + partialDependentVariableSettings->derivativeWrtBody_;
         }
     }
-    if ( dependentVariableSettings->dependentVariableType_ == illuminated_panel_fraction )
+    if( dependentVariableSettings->dependentVariableType_ == illuminated_panel_fraction )
     {
         std::shared_ptr< IlluminatedPanelFractionDependentVariableSaveSettings > illuminatedPanelFractionDependentVariableSettings =
                 std::dynamic_pointer_cast< IlluminatedPanelFractionDependentVariableSaveSettings >( dependentVariableSettings );
@@ -468,25 +468,25 @@ std::string getDependentVariableId( const std::shared_ptr< SingleDependentVariab
         else
         {
             variableId += " of body " + illuminatedPanelFractionDependentVariableSettings->associatedBody_ + " w.r.t. source " +
-                            illuminatedPanelFractionDependentVariableSettings->secondaryBody_ + " for panel " + 
-                            illuminatedPanelFractionDependentVariableSettings->panelTypeId_;
+                    illuminatedPanelFractionDependentVariableSettings->secondaryBody_ + " for panel " +
+                    illuminatedPanelFractionDependentVariableSettings->panelTypeId_;
         }
     }
-    if ( dependentVariableSettings->dependentVariableType_ == cross_section_change )
+    if( dependentVariableSettings->dependentVariableType_ == cross_section_change )
     {
-        variableId += " of body " + dependentVariableSettings->associatedBody_ + " w.r.t. source " +
-                        dependentVariableSettings->secondaryBody_;
+        variableId +=
+                " of body " + dependentVariableSettings->associatedBody_ + " w.r.t. source " + dependentVariableSettings->secondaryBody_;
     }
-    if ( dependentVariableSettings->dependentVariableType_ == actual_cross_section )
+    if( dependentVariableSettings->dependentVariableType_ == actual_cross_section )
     {
-        variableId += " of body " + dependentVariableSettings->associatedBody_ + " w.r.t. source " +
-                        dependentVariableSettings->secondaryBody_;
+        variableId +=
+                " of body " + dependentVariableSettings->associatedBody_ + " w.r.t. source " + dependentVariableSettings->secondaryBody_;
     }
-    if ( dependentVariableSettings->dependentVariableType_ == full_body_paneled_geometry )
+    if( dependentVariableSettings->dependentVariableType_ == full_body_paneled_geometry )
     {
         variableId += " of body " + dependentVariableSettings->associatedBody_;
     }
-    if ( dependentVariableSettings->dependentVariableType_ == aerodynamic_coefficients )
+    if( dependentVariableSettings->dependentVariableType_ == aerodynamic_coefficients )
     {
         variableId += " of body " + dependentVariableSettings->associatedBody_;
     }

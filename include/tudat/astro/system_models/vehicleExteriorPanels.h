@@ -297,7 +297,6 @@ protected:
     double tangentialAccomodationCoefficient_;
 
     double normalVelocityAtWallRatio_;
-
 };
 
 }  // namespace system_models

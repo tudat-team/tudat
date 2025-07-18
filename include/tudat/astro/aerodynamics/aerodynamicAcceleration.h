@@ -71,13 +71,12 @@ class AerodynamicAcceleration : public basic_astrodynamics::AccelerationModel< E
 public:
     AerodynamicAcceleration( const std::shared_ptr< AtmosphericFlightConditions > flightConditions,
                              const std::function< double( ) > currentMass ):
-                             flightConditions_( flightConditions ),
-                             currentMass_( currentMass )
+        flightConditions_( flightConditions ), currentMass_( currentMass )
     {
         coefficientInterface_ = flightConditions_->getAerodynamicCoefficientInterface( );
         aerodynamicCoefficientFrame_ = coefficientInterface_->getForceCoefficientsFrame( );
         aerodynamicCompleteCoefficientFrame_ = getCompleteFrameForCoefficients( aerodynamicCoefficientFrame_ );
-        coefficientMultiplier_ = areCoefficientsInNegativeDirection( aerodynamicCoefficientFrame_) == true ? -1.0 : 1.0;
+        coefficientMultiplier_ = areCoefficientsInNegativeDirection( aerodynamicCoefficientFrame_ ) == true ? -1.0 : 1.0;
     }
 
     //! Destructor
@@ -97,8 +96,10 @@ public:
         {
             currentTime_ = currentTime;
             currentForceCoefficients_ = coefficientInterface_->getCurrentForceCoefficients( );
-            currentForceCoefficients_ = coefficientMultiplier_ *  ( flightConditions_->getAerodynamicAngleCalculator( )->getRotationQuaternionBetweenFrames(
-                aerodynamicCompleteCoefficientFrame_, reference_frames::inertial_frame ) * currentForceCoefficients_ );
+            currentForceCoefficients_ = coefficientMultiplier_ *
+                    ( flightConditions_->getAerodynamicAngleCalculator( )->getRotationQuaternionBetweenFrames(
+                              aerodynamicCompleteCoefficientFrame_, reference_frames::inertial_frame ) *
+                      currentForceCoefficients_ );
 
             currentAcceleration_ = computeAerodynamicAcceleration( flightConditions_->getCurrentDynamicPressure( ),
                                                                    coefficientInterface_->getReferenceArea( ),
@@ -120,15 +121,16 @@ public:
     Eigen::Vector3d getCurrentForceCoefficientsInAerodynamicFrame( ) const
     {
         return flightConditions_->getAerodynamicAngleCalculator( )->getRotationQuaternionBetweenFrames(
-                reference_frames::inertial_frame, reference_frames::aerodynamic_frame ) * ( -currentForceCoefficients_ );
+                       reference_frames::inertial_frame, reference_frames::aerodynamic_frame ) *
+                ( -currentForceCoefficients_ );
     }
 
     double getCurrentMass( ) const
     {
         return currentMass_( );
     }
-private:
 
+private:
     std::shared_ptr< AtmosphericFlightConditions > flightConditions_;
 
     std::shared_ptr< AerodynamicCoefficientInterface > coefficientInterface_;
@@ -142,7 +144,6 @@ private:
     AerodynamicCoefficientFrames aerodynamicCoefficientFrame_;
 
     reference_frames::AerodynamicsReferenceFrames aerodynamicCompleteCoefficientFrame_;
-
 };
 
 }  // namespace aerodynamics
