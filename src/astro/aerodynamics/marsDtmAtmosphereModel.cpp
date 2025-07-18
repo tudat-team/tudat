@@ -42,6 +42,9 @@ namespace aerodynamics
     // function to load the coefficients from the file
     std::vector<std::vector<double>> loadCoefficients(const std::string& filename){
         std::ifstream file(filename);
+        if (!file.is_open()) {
+            throw std::runtime_error("Failed to open file: " + filename);
+        }
         // define the number of rows and columns in the file
         const int rows = 70;
         //const int rows = 74;
@@ -51,14 +54,18 @@ namespace aerodynamics
         for (int i = 0; i < rows; ++i) {
             for (int j = 0; j < cols; ++j) {
                 if (!(file >> matrix[i][j])) {
-                    // if the file is not read correctly, print an error message
-                    std::cerr << "Error reading data from the file." << std::endl;
-                    // return an error code
+                    throw std::runtime_error(
+                    "Error reading value at row " + std::to_string(i) +
+                    ", column " + std::to_string(j)
+                );
                 }
             }
         }
-        //std::cout << "Loaded Matrix values:" << std::endl;
-        //std::cout << matrix[0][3] << "\t";
+        // Check for extra data
+        double extra;
+        if (file >> extra) {
+            throw std::runtime_error("File " + filename + " contains more data than expected (more than 70×25 values).");
+        }
         file.close();
         return matrix;
     }
@@ -133,9 +140,9 @@ namespace aerodynamics
 
 
 
-    MarsDtmAtmosphereModel::MarsDtmAtmosphereModel(const double polarRadius, const std::string &filename,
+    MarsDtmAtmosphereModel::MarsDtmAtmosphereModel(const std::string &filename,
                                                    const std::function< double( const double ) > f107Function ) :
-    polarRadius_( polarRadius ), // polar radius of Mars
+    polarRadius_( 3378.0e3 ), // polar radius of Mars
     filename_ ( filename ), // file name of the coefficients
     f107Function_( f107Function ),
     alpha_( {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.38, -0.40, 0.0}), // thermal diffusion coefficients

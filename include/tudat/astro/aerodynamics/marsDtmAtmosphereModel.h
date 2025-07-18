@@ -106,7 +106,6 @@ public:
 
 
     MarsDtmAtmosphereModel(
-        const double polarRadius,
         const std::string &filename,
         const std::function< double( const double ) > f107Function = [](const double){return 65.0;} );
 

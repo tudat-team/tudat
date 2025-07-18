@@ -533,8 +533,8 @@ class MarsDtmAtmosphereSettings: public AtmosphereSettings
 {
 public:
 
-    MarsDtmAtmosphereSettings( const std::string& marsDtmFile, const double polarRadius, const std::string& spaceWeatherFile = "" ):
-        AtmosphereSettings( mars_dtm_atmosphere ), marsDtmFile_( marsDtmFile ), polarRadius_( polarRadius ), spaceWeatherFile_( spaceWeatherFile ){ }
+    MarsDtmAtmosphereSettings( const std::string& marsDtmFile, const std::string& spaceWeatherFile = "" ):
+        AtmosphereSettings( mars_dtm_atmosphere ), marsDtmFile_( marsDtmFile ), spaceWeatherFile_( spaceWeatherFile ){ }
 
 
     std::string getMarsDtmFile( ){ return marsDtmFile_; }
@@ -968,9 +968,9 @@ inline std::shared_ptr< AtmosphereSettings > nrlmsise00AtmosphereSettings(
 }
 
 inline std::shared_ptr< AtmosphereSettings > marsDtmAtmosphereSettings(
-    const std::string& marsDtmFile, const double polarRadius )
+    const std::string& marsDtmFile )
 {
-    return std::make_shared< MarsDtmAtmosphereSettings >( marsDtmFile, polarRadius );
+    return std::make_shared< MarsDtmAtmosphereSettings >( marsDtmFile );
 }
 
 

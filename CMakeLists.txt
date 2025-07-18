@@ -372,7 +372,6 @@ add_subdirectory(src/simulation)
 add_subdirectory(src/io)
 add_subdirectory(src/utils)
 #add_subdirectory(examples)
-add_subdirectory(tests_riva)
 
 
 if (TUDAT_BUILD_TESTS)
