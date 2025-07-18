@@ -617,7 +617,7 @@ inline std::shared_ptr< AccelerationSettings > customAccelerationSettings(
 
 
 //! @get_docstring(CustomAccelerationSettings.__docstring__)
-class RTGAccelerationSettings : public AccelerationSettings
+class   : public AccelerationSettings
 {
 public:
     RTGAccelerationSettings( const Eigen::Vector3d& bodyFixedForceVectorAtReferenceEpoch,

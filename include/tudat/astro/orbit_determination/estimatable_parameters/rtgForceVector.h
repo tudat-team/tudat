@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef TUDAT_EMPIRICALACCELERATIONCOEFFICIENTS_H
-#define TUDAT_EMPIRICALACCELERATIONCOEFFICIENTS_H
+#ifndef TUDAT_RTGFORCEVECTOR_H
+#define TUDAT_RTGFORCEVECTOR_H
 
 #include "tudat/astro/orbit_determination/estimatable_parameters/estimatableParameter.h"
 #include "tudat/astro/basic_astro/empiricalAcceleration.h"
@@ -110,11 +110,13 @@ private:
 
 
 
+
 //! Interface class for estimation of a body's time-independent empirical accelerations
 /*!
  * Interface class for estimation of a body's time-independent empirical accelerations. Interfaces the estimation with the
  * acceleration components in the EmpiricalAcceleration class
  */
+
 class RTGForceVectorMagnitude : public EstimatableParameter< double >
 {
 public:
@@ -140,10 +142,9 @@ public:
      *  Get value of rtg acceleration components
      *  \return Value of rtg acceleration components
      */
-    Eigen::VectorXd getParameterValue( )
+    double getParameterValue( )
     {
-        double parameter = rtgAccelerationModel_->getbodyFixedForceVectorAtReferenceEpoch().norm();
-        return parameter;
+        return rtgAccelerationModel_->getForceVectorMagnitudeAtReferenceEpoch();
     }
 
     //! Reset value of rtg force magnitude
@@ -154,7 +155,7 @@ public:
     void setParameterValue( double parameterValue )
     {
         // Reset value of rtg force magnitude
-        rtgAccelerationModel_->resetForceVectorAtReferenceEpoch( parameterValue );
+        rtgAccelerationModel_->resetForceMagnitudeAtReferenceEpoch( parameterValue );
 
     }
 
@@ -191,10 +192,8 @@ private:
 };
 
 
-
-
 }  // namespace estimatable_parameters
 
 }  // namespace tudat
 
-#endif  // TUDAT_EMPIRICALACCELERATIONCOEFFICIENTS_H
+#endif  // TUDAT_RTGFORCEVECTOR_H

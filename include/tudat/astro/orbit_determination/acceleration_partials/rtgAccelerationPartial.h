@@ -172,6 +172,16 @@ public:
     std::pair< std::function< void( Eigen::MatrixXd& ) >, int > getParameterPartialFunction(
             std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > parameter );
 
+    //! Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.
+    /*!
+     *  Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.
+     *  Function returns empty function and zero size indicator for parameters with no dependency for current acceleration.
+     *  \param parameter Parameter w.r.t. which partial is to be taken.
+     *  \return Pair of parameter partial function and number of columns in partial
+     */
+    std::pair< std::function< void( Eigen::MatrixXd& ) >, int > getParameterPartialFunction(
+            std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > parameter );
+
 
     //! Function to compute the partial w.r.t. time-independent empirical acceleration components
     /*!
@@ -206,45 +216,10 @@ public:
      * \param partialDerivativeMatrix Matrix of partial derivatives of accelerations w.r.t. empirical accelerations (returned
      * by reference)
      */
-    void wrtRTGForceVector(
-            std::shared_ptr< estimatable_parameters::RTGForceVector > parameter,
-            Eigen::MatrixXd& partialDerivativeMatrix );
+    void wrtRTGForceVector(Eigen::MatrixXd& partialDerivativeMatrix );
 
-    void wrtRTGForceVectorMagnitude(
-            std::shared_ptr< estimatable_parameters::RTGForceVectorMagnitude > parameter,
-            Eigen::MatrixXd& partialDerivativeMatrix );
+    void wrtRTGForceVectorMagnitude(Eigen::MatrixXd& partialDerivativeMatrix );
 
-    //! Function to compute the partial w.r.t. time-independent empirical acceleration components
-    /*!
-     * Function to compute the partial w.r.t. time-independent empirical acceleration components
-     * \param parameter Object defining the properties of the components that are to be estimated.
-     * \param partialDerivativeMatrix Matrix of partial derivatives of accelerations w.r.t. empirical accelerations (returned
-     * by reference)
-     */
-    void wrtEmpiricalAccelerationCoefficient(
-            std::shared_ptr< estimatable_parameters::EmpiricalAccelerationCoefficientsParameter > parameter,
-            Eigen::MatrixXd& partialDerivativeMatrix )
-    {
-        return wrtEmpiricalAccelerationCoefficientFromIndices(
-                parameter->getParameterSize( ), parameter->getIndices( ), partialDerivativeMatrix );
-    }
-
-    //! Function to compute the partial w.r.t. time-independent empirical acceleration components
-    /*!
-     * Function to compute the partial w.r.t. time-independent empirical acceleration components from list of components and
-     * functional shapes.
-     * \param numberOfAccelerationComponents Total number of empirical acceleration components w.r.t. which partials are to
-     * be computed.
-     * \param accelerationIndices Map denoting list of components of accelerations that are to be computed. Key: functional
-     * shape of empirical accelerations. Value: list of acceleration vaector entries that are to be used (0: radial (R),
-     * 1: along-track (S), 2: cross-track (W)).
-     * \param partialDerivativeMatrix Matrix of partial derivatives of accelerations w.r.t. empirical accelerations (returned
-     * by reference)
-     */
-    void wrtEmpiricalAccelerationCoefficientFromIndices(
-            const int numberOfAccelerationComponents,
-            const std::map< basic_astrodynamics::EmpiricalAccelerationFunctionalShapes, std::vector< int > >& accelerationIndices,
-            Eigen::MatrixXd& partialDerivativeMatrix );
 
 private:
     //! Acceleration w.r.t. which partials are to be computed.
