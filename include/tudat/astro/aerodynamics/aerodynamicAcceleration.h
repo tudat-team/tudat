@@ -71,7 +71,11 @@ class AerodynamicAcceleration : public basic_astrodynamics::AccelerationModel< E
 public:
     AerodynamicAcceleration( const std::shared_ptr< AtmosphericFlightConditions > flightConditions,
                              const std::function< double( ) > currentMass ):
-        flightConditions_( flightConditions ), currentMass_( currentMass )
+                             flightConditions_( flightConditions ),
+                             currentMass_( currentMass ),
+                             dragComponentScaling_( 1.0 ), 
+                             liftComponentScaling_( 1.0 ), 
+                             sideComponentScaling_( 1.0 )
     {
         coefficientInterface_ = flightConditions_->getAerodynamicCoefficientInterface( );
         aerodynamicCoefficientFrame_ = coefficientInterface_->getForceCoefficientsFrame( );
@@ -101,11 +105,29 @@ public:
                               aerodynamicCompleteCoefficientFrame_, reference_frames::inertial_frame ) *
                       currentForceCoefficients_ );
 
-            currentAcceleration_ = computeAerodynamicAcceleration( flightConditions_->getCurrentDynamicPressure( ),
+            currentUnscaledAcceleration_ = computeAerodynamicAcceleration( flightConditions_->getCurrentDynamicPressure( ),
                                                                    coefficientInterface_->getReferenceArea( ),
                                                                    currentForceCoefficients_,
                                                                    currentMass_( ) );
+            scaleAerodynamicAcceleration( );
         }
+    }
+
+    void scaleAerodynamicAcceleration( )
+    {
+       currentAcceleration_ = currentUnscaledAcceleration_;
+
+       currentUnscaledAccelerationInAerodynamicFrame_ = flightConditions_->getAerodynamicAngleCalculator( )->getRotationQuaternionBetweenFrames(
+                reference_frames::inertial_frame, reference_frames::aerodynamic_frame ) * currentAcceleration_;
+                
+       if( isScalingModelSet_ )
+       {
+            currentAccelerationInAerodynamicFrame_( 0 ) = currentUnscaledAccelerationInAerodynamicFrame_( 0 ) * dragComponentScaling_;
+            currentAccelerationInAerodynamicFrame_( 1 ) = currentUnscaledAccelerationInAerodynamicFrame_( 1 ) * sideComponentScaling_;
+            currentAccelerationInAerodynamicFrame_( 2 ) = currentUnscaledAccelerationInAerodynamicFrame_( 2 ) * liftComponentScaling_;
+            currentAcceleration_ = flightConditions_->getAerodynamicAngleCalculator( )->getRotationQuaternionBetweenFrames(
+                 reference_frames::aerodynamic_frame, reference_frames::inertial_frame ) * currentAccelerationInAerodynamicFrame_;
+       }
     }
 
     std::shared_ptr< AtmosphericFlightConditions > getFlightConditions( ) const
@@ -130,6 +152,55 @@ public:
         return currentMass_( );
     }
 
+    void enableScaling( )
+    {
+        isScalingModelSet_ = true;
+    }
+
+    void setDragComponentScaling( double dragComponentScaling )
+    {
+        enableScaling( );
+        dragComponentScaling_ = dragComponentScaling;
+    }
+
+    void setSideComponentScaling( double sideComponentScaling )
+    {
+        enableScaling( );
+        sideComponentScaling_ = sideComponentScaling;
+    }
+
+    void setLiftComponentScaling( double liftComponentScaling )
+    {
+        enableScaling( );
+        liftComponentScaling_ = liftComponentScaling;
+    }
+
+    double getDragComponentScaling( )
+    {
+        return dragComponentScaling_;
+    }
+
+    double getSideComponentScaling( )
+    {
+        return sideComponentScaling_;
+    }
+    
+    double getLiftComponentScaling( )
+    {
+        return liftComponentScaling_;
+    }
+
+    Eigen::Vector3d getCurrentUnscaledAcceleration( )
+    {
+        return currentUnscaledAcceleration_;
+    }
+
+    Eigen::Vector3d getCurrentUnscaledAccelerationInAerodynamicFrame( )
+    {
+        return currentUnscaledAccelerationInAerodynamicFrame_;
+    }
+
+
 private:
     std::shared_ptr< AtmosphericFlightConditions > flightConditions_;
 
@@ -144,6 +215,22 @@ private:
     AerodynamicCoefficientFrames aerodynamicCoefficientFrame_;
 
     reference_frames::AerodynamicsReferenceFrames aerodynamicCompleteCoefficientFrame_;
+
+    // new acceleration scaling
+    Eigen::Vector3d currentUnscaledAcceleration_;
+
+    Eigen::Vector3d currentUnscaledAccelerationInAerodynamicFrame_;
+
+    Eigen::Vector3d currentAccelerationInAerodynamicFrame_;
+
+    bool isScalingModelSet_;
+
+    double dragComponentScaling_;
+
+    double liftComponentScaling_;
+
+    double sideComponentScaling_;
+
 };
 
 }  // namespace aerodynamics

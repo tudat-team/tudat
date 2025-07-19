@@ -486,9 +486,7 @@ private:
 
     int maximumNumberOfPixels_;
 
-    bool onlyDrag_;
-
-    aerodynamics::AerodynamicCoefficientFrames coefficientFrame_;
+bool onlyDrag_;
 
     // constant force coefficient (variable cross-section)
     Eigen::Vector3d constantForceCoefficient_;
