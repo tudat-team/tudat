@@ -52,8 +52,8 @@ int main( )
     // Create Earth object
     BodyListSettings defaultBodySettings =
         getDefaultBodySettings( { "Mars" } );
-    std::string filename ="/Users/ralkahal/OneDrive - Delft University of Technology/PhD/Programs/atmodensitydtm/dtm_mars";;
-    defaultBodySettings.at( "Mars" )->atmosphereSettings = marsDtmAtmosphereSettings( filename, 3378.0E3);
+    std::string filename ="/Users/ralkahal/OneDrive - Delft University of Technology/PhD/Programs/atmodensitydtm/dtm_mars";
+    defaultBodySettings.at( "Mars" )->atmosphereSettings = marsDtmAtmosphereSettings( filename );
     SystemOfBodies bodies = createSystemOfBodies( defaultBodySettings );
 
     // Create vehicle object.
