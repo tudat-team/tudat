@@ -1127,7 +1127,7 @@ inline std::shared_ptr< EstimatableParameterSettings > sideComponentScaling( con
 
 inline std::shared_ptr< EstimatableParameterSettings > liftComponentScaling( const std::string bodyName )
 {
-    return std::make_shared< EstimatableParameterSettings >( bodyName,lift_component_scaling_factor );
+    return std::make_shared< EstimatableParameterSettings >( bodyName, lift_component_scaling_factor );
 }
 
 inline std::shared_ptr< EstimatableParameterSettings > radiationPressureCoefficient( const std::string bodyName )

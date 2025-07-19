@@ -25,11 +25,9 @@ public:
     AerodynamicScalingFactor( const std::shared_ptr< aerodynamics::AerodynamicAcceleration > aerodynamicAcceleration,
                               const EstimatebleParametersEnum parameterType,
                               const std::string& associatedBody ):
-        EstimatableParameter< double >( parameterType, associatedBody ),
-        aerodynamicAcceleration_( aerodynamicAcceleration )
+        EstimatableParameter< double >( parameterType, associatedBody ), aerodynamicAcceleration_( aerodynamicAcceleration )
     {
-        if( ( parameterType != drag_component_scaling_factor ) &&
-            ( parameterType != side_component_scaling_factor ) && 
+        if( ( parameterType != drag_component_scaling_factor ) && ( parameterType != side_component_scaling_factor ) &&
             ( parameterType != lift_component_scaling_factor ) )
         {
             throw std::runtime_error( "Error when creating aerodynamic scaling parameter, type is inconsistent: " +

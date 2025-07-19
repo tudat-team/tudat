@@ -71,11 +71,8 @@ class AerodynamicAcceleration : public basic_astrodynamics::AccelerationModel< E
 public:
     AerodynamicAcceleration( const std::shared_ptr< AtmosphericFlightConditions > flightConditions,
                              const std::function< double( ) > currentMass ):
-                             flightConditions_( flightConditions ),
-                             currentMass_( currentMass ),
-                             dragComponentScaling_( 1.0 ), 
-                             liftComponentScaling_( 1.0 ), 
-                             sideComponentScaling_( 1.0 )
+        flightConditions_( flightConditions ), currentMass_( currentMass ), dragComponentScaling_( 1.0 ), liftComponentScaling_( 1.0 ),
+        sideComponentScaling_( 1.0 )
     {
         coefficientInterface_ = flightConditions_->getAerodynamicCoefficientInterface( );
         aerodynamicCoefficientFrame_ = coefficientInterface_->getForceCoefficientsFrame( );
@@ -106,28 +103,31 @@ public:
                       currentForceCoefficients_ );
 
             currentUnscaledAcceleration_ = computeAerodynamicAcceleration( flightConditions_->getCurrentDynamicPressure( ),
-                                                                   coefficientInterface_->getReferenceArea( ),
-                                                                   currentForceCoefficients_,
-                                                                   currentMass_( ) );
+                                                                           coefficientInterface_->getReferenceArea( ),
+                                                                           currentForceCoefficients_,
+                                                                           currentMass_( ) );
             scaleAerodynamicAcceleration( );
         }
     }
 
     void scaleAerodynamicAcceleration( )
     {
-       currentAcceleration_ = currentUnscaledAcceleration_;
+        currentAcceleration_ = currentUnscaledAcceleration_;
 
-       currentUnscaledAccelerationInAerodynamicFrame_ = flightConditions_->getAerodynamicAngleCalculator( )->getRotationQuaternionBetweenFrames(
-                reference_frames::inertial_frame, reference_frames::aerodynamic_frame ) * currentAcceleration_;
-                
-       if( isScalingModelSet_ )
-       {
+        currentUnscaledAccelerationInAerodynamicFrame_ =
+                flightConditions_->getAerodynamicAngleCalculator( )->getRotationQuaternionBetweenFrames(
+                        reference_frames::inertial_frame, reference_frames::aerodynamic_frame ) *
+                currentAcceleration_;
+
+        if( isScalingModelSet_ )
+        {
             currentAccelerationInAerodynamicFrame_( 0 ) = currentUnscaledAccelerationInAerodynamicFrame_( 0 ) * dragComponentScaling_;
             currentAccelerationInAerodynamicFrame_( 1 ) = currentUnscaledAccelerationInAerodynamicFrame_( 1 ) * sideComponentScaling_;
             currentAccelerationInAerodynamicFrame_( 2 ) = currentUnscaledAccelerationInAerodynamicFrame_( 2 ) * liftComponentScaling_;
             currentAcceleration_ = flightConditions_->getAerodynamicAngleCalculator( )->getRotationQuaternionBetweenFrames(
-                 reference_frames::aerodynamic_frame, reference_frames::inertial_frame ) * currentAccelerationInAerodynamicFrame_;
-       }
+                                           reference_frames::aerodynamic_frame, reference_frames::inertial_frame ) *
+                    currentAccelerationInAerodynamicFrame_;
+        }
     }
 
     std::shared_ptr< AtmosphericFlightConditions > getFlightConditions( ) const
@@ -184,7 +184,7 @@ public:
     {
         return sideComponentScaling_;
     }
-    
+
     double getLiftComponentScaling( )
     {
         return liftComponentScaling_;
@@ -199,7 +199,6 @@ public:
     {
         return currentUnscaledAccelerationInAerodynamicFrame_;
     }
-
 
 private:
     std::shared_ptr< AtmosphericFlightConditions > flightConditions_;
@@ -230,7 +229,6 @@ private:
     double liftComponentScaling_;
 
     double sideComponentScaling_;
-
 };
 
 }  // namespace aerodynamics

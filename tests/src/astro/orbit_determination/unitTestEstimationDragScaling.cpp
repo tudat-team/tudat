@@ -39,9 +39,8 @@ BOOST_AUTO_TEST_SUITE( test_estimation_drag_scaling )
 
 BOOST_AUTO_TEST_CASE( test_EstimationDragScaling )
 {
-    
     std::vector< double > residuals;
-    
+
     for( unsigned int i = 0; i < 2; i++ )
     {
         spice_interface::loadStandardSpiceKernels( );
@@ -58,13 +57,12 @@ BOOST_AUTO_TEST_CASE( test_EstimationDragScaling )
         BodyListSettings bodySettings = getDefaultBodySettings( bodyNames, "Mars" );
         bodySettings.addSettings( "MGS" );
         bodySettings.at( "MGS" )->ephemerisSettings =
-            std::make_shared< InterpolatedSpiceEphemerisSettings >( initialTime - 3600.0, finalTime + 3600.0, 30.0, "Mars" );
+                std::make_shared< InterpolatedSpiceEphemerisSettings >( initialTime - 3600.0, finalTime + 3600.0, 30.0, "Mars" );
 
         // Create bodies needed in simulation
         SystemOfBodies bodies = createSystemOfBodies( bodySettings );
-        bodies.at( "Mars" )->setAtmosphereModel( 
-                createAtmosphereModel( std::make_shared< ExponentialAtmosphereSettings >( aerodynamics::mars ),
-                                       "Mars" ) );
+        bodies.at( "Mars" )->setAtmosphereModel(
+                createAtmosphereModel( std::make_shared< ExponentialAtmosphereSettings >( aerodynamics::mars ), "Mars" ) );
         bodies.at( "MGS" )->setConstantBodyMass( 2.0 );
 
         Eigen::Vector3d forceCoefficients( 1.0, 0.0, 0.0 );
@@ -72,9 +70,8 @@ BOOST_AUTO_TEST_CASE( test_EstimationDragScaling )
         std::shared_ptr< AerodynamicCoefficientSettings > aerodynamicCoefficientSettings =
                 std::make_shared< ConstantAerodynamicCoefficientSettings >(
                         2000.0, forceCoefficients, aerodynamics::negative_aerodynamic_frame_coefficients );
-        bodies.at( "MGS" )
-                ->setAerodynamicCoefficientInterface(
-                        createAerodynamicCoefficientInterface( aerodynamicCoefficientSettings, "MGS", bodies ) );
+        bodies.at( "MGS" )->setAerodynamicCoefficientInterface(
+                createAerodynamicCoefficientInterface( aerodynamicCoefficientSettings, "MGS", bodies ) );
 
         // Set accelerations between bodies that are to be taken into account.
         SelectedAccelerationMap accelerationMap;
@@ -99,11 +96,11 @@ BOOST_AUTO_TEST_CASE( test_EstimationDragScaling )
         else
         {
             additionalParameterNames.push_back( estimatable_parameters::dragComponentScaling( "MGS" ) );
-            //additionalParameterNames.push_back( estimatable_parameters::constantDragCoefficient( "MGS" ) );
+            // additionalParameterNames.push_back( estimatable_parameters::constantDragCoefficient( "MGS" ) );
         }
 
         Eigen::Matrix< double, Eigen::Dynamic, 1 > initialState =
-            getInitialStatesOfBodies( bodiesToEstimate, centralBodies, bodies, initialTime );
+                getInitialStatesOfBodies( bodiesToEstimate, centralBodies, bodies, initialTime );
 
         std::shared_ptr< TranslationalStatePropagatorSettings< double > > propagatorSettings =
                 std::make_shared< TranslationalStatePropagatorSettings< double > >(
@@ -116,19 +113,17 @@ BOOST_AUTO_TEST_CASE( test_EstimationDragScaling )
                         std::make_shared< PropagationTimeTerminationSettings >( finalTime ) );
 
         std::vector< std::shared_ptr< EstimatableParameterSettings > > parameterNames =
-                getInitialStateParameterSettings( 
-                    std::dynamic_pointer_cast< PropagatorSettings< double > >( propagatorSettings ),
-                    bodies );
+                getInitialStateParameterSettings( std::dynamic_pointer_cast< PropagatorSettings< double > >( propagatorSettings ), bodies );
         parameterNames.insert( parameterNames.end( ), additionalParameterNames.begin( ), additionalParameterNames.end( ) );
 
-        std::shared_ptr< estimatable_parameters::EstimatableParameterSet< double > > parametersToEstimate =
-                createParametersToEstimate( parameterNames, bodies, std::dynamic_pointer_cast< PropagatorSettings< double > >( propagatorSettings ) );
+        std::shared_ptr< estimatable_parameters::EstimatableParameterSet< double > > parametersToEstimate = createParametersToEstimate(
+                parameterNames, bodies, std::dynamic_pointer_cast< PropagatorSettings< double > >( propagatorSettings ) );
         printEstimatableParameterEntries( parametersToEstimate );
 
         std::pair< std::vector< std::shared_ptr< observation_models::ObservationModelSettings > >,
                    std::shared_ptr< observation_models::ObservationCollection< double > > >
-                observationCollectionAndModelSettings = simulatePseudoObservations(
-                        bodies, bodiesToEstimate, centralBodies, initialTime, finalTime, 120.0 );
+                observationCollectionAndModelSettings =
+                        simulatePseudoObservations( bodies, bodiesToEstimate, centralBodies, initialTime, finalTime, 120.0 );
         std::shared_ptr< observation_models::ObservationCollection< double > > observationCollection =
                 observationCollectionAndModelSettings.second;
 
@@ -136,21 +131,21 @@ BOOST_AUTO_TEST_CASE( test_EstimationDragScaling )
                 observationCollectionAndModelSettings.first;
 
         OrbitDeterminationManager< double > orbitDeterminationManager =
-                OrbitDeterminationManager< double >(
-                        bodies, parametersToEstimate, observationModelSettingsList, std::dynamic_pointer_cast< PropagatorSettings< double > >( propagatorSettings ) );
+                OrbitDeterminationManager< double >( bodies,
+                                                     parametersToEstimate,
+                                                     observationModelSettingsList,
+                                                     std::dynamic_pointer_cast< PropagatorSettings< double > >( propagatorSettings ) );
 
         std::shared_ptr< EstimationInput< double > > estimationInput =
                 std::make_shared< EstimationInput< double > >( observationCollection );
-        //estimationInput->setConvergenceChecker( std::make_shared< EstimationConvergenceChecker >( 1 ) );
+        // estimationInput->setConvergenceChecker( std::make_shared< EstimationConvergenceChecker >( 1 ) );
         estimationInput->defineEstimationSettings( 0, 1, 0, 1, 1, 1 );
 
         std::shared_ptr< EstimationOutput<> > estimationOutput = orbitDeterminationManager.estimateParameters( estimationInput );
 
         residuals.push_back( estimationOutput->residualStandardDeviation_ );
-
     }
     BOOST_CHECK( std::abs( residuals.at( 0 ) - residuals.at( 1 ) ) < 1e-8 );
-
 }
 BOOST_AUTO_TEST_SUITE_END( )
 

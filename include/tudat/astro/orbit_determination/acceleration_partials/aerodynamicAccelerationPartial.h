@@ -56,15 +56,11 @@ public:
         bodyStatePerturbations_ << 10.0, 10.0, 10.0, 1.0E-2, 1.0E-2, 1.0E-2;
     }
 
-    void computeAerodynamicAccelerationWrtDragComponent(
-        Eigen::MatrixXd& partial );
+    void computeAerodynamicAccelerationWrtDragComponent( Eigen::MatrixXd& partial );
 
-    void computeAerodynamicAccelerationWrtSideComponent(
-        Eigen::MatrixXd& partial );
+    void computeAerodynamicAccelerationWrtSideComponent( Eigen::MatrixXd& partial );
 
-    void computeAerodynamicAccelerationWrtLiftComponent(
-        Eigen::MatrixXd& partial );
-
+    void computeAerodynamicAccelerationWrtLiftComponent( Eigen::MatrixXd& partial );
 
     //! Function for calculating the partial of the acceleration w.r.t. the position of body undergoing acceleration..
     /*!

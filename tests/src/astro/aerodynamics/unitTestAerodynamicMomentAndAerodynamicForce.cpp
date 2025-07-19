@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE( testAerodynamicForceAndAcceleration )
         std::shared_ptr< AerodynamicCoefficientSettings > aerodynamicCoefficientSettings =
                 std::make_shared< ConstantAerodynamicCoefficientSettings >(
                         referenceArea, forceCoefficients, positive_aerodynamic_frame_coefficients );
-        
+
         // Set constant density and constant rotation models to TreasurePlanet
         DensityFunction densityFunction = [ = ]( double a, double b, double c, double d ) { return density; };
         bodies.at( "TreasurePlanet" )
@@ -277,7 +277,6 @@ BOOST_AUTO_TEST_CASE( testAerodynamicForceAndAcceleration )
 
         TUDAT_CHECK_MATRIX_CLOSE_FRACTION( expectedForce, force, tolerance );
     }
-
 }
 
 //! Test implementation of aerodynamic moment and rotational acceleration models.
