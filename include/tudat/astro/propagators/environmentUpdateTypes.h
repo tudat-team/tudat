@@ -8,7 +8,6 @@
  *    http://tudat.tudelft.nl/LICENSE.
  */
 
-
 #ifndef TUDAT_ENVIRONMENTUPDATETYPES_H
 #define TUDAT_ENVIRONMENTUPDATETYPES_H
 
@@ -23,17 +22,17 @@ namespace propagators
 {
 
 //! Enum defining types of environment model updates that can be done.
-enum EnvironmentModelsToUpdate
-{
+enum EnvironmentModelsToUpdate {
     body_translational_state_update = 0,
     body_rotational_state_update = 1,
     spherical_harmonic_gravity_field_update = 2,
     body_mass_update = 3,
     body_mass_distribution_update = 4,
-    vehicle_flight_conditions_update = 5,
-    radiation_source_model_update = 6,
-    radiation_pressure_target_model_update = 7,
-    body_segment_orientation_update = 8
+    body_segment_orientation_update = 5,
+    vehicle_flight_conditions_update = 6,
+    radiation_source_model_update = 7,
+    cannonball_radiation_pressure_target_model_update = 8,
+    panelled_radiation_pressure_target_model_update = 9
 };
 
 //! Function to extend existing list of required environment update types
@@ -43,13 +42,10 @@ enum EnvironmentModelsToUpdate
  * (passed by reference and modified by function)
  * \param updatesToAdd List of environment updates that are to be added to environmentUpdateList
  */
-void addEnvironmentUpdates(
-        std::map< propagators::EnvironmentModelsToUpdate, std::vector< std::string > >&
-        environmentUpdateList,
-        const std::map< propagators::EnvironmentModelsToUpdate, std::vector< std::string > >
-        updatesToAdd );
+void addEnvironmentUpdates( std::map< propagators::EnvironmentModelsToUpdate, std::vector< std::string > >& environmentUpdateList,
+                            const std::map< propagators::EnvironmentModelsToUpdate, std::vector< std::string > > updatesToAdd );
 
-} // namespace propagators
+}  // namespace propagators
 
-} // namespace tudat
-#endif // TUDAT_ENVIRONMENTUPDATETYPES_H
+}  // namespace tudat
+#endif  // TUDAT_ENVIRONMENTUPDATETYPES_H

@@ -19,7 +19,7 @@ namespace aerodynamics
             const double latitude, const double time )
     {
         // Compute the hash key??
-        basic_astrodynamics::DateTime currentDateTime_ = basic_astrodynamics::getCalendarDateFromTime( time );
+        basic_astrodynamics::DateTime currentDateTime_ = basic_astrodynamics::DateTime::fromTime( time );
         currentF107_ =  f107Function_( time );
         if (currentF107_ > 100.0) {
             currentF107_ = 100.0;

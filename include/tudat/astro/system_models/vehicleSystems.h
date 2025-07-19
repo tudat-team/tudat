@@ -18,9 +18,12 @@
 
 #include "tudat/astro/electromagnetism/reflectionLaw.h"
 #include "tudat/astro/ephemerides/rotationalEphemeris.h"
+#include "tudat/astro/ground_stations/transmittingFrequencies.h"
 #include "tudat/astro/system_models/engineModel.h"
+#include "tudat/astro/system_models/timingSystem.h"
 #include "tudat/astro/system_models/vehicleExteriorPanels.h"
 #include "tudat/astro/observation_models/observationFrequencies.h"
+#include "tudat/astro/ephemerides/constantEphemeris.h"
 
 namespace tudat
 {
@@ -36,17 +39,15 @@ namespace system_models
 class VehicleSystems
 {
 public:
-
     //! Constructor
     /*!
      * Constructor
      * \param dryMass Total dry mass of the vehicle (not defined; NaN by default).
      */
-    VehicleSystems( const double dryMass = TUDAT_NAN ):
-        currentOrientationTime_( TUDAT_NAN ), dryMass_( dryMass ){ }
+    VehicleSystems( const double dryMass = TUDAT_NAN ): currentOrientationTime_( TUDAT_NAN ), dryMass_( dryMass ) { }
 
     //! Destructor
-    ~VehicleSystems( ){ }
+    ~VehicleSystems( ) { }
 
     //! Function to retrieve the engine models
     /*!
@@ -74,16 +75,26 @@ public:
      * \param engineModel Model of engine that is to be set
      * \param engineName Reference id of the engine that is to be set.
      */
-    void setEngineModel(
-            const std::shared_ptr< EngineModel > engineModel )
+    void setEngineModel( const std::shared_ptr< EngineModel > engineModel )
     {
         // Check if engine with this name already exists.
         if( engineModels_.count( engineModel->getEngineName( ) ) )
         {
-            std::cerr << "Warning, engine model of name " << engineModel->getEngineName( ) << " already exists, overriding old model" << std::endl;
+            std::cerr << "Warning, engine model of name " << engineModel->getEngineName( ) << " already exists, overriding old model"
+                      << std::endl;
         }
 
         engineModels_[ engineModel->getEngineName( ) ] = engineModel;
+    }
+
+    std::shared_ptr< system_models::TimingSystem > getTimingSystem( )
+    {
+        return timingSystem_;
+    }
+
+    void setTimingSystem( const std::shared_ptr< system_models::TimingSystem > timingSystem )
+    {
+        timingSystem_ = timingSystem;
     }
 
     //! Function to retrieve the total dry mass of the vehicle
@@ -102,10 +113,9 @@ public:
      * \param controlSurfaceId Name of control surface for which deflection is to be set
      * \param deflectionAngle Current deflection of control surface that is to be set.
      */
-    void setCurrentControlSurfaceDeflection(
-            const std::string& controlSurfaceId, const double deflectionAngle )
+    void setCurrentControlSurfaceDeflection( const std::string& controlSurfaceId, const double deflectionAngle )
     {
-        currentControlSurfaceDeflections_[ controlSurfaceId ] =  deflectionAngle;
+        currentControlSurfaceDeflections_[ controlSurfaceId ] = deflectionAngle;
     }
 
     bool doesControlSurfaceExist( const std::string& controlSurfaceName )
@@ -119,13 +129,12 @@ public:
      * \param controlSurfaceId Name of control surface for which deflection is to be set
      * \return Current deflection of control surface that is requested.
      */
-    double getCurrentControlSurfaceDeflection(
-            const std::string& controlSurfaceId )
+    double getCurrentControlSurfaceDeflection( const std::string& controlSurfaceId )
     {
         if( currentControlSurfaceDeflections_.count( controlSurfaceId ) == 0 )
         {
             throw std::runtime_error( "Error when retrieving control surface deflection of control surface " + controlSurfaceId +
-                ", control surface not yet created" );
+                                      ", control surface not yet created" );
         }
         return currentControlSurfaceDeflections_.at( controlSurfaceId );
     }
@@ -177,11 +186,21 @@ public:
 
     void updatePartOrientations( const double time )
     {
-        if( !(time == currentOrientationTime_ ) )
+        if( !( time == currentOrientationTime_ ) )
         {
-            for( auto it : vehiclePartOrientation_ )
+            for( auto it: vehiclePartOrientation_ )
             {
                 currentVehiclePartRotationToBodyFixedFrame_[ it.first ] = it.second->getRotationToBaseFrame( time );
+            }
+            currentVehiclePartRotationToBodyFixedFrame_[ "" ] = Eigen::Quaterniond::Identity( );
+            unsigned int buffer = 0;
+            for( auto it: vehicleExteriorPanels_ )
+            {
+                for( unsigned int i = 0; i < it.second.size( ); i++ )
+                {
+                    allPanels_.at( i + buffer )->updatePanel( currentVehiclePartRotationToBodyFixedFrame_.at( it.first ) );
+                }
+                buffer += it.second.size( );
             }
             currentOrientationTime_ = time;
         }
@@ -197,13 +216,12 @@ public:
         {
             if( vehiclePartOrientation_.count( partName ) == 0 )
             {
-                throw std::runtime_error(
-                    "Error when retrieving orientation of body part " + partName + ", part rotation model not defined" );
+                throw std::runtime_error( "Error when retrieving orientation of body part " + partName +
+                                          ", part rotation model not defined" );
             }
             else
             {
-                throw std::runtime_error(
-                    "Error when retrieving orientation of body part " + partName + ", part not updated" );
+                throw std::runtime_error( "Error when retrieving orientation of body part " + partName + ", part not updated" );
             }
         }
 
@@ -211,9 +229,67 @@ public:
     }
 
     void setVehicleExteriorPanels(
-        const std::map< std::string, std::vector< std::shared_ptr< VehicleExteriorPanel > > > vehicleExteriorPanels )
+            const std::map< std::string, std::vector< std::shared_ptr< VehicleExteriorPanel > > > vehicleExteriorPanels )
     {
         vehicleExteriorPanels_ = vehicleExteriorPanels;
+        // group all panels in a vector
+        totalNumberOfPanels_ = 0;
+        for( auto it: vehicleExteriorPanels_ )
+        {
+            allPanels_.insert( allPanels_.end( ), it.second.begin( ), it.second.end( ) );
+            totalNumberOfPanels_ += it.second.size( );
+        }
+        // check if macro-model is loaded (find at least one isGeometryDefined == false)
+        panelGeometryDefined_ = true;
+        for( int i = 0; i < totalNumberOfPanels_; i++ )
+        {
+            if( !allPanels_.at( i )->isGeometryDefined( ) )
+            {
+                panelGeometryDefined_ = false;
+                break;
+            }
+        }
+        if( panelGeometryDefined_ )
+        {
+            system_models::Triangle3d triangleI, triangleJ;
+            std::vector< Eigen::Vector3d > verticesI, verticesJ;
+            // find neighbours
+            for( int i = 0; i < totalNumberOfPanels_; i++ )
+            {
+                std::vector< int > neighboringSurfaces;
+                for( int j = 0; j < totalNumberOfPanels_; j++ )
+                {
+                    if( i == j )
+                    {
+                        continue;
+                    }
+                    system_models::Triangle3d triangleI = allPanels_.at( i )->getFrameFixedTriangle3d( );
+                    system_models::Triangle3d triangleJ = allPanels_.at( j )->getFrameFixedTriangle3d( );
+                    verticesI = { triangleI.getVertexA( ), triangleI.getVertexB( ), triangleI.getVertexC( ) };
+                    verticesJ = { triangleJ.getVertexA( ), triangleJ.getVertexB( ), triangleJ.getVertexC( ) };
+                    int match = 0;
+                    for( int n = 0; n < 3; n++ )
+                    {
+                        for( int m = 0; m < 3; m++ )
+                        {
+                            if( verticesI[ n ].isApprox( verticesJ[ m ] ) )
+                            {
+                                match++;
+                            }
+                        }
+                    }
+                    if( match == 2 )
+                    {
+                        neighboringSurfaces.push_back( j );
+                    }
+                    if( neighboringSurfaces.size( ) == 3 )
+                    {
+                        allPanels_.at( i )->setNeighboringSurfaces( neighboringSurfaces );
+                        break;  // found all the neighbours, skip to next panel
+                    }
+                }
+            }
+        }
     }
 
     std::map< std::string, std::vector< std::shared_ptr< VehicleExteriorPanel > > > getVehicleExteriorPanels( )
@@ -221,81 +297,149 @@ public:
         return vehicleExteriorPanels_;
     }
 
+    std::vector< std::shared_ptr< system_models::VehicleExteriorPanel > >& getAllPanels( )
+    {
+        return allPanels_;
+    }
+
+    int getTotalNumberOfPanels( )
+    {
+        int numberOfPanels = 0;
+        for( auto it: vehicleExteriorPanels_ )
+        {
+            numberOfPanels += it.second.size( );
+        }
+        return numberOfPanels;
+    }
+
     void setVehiclePartOrientation(
-        const std::map< std::string, std::shared_ptr< ephemerides::RotationalEphemeris > > vehiclePartOrientation )
+            const std::map< std::string, std::shared_ptr< ephemerides::RotationalEphemeris > > vehiclePartOrientation )
     {
         vehiclePartOrientation_ = vehiclePartOrientation;
     }
 
     void setTransponderTurnaroundRatio(
-             std::function< double (
-                     observation_models::FrequencyBands uplinkBand,
-                     observation_models::FrequencyBands downlinkBand ) > transponderRatioFunction = &observation_models::getDsnDefaultTurnaroundRatios )
+            std::function< double( observation_models::FrequencyBands uplinkBand, observation_models::FrequencyBands downlinkBand ) >
+                    transponderRatioFunction = &observation_models::getDsnDefaultTurnaroundRatios )
     {
         transponderTurnaroundRatio_ = transponderRatioFunction;
     }
 
-    void setTransponderTurnaroundRatio(
-            std::map< std::pair< observation_models::FrequencyBands, observation_models::FrequencyBands >, double >&
-                    transponderRatioPerUplinkAndDownlinkFrequencyBand )
+    void setDefaultTransponderTurnaroundRatio( )
     {
-        transponderTurnaroundRatio_ = [=] (
-                observation_models::FrequencyBands uplinkBand,
-                observation_models::FrequencyBands downlinkBand )
-        {
+        setTransponderTurnaroundRatio( );
+    }
+
+    void setTransponderTurnaroundRatio( std::map< std::pair< observation_models::FrequencyBands, observation_models::FrequencyBands >,
+                                                  double >& transponderRatioPerUplinkAndDownlinkFrequencyBand )
+    {
+        transponderTurnaroundRatio_ = [ = ]( observation_models::FrequencyBands uplinkBand,
+                                             observation_models::FrequencyBands downlinkBand ) {
             return transponderRatioPerUplinkAndDownlinkFrequencyBand.at( std::make_pair( uplinkBand, downlinkBand ) );
         };
     }
 
-    std::function< double ( observation_models::FrequencyBands uplinkBand, observation_models::FrequencyBands downlinkBand ) >
-            getTransponderTurnaroundRatio( )
+    std::function< double( observation_models::FrequencyBands uplinkBand, observation_models::FrequencyBands downlinkBand ) >
+    getTransponderTurnaroundRatio( )
     {
         if( transponderTurnaroundRatio_ == nullptr )
         {
-            throw std::runtime_error( "Error when retrieving transponder turnaround ratio from vehicle systems: "
-                                      "turnaround ratio function is not defined." );
+            throw std::runtime_error(
+                    "Error when retrieving transponder turnaround ratio from vehicle systems: "
+                    "turnaround ratio function is not defined." );
         }
         return transponderTurnaroundRatio_;
     }
 
     bool doesReferencePointExist( const std::string referencePoint )
     {
-        return ( bodyFixedReferencePoint_.count( referencePoint ) > 0 );
+        return ( referencePoints_.count( referencePoint ) > 0 );
     }
 
-    Eigen::Vector3d getReferencePointPosition( const std::string referencePoint )
+    std::shared_ptr< ephemerides::Ephemeris > getReferencePointEphemerisInBodyFixedFrame( const std::string referencePoint )
     {
-        return bodyFixedReferencePoint_.at( referencePoint );
+        return referencePoints_.at( referencePoint );
     }
 
-    void setReferencePointPosition( const std::string referencePoint, const Eigen::Vector3d location )
+    Eigen::Vector3d getReferencePointPositionInBodyFixedFrame( const std::string referencePoint, const double time )
     {
-        bodyFixedReferencePoint_[ referencePoint ] = location;
+        return referencePoints_.at( referencePoint )->getCartesianPosition( time );
     }
 
-    std::map< std::string, Eigen::Vector3d > getBodyFixedReferencePoints( )
+    void setReferencePointPosition( const std::string referencePoint,
+                                    const Eigen::Vector3d& location,
+                                    const std::string frameOrigin = "",
+                                    const std::string frameOrientation = "" )
     {
-        return bodyFixedReferencePoint_;
+        Eigen::Vector6d pointState = Eigen::Vector6d::Zero( );
+        pointState.segment( 0, 3 ) = location;
+        referencePoints_[ referencePoint ] =
+                std::make_shared< ephemerides::ConstantEphemeris >( pointState, frameOrigin, frameOrientation );
     }
 
+    void setReferencePointPosition( const std::string referencePoint, std::shared_ptr< ephemerides::Ephemeris > referencePointEphemeris )
+    {
+        referencePoints_[ referencePoint ] = referencePointEphemeris;
+    }
+
+    std::map< std::string, std::shared_ptr< ephemerides::Ephemeris > > getReferencePoints( )
+    {
+        return referencePoints_;
+    }
+
+    //! Function to return reference points with fixed position in body-fixed frame only.
+    std::map< std::string, std::shared_ptr< ephemerides::ConstantEphemeris > > getFixedReferencePoints( )
+    {
+        std::map< std::string, std::shared_ptr< ephemerides::ConstantEphemeris > > fixedReferencePoints;
+        for( auto it: referencePoints_ )
+        {
+            if( std::dynamic_pointer_cast< ephemerides::ConstantEphemeris >( it.second ) != nullptr )
+            {
+                fixedReferencePoints[ it.first ] = std::dynamic_pointer_cast< ephemerides::ConstantEphemeris >( it.second );
+            }
+        }
+        return fixedReferencePoints;
+    }
 
     template< typename StateScalarType, typename TimeType >
-    Eigen::Matrix< StateScalarType, 6, 1 > getReferencePointStateInBodyFixedFrame(
-        const std::string referencePoint, const TimeType& time )
+    Eigen::Matrix< StateScalarType, 6, 1 > getReferencePointStateInBodyFixedFrame( const std::string referencePoint, const TimeType& time )
     {
-        Eigen::Matrix< StateScalarType, 6, 1 > pointLocation = Eigen::Matrix< StateScalarType, 6, 1 >::Zero( );
-        pointLocation.segment( 0, 3 ) = bodyFixedReferencePoint_.at( referencePoint ).template cast< StateScalarType >( );
-        return pointLocation;
+        return referencePoints_.at( referencePoint )->getTemplatedStateFromEphemeris< StateScalarType, TimeType >( time );
     }
 
+    bool isPanelGeometryDefined( ) const
+    {
+        return panelGeometryDefined_;
+    }
+
+    int getTotalNumberOfPanels( ) const
+    {
+        return totalNumberOfPanels_;
+    }
+
+    std::shared_ptr< ground_stations::StationFrequencyInterpolator > getTransmittedFrequencyCalculator( )
+    {
+        return transmittedFrequencyCalculator_;
+    }
+
+    void setTransmittedFrequencyCalculator(
+            const std::shared_ptr< ground_stations::StationFrequencyInterpolator > transmittedFrequencyCalculator )
+    {
+        transmittedFrequencyCalculator_ = transmittedFrequencyCalculator;
+    }
 
 private:
-
-    std::map< std::string, Eigen::Vector3d > bodyFixedReferencePoint_;
+    std::map< std::string, std::shared_ptr< ephemerides::Ephemeris > > referencePoints_;
 
     std::map< std::string, std::shared_ptr< ephemerides::RotationalEphemeris > > vehiclePartOrientation_;
 
     std::map< std::string, std::vector< std::shared_ptr< VehicleExteriorPanel > > > vehicleExteriorPanels_;
+
+    std::vector< std::shared_ptr< system_models::VehicleExteriorPanel > > allPanels_;
+
+    bool panelGeometryDefined_;
+
+    int totalNumberOfPanels_;
 
     double currentOrientationTime_;
 
@@ -303,6 +447,8 @@ private:
 
     //! Named list of engine models in the vehicle
     std::map< std::string, std::shared_ptr< EngineModel > > engineModels_;
+
+    std::shared_ptr< system_models::TimingSystem > timingSystem_;
 
     //! Total dry mass of the vehicle
     double dryMass_;
@@ -316,11 +462,14 @@ private:
     //! Wall emissivity of the vehicle (used for heating computations)
     double wallEmissivity_;
 
-    std::function< double ( observation_models::FrequencyBands uplinkBand, observation_models::FrequencyBands downlinkBand ) > transponderTurnaroundRatio_;
+    std::function< double( observation_models::FrequencyBands uplinkBand, observation_models::FrequencyBands downlinkBand ) >
+            transponderTurnaroundRatio_;
+
+    std::shared_ptr< ground_stations::StationFrequencyInterpolator > transmittedFrequencyCalculator_;
 };
 
-} // namespace system_models
+}  // namespace system_models
 
-} // namespace tudat
+}  // namespace tudat
 
-#endif // TUDAT_VEHICLESYSTEMS_H
+#endif  // TUDAT_VEHICLESYSTEMS_H

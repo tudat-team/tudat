@@ -34,15 +34,10 @@
 
 #include <Eigen/Core>
 
-
-
-
 #include <boost/circular_buffer.hpp>
 #include <functional>
 #include <memory>
 #include <vector>
-
-
 
 #include "tudat/math/basic/mathematicalConstants.h"
 
@@ -54,11 +49,9 @@ namespace basic_mathematics
 //! Class for creating and accessing a back-end cache of Legendre polynomials.
 class LegendreCache
 {
-
 public:
-
     //! Define Legendre polynomial function pointer.
-    typedef std::function< double ( int, int, LegendreCache& ) > LegendrePolynomialFunction;
+    typedef std::function< double( int, int, LegendreCache& ) > LegendrePolynomialFunction;
 
     //! Default constructor, initializes cache object with 0 maximum degree and order.
     /*!
@@ -78,7 +71,7 @@ public:
      */
     LegendreCache( const int maximumDegree, const int maximumOrder, const bool useGeodesyNormalization = 1 );
 
-    ~LegendreCache( ){ }
+    ~LegendreCache( ) { }
     //! Update maximum degree and order of cache
     /*!
      * Update maximum degree and order of cache
@@ -93,14 +86,14 @@ public:
      * \param polynomialParameter Parameter used as input argument for Legendre polynomials, in astro
      * applications, this is typically the sine of the body-fixed latitude.
      */
-   void update( const double polynomialParameter );
+    void update( const double polynomialParameter, const bool checkConsistency = true );
 
     //! Function to return the current polynomial parameter (typically sine of latitude)
     /*!
      * Function to return the current polynomial parameter (typically sine of latitude)
      * \return Current polynomial parameter
      */
-    double getCurrentPolynomialParameter( )
+    double getCurrentPolynomialParameter( ) const
     {
         return currentPolynomialParameter_;
     }
@@ -110,37 +103,43 @@ public:
      *  Function to return the complement to the current polynomial parameter (typically cosine of latitude)
      * \return Complement to the current polynomial parameter
      */
-    double getCurrentPolynomialParameterComplement( )
+    double getCurrentPolynomialParameterComplement( ) const
     {
         return currentPolynomialParameterComplement_;
     }
 
     //! Get Legendre polynomial value from the cache.
     /*!
-    * Get Legendre polynomial value from the cache, as computed by last call to update function.
-    * \param degree Degree of requested Legendre polynomial.
-    * \param order Order of requested Legendre polynomial.
-    * \return Legendre polynomial value.
-    */
-    double getLegendrePolynomial( const int degree, const int order );
+     * Get Legendre polynomial value from the cache, as computed by last call to update function.
+     * \param degree Degree of requested Legendre polynomial.
+     * \param order Order of requested Legendre polynomial.
+     * \return Legendre polynomial value.
+     */
+    double getLegendrePolynomial( const int degree, const int order ) const;
+
+    double getLegendrePolynomialWithoutCheck( const int degree, const int order ) const;
 
     //! Get first derivative of Legendre polynomial value from the cache.
     /*!
-    * Get first derivative of Legendre polynomial value from the cache, as computed by last call to update function.
-    * \param degree Degree of requested Legendre polynomial.
-    * \param order Order of requested Legendre polynomial.
-    * \return First derivative of Legendre polynomial value.
-    */
-    double getLegendrePolynomialDerivative( const int degree, const int order );
+     * Get first derivative of Legendre polynomial value from the cache, as computed by last call to update function.
+     * \param degree Degree of requested Legendre polynomial.
+     * \param order Order of requested Legendre polynomial.
+     * \return First derivative of Legendre polynomial value.
+     */
+    double getLegendrePolynomialDerivative( const int degree, const int order ) const;
+
+    double getLegendrePolynomialDerivativeWithoutCheck( const int degree, const int order ) const;
 
     //! Get second derivative of Legendre polynomial value from the cache.
     /*!
-    * Get second derivative of Legendre polynomial value from the cache, as computed by last call to update function.
-    * \param degree Degree of requested Legendre polynomial.
-    * \param order Order of requested Legendre polynomial.
-    * \return Second derivative of Legendre polynomial value.
-    */
-    double getLegendrePolynomialSecondDerivative( const int degree, const int order );
+     * Get second derivative of Legendre polynomial value from the cache, as computed by last call to update function.
+     * \param degree Degree of requested Legendre polynomial.
+     * \param order Order of requested Legendre polynomial.
+     * \return Second derivative of Legendre polynomial value.
+     */
+    double getLegendrePolynomialSecondDerivative( const int degree, const int order ) const;
+
+    double getLegendrePolynomialSecondDerivativeWithoutCheck( const int degree, const int order ) const;
 
     //! Function to get the maximum degree of cache.
     /*!
@@ -201,7 +200,6 @@ public:
     double getVerticalLegendreValuesComputationMultipliersTwo( const int degree, const int order );
 
 private:
-
     //! Maximum degree of cache.
     int maximumDegree_;
 
@@ -243,6 +241,7 @@ private:
 
     //! Function from which to compute the Legendre polynomials.
     LegendrePolynomialFunction legendrePolynomialFunction_;
+    LegendrePolynomialFunction legendrePolynomialFunctionWithoutCheck_;
 
     //! Boolean denoting whether the Legendre polynomials are geodesy-normalized or unnormalized
     bool useGeodesyNormalization_;
@@ -255,16 +254,12 @@ private:
 
     //! Boolean denoting whether the first derivatives of the Legendre polynomials are to be computed when calling
     //! update function.
-    bool computeFirstDerivatives_{true};
+    bool computeFirstDerivatives_{ true };
 
     //! Boolean denoting whether the second derivatives of the Legendre polynomials are to be computed when calling
     //! update function.
     bool computeSecondDerivatives_;
-
-
 };
-
-
 
 //! Compute unnormalized associated Legendre polynomial.
 /*!
@@ -291,11 +286,9 @@ private:
  * \param order Order of requested Legendre polynomial.
  * \param legendreCache Legendre cache from which to retrieve Legendre polynomial.
  * \return Unnormalized Legendre polynomial.
-*/
-double computeLegendrePolynomialFromCache( const int degree,
-                                           const int order,
-                                           LegendreCache& legendreCache );
-
+ */
+double computeLegendrePolynomialFromCache( const int degree, const int order, LegendreCache& legendreCache );
+double computeLegendrePolynomialFromCacheWithoutCheck( const int degree, const int order, LegendreCache& legendreCache );
 
 //! Compute unnormalized associated Legendre polynomial.
 /*!
@@ -322,11 +315,8 @@ double computeLegendrePolynomialFromCache( const int degree,
  * \param order Order of requested Legendre polynomial.
  * \param legendreParameter Free variable  of requested Legendre polynomial.
  * \return Unnormalized Legendre polynomial.
-*/
-double computeLegendrePolynomial( const int degree,
-                                  const int order,
-                                  const double legendreParameter );
-
+ */
+double computeLegendrePolynomial( const int degree, const int order, const double legendreParameter );
 
 //! Compute geodesy-normalized associated Legendre polynomial.
 /*!
@@ -367,9 +357,9 @@ double computeLegendrePolynomial( const int degree,
  * \param geodesyLegendreCache Legendre cache from which to retrieve Legendre polynomial.
  * \return Geodesy-normalized Legendre polynomial.
 */
-double computeGeodesyLegendrePolynomialFromCache( const int degree,
-                                                  const int order,
-                                                  LegendreCache& geodesyLegendreCache );
+double computeGeodesyLegendrePolynomialFromCache( const int degree, const int order, LegendreCache& geodesyLegendreCache );
+
+double computeGeodesyLegendrePolynomialFromCacheWithoutCheck( const int degree, const int order, LegendreCache& geodesyLegendreCache );
 
 //! Compute geodesy-normalized associated Legendre polynomial.
 /*!
@@ -410,9 +400,7 @@ double computeGeodesyLegendrePolynomialFromCache( const int degree,
  * \param legendreParameter Free variable of requested Legendre polynomial.
  * \return Geodesy-normalized Legendre polynomial.
 */
-double computeGeodesyLegendrePolynomial( const int degree,
-                                         const int order,
-                                         const double legendreParameter );
+double computeGeodesyLegendrePolynomial( const int degree, const int order, const double legendreParameter );
 
 //! Compute derivative of unnormalized Legendre polynomial.
 /*!
@@ -432,7 +420,7 @@ double computeGeodesyLegendrePolynomial( const int degree,
  *          polynomial parameter as the requested Legendre polynomial derivative, but with an order
  *          of one more.
  * \return Unnormalized Legendre polynomial derivative with respect to the polynomial parameter.
-*/
+ */
 double computeLegendrePolynomialDerivative( const int order,
                                             const double polynomialParameter,
                                             const double currentLegendrePolynomial,
@@ -451,14 +439,13 @@ double computeLegendrePolynomialDerivative( const int order,
  *          of one more.
  * \param normalizationCorrection Pre-computed scaling term used for part of computations.
  * \return Geodesy-normalized Legendre polynomial derivative with respect to the polynomial parameter.
-*/
+ */
 double computeGeodesyLegendrePolynomialDerivative( const int order,
                                                    const double polynomialParameter,
                                                    const double oneOverPolynomialParameterComplement,
                                                    const double currentLegendrePolynomial,
                                                    const double incrementedLegendrePolynomial,
                                                    const double normalizationCorrection );
-
 
 //! Compute derivative of geodesy-normalized Legendre polynomial.
 /*!
@@ -480,7 +467,7 @@ double computeGeodesyLegendrePolynomialDerivative( const int order,
  *          polynomial parameter as the requested Legendre polynomial derivative, but with an order
  *          of one more.
  * \return Geodesy-normalized Legendre polynomial derivative with respect to the polynomial parameter.
-*/
+ */
 double computeGeodesyLegendrePolynomialDerivative( const int degree,
                                                    const int order,
                                                    const double polynomialParameter,
@@ -505,7 +492,7 @@ double computeGeodesyLegendrePolynomialDerivative( const int degree,
  *          of one more.
  * \param normalizationCorrection Pre-computed scaling term used for part of computations.
  * \return Geodesy-normalized Legendre polynomial derivative with respect to the polynomial parameter.
-*/
+ */
 double computeGeodesyLegendrePolynomialSecondDerivative( const int order,
                                                          const double polynomialParameter,
                                                          const double oneOverPolynomialParameterComplement,
@@ -530,10 +517,8 @@ double computeGeodesyLegendrePolynomialSecondDerivative( const int order,
  * \param order Order of requested Legendre polynomial.
  * \param polynomialParameter Free variable of requested Legendre polynomial.
  * \return Unnormalized Legendre polynomial.
-*/
-double computeLegendrePolynomialExplicit( const int degree,
-                                          const int order,
-                                          const double polynomialParameter );
+ */
+double computeLegendrePolynomialExplicit( const int degree, const int order, const double polynomialParameter );
 
 //! Compute low degree/order geodesy-normalized Legendre polynomial explicitly.
 /*!
@@ -550,10 +535,8 @@ double computeLegendrePolynomialExplicit( const int degree,
  * \param order Order of requested Legendre polynomial.
  * \param polynomialParameter Free variable of requested Legendre polynomial.
  * \return Geodesy-normalized Legendre polynomial.
-*/
-double computeGeodesyLegendrePolynomialExplicit( const int degree,
-                                                 const int order,
-                                                 const double polynomialParameter );
+ */
+double computeGeodesyLegendrePolynomialExplicit( const int degree, const int order, const double polynomialParameter );
 
 //! Compute unnormalized Legendre polynomial through sectoral recursion.
 /*!
@@ -570,7 +553,7 @@ double computeGeodesyLegendrePolynomialExplicit( const int degree,
  *          parameter as the requested Legendre polynomial, but with a degree and order of one
  *          less.
  * \return Unnormalized Legendre polynomial.
-*/
+ */
 double computeLegendrePolynomialDiagonal( const int degree,
                                           const double degreeOneOrderOnePolynomial,
                                           const double priorSectoralPolynomial );
@@ -590,7 +573,7 @@ double computeLegendrePolynomialDiagonal( const int degree,
  * \param priorSectoralPolynomial Legendre polynomial with the same polynomial parameter as the
  *          requested Legendre polynomial, but with a degree and order of one less.
  * \return Geodesy-normalized Legendre polynomial.
-*/
+ */
 double computeGeodesyLegendrePolynomialDiagonal( const int degree,
                                                  const double degreeOneOrderOnePolynomial,
                                                  const double priorSectoralPolynomial );
@@ -614,7 +597,7 @@ double computeGeodesyLegendrePolynomialDiagonal( const int degree,
  *          and polynomial parameter as the requested Legendre polynomial, but with a degree of
  *          two less.
  * \return Unnormalized Legendre polynomial.
-*/
+ */
 double computeLegendrePolynomialVertical( const int degree,
                                           const int order,
                                           const double polynomialParameter,
@@ -647,17 +630,21 @@ double computeGeodesyLegendrePolynomialVertical( const int degree,
  * \param twoDegreesPriorPolynomial Geodesy-normalized Legendre polynomial with the same polynomial
  *          parameter as the requested Legendre polynomial, but with a degree of two less.
  * \return Geodesy-normalized Legendre polynomial.
-*/
+ */
 double computeGeodesyLegendrePolynomialVertical( const int degree,
                                                  const int order,
                                                  const double polynomialParameter,
                                                  const double oneDegreePriorPolynomial,
                                                  const double twoDegreesPriorPolynomial );
 
-
 //! Predefine boost function for geodesy-normalized Legendre polynomial.
 static const LegendreCache::LegendrePolynomialFunction geodesyNormalizedLegendrePolynomialFunction =
         std::bind( &computeGeodesyLegendrePolynomialFromCache, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3 );
+static const LegendreCache::LegendrePolynomialFunction geodesyNormalizedLegendrePolynomialFunctionWithoutCheck =
+        std::bind( &computeGeodesyLegendrePolynomialFromCacheWithoutCheck,
+                   std::placeholders::_1,
+                   std::placeholders::_2,
+                   std::placeholders::_3 );
 
 //! Function to calculate the normalization factor for Legendre polynomials to geodesy-normalized.
 /*!
@@ -674,6 +661,8 @@ double calculateLegendreGeodesyNormalizationFactor( const int degree, const int 
 //! Predefine boost function for unnormalized Legendre polynomial.
 const LegendreCache::LegendrePolynomialFunction regularLegendrePolynomialFunction =
         std::bind( &computeLegendrePolynomialFromCache, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3 );
+const LegendreCache::LegendrePolynomialFunction regularLegendrePolynomialFunctionWithoutCheck =
+        std::bind( &computeLegendrePolynomialFromCacheWithoutCheck, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3 );
 
 //! Function to convert unnormalized to geodesy-normalized (4-pi normalized) spherical harmonic coefficients
 /*!
@@ -683,11 +672,10 @@ const LegendreCache::LegendrePolynomialFunction regularLegendrePolynomialFunctio
  * \param normalizedCosineCoefficients Transformed, normalized, cosine coefficients (returned by reference)
  * \param normalizedSineCoefficients Transformed, normalized, sine coefficients (returned by reference)
  */
-void convertUnnormalizedToGeodesyNormalizedCoefficients(
-        const Eigen::MatrixXd& unnormalizedCosineCoefficients,
-        const Eigen::MatrixXd& unnormalizedSineCoefficients,
-        Eigen::MatrixXd& normalizedCosineCoefficients,
-        Eigen::MatrixXd& normalizedSineCoefficients );
+void convertUnnormalizedToGeodesyNormalizedCoefficients( const Eigen::MatrixXd& unnormalizedCosineCoefficients,
+                                                         const Eigen::MatrixXd& unnormalizedSineCoefficients,
+                                                         Eigen::MatrixXd& normalizedCosineCoefficients,
+                                                         Eigen::MatrixXd& normalizedSineCoefficients );
 
 std::pair< Eigen::MatrixXd, Eigen::MatrixXd > convertUnnormalizedToGeodesyNormalizedCoefficients(
         const Eigen::MatrixXd& unnormalizedCosineCoefficients,
@@ -701,11 +689,10 @@ std::pair< Eigen::MatrixXd, Eigen::MatrixXd > convertUnnormalizedToGeodesyNormal
  * \param unnormalizedCosineCoefficients Transformed, unnormalized, cosine coefficients (returned by reference)
  * \param unnormalizedSineCoefficients Transformed, unnormalized, sine coefficients (returned by reference)
  */
-void convertGeodesyNormalizedToUnnormalizedCoefficients(
-        const Eigen::MatrixXd& normalizedCosineCoefficients,
-        const Eigen::MatrixXd& normalizedSineCoefficients,
-        Eigen::MatrixXd& unnormalizedCosineCoefficients,
-        Eigen::MatrixXd& unnormalizedSineCoefficients );
+void convertGeodesyNormalizedToUnnormalizedCoefficients( const Eigen::MatrixXd& normalizedCosineCoefficients,
+                                                         const Eigen::MatrixXd& normalizedSineCoefficients,
+                                                         Eigen::MatrixXd& unnormalizedCosineCoefficients,
+                                                         Eigen::MatrixXd& unnormalizedSineCoefficients );
 
 std::pair< Eigen::MatrixXd, Eigen::MatrixXd > convertGeodesyNormalizedToUnnormalizedCoefficients(
         const Eigen::MatrixXd& normalizedCosineCoefficients,
@@ -720,11 +707,9 @@ std::pair< Eigen::MatrixXd, Eigen::MatrixXd > convertGeodesyNormalizedToUnnormal
  * \param sineCoefficients Original, unnormalized, cosine coefficients, to be transformed to normalized coefficients (returned
  * by reference)
  */
-void geodesyNormalizeUnnormalizedCoefficients(
-        Eigen::MatrixXd& cosineCoefficients,
-        Eigen::MatrixXd& sineCoefficients );
+void geodesyNormalizeUnnormalizedCoefficients( Eigen::MatrixXd& cosineCoefficients, Eigen::MatrixXd& sineCoefficients );
 
-} // namespace basic_mathematics
-} // namespace tudat
+}  // namespace basic_mathematics
+}  // namespace tudat
 
-#endif // TUDAT_LEGENDRE_POLYNOMIALS_H
+#endif  // TUDAT_LEGENDRE_POLYNOMIALS_H

@@ -113,6 +113,7 @@
                  "${CMAKE_CXX_FLAGS}"
                  " -Wno-unused-parameter"
                  " -Wno-unused-variable"
+                 " -Wno-enum-constexpr-conversion"
                  )
          string(CONCAT CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
@@ -367,11 +368,10 @@ if (MSVC)
   add_compile_options(/bigobj)
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
 endif ()
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
 
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)

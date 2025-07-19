@@ -14,8 +14,6 @@
 
 #include <Eigen/Core>
 
-
-
 #include "tudat/math/basic/legendrePolynomials.h"
 
 namespace tudat
@@ -33,7 +31,6 @@ namespace basic_mathematics
 class SphericalHarmonicsCache
 {
 public:
-
     //! Default constructor, initializes cache object with 0 maximum degree and order.
     /*!
      * Default constructor, initializes cache object with 0 mazimum degree and order.
@@ -42,7 +39,7 @@ public:
      */
     SphericalHarmonicsCache( const bool useGeodesyNormalization = 1 )
     {
-        legendreCache_ = std::make_shared< LegendreCache >( useGeodesyNormalization );
+        legendreCache_ = LegendreCache( useGeodesyNormalization );
         currentLongitude_ = TUDAT_NAN;
         referenceRadiusRatio_ = TUDAT_NAN;
 
@@ -59,7 +56,7 @@ public:
      */
     SphericalHarmonicsCache( const int maximumDegree, const int maximumOrder, const bool useGeodesyNormalization = 1 )
     {
-        legendreCache_ = std::make_shared< LegendreCache >( maximumDegree, maximumOrder, useGeodesyNormalization );
+        legendreCache_ = LegendreCache( maximumDegree, maximumOrder, useGeodesyNormalization );
 
         currentLongitude_ = TUDAT_NAN;
         referenceRadiusRatio_ = TUDAT_NAN;
@@ -75,7 +72,6 @@ public:
      */
     void resetMaximumDegreeAndOrder( const int maximumDegree, const int maximumOrder );
 
-
     //! Update cached variables to current state.
     /*!
      * Update cached variables to current state.
@@ -84,10 +80,13 @@ public:
      * \param longitude Current latitude
      * \param referenceRadius Reference (typically equatorial) radius of gravity field.
      */
-    void update( const double radius, const double polynomialParameter,
-                 const double longitude, const double referenceRadius )
+    void update( const double radius,
+                 const double polynomialParameter,
+                 const double longitude,
+                 const double referenceRadius,
+                 const bool checkConsistency = true )
     {
-        legendreCache_->update( polynomialParameter );
+        legendreCache_.update( polynomialParameter, checkConsistency );
         updateSines( longitude );
         updateRadiusPowers( referenceRadius / radius );
     }
@@ -98,9 +97,9 @@ public:
      * \param order Order as input to sine( order * longitude )
      * \return Sine( order * longitude )
      */
-    double getSineOfMultipleLongitude( const int order )
+    double getSineOfMultipleLongitude( const int order ) const
     {
-        return sinesOfLongitude_[ order ];
+        return sinesOfLongitude_.at( order );
     }
 
     //! Function to retrieve the current cosine of m times the longitude.
@@ -109,9 +108,9 @@ public:
      * \param order Order as input to cosine( order * longitude )
      * \return Cosine( order * longitude )
      */
-    double getCosineOfMultipleLongitude( const int order )
+    double getCosineOfMultipleLongitude( const int order ) const
     {
-        return cosinesOfLongitude_[ order ];
+        return cosinesOfLongitude_.at( order );
     }
 
     //! Function to get an integer power of the distance divided by the reference radius.
@@ -121,9 +120,9 @@ public:
      * degree + 1).
      * \return Ratio of distance and reference radius to power of input argument.
      */
-    double getReferenceRadiusRatioPowers( const int degreePlusOne )
+    double getReferenceRadiusRatioPowers( const int degreePlusOne ) const
     {
-        return referenceRadiusRatioPowers_[ degreePlusOne ];
+        return referenceRadiusRatioPowers_.at( degreePlusOne );
     }
 
     //! Function to get the maximum degree of cache.
@@ -141,7 +140,7 @@ public:
      * Function to get the maximum order of cache.
      * \return Maximum order of cache.
      */
-    int getMaximumOrder( )
+    int getMaximumOrder( ) const
     {
         return maximumOrder_;
     }
@@ -151,7 +150,7 @@ public:
      * Function to get current longitude
      * \return Current longitude
      */
-    double getCurrentLongitude( )
+    double getCurrentLongitude( ) const
     {
         return currentLongitude_;
     }
@@ -161,13 +160,22 @@ public:
      * Function to get object for caching and computing Legendre polynomials.
      * \return Object for caching and computing Legendre polynomials.
      */
-    std::shared_ptr< LegendreCache > getLegendreCache( )
+    const LegendreCache& getLegendreCacheConst( ) const
     {
         return legendreCache_;
     }
 
-private:
+    LegendreCache& getLegendreCache( )
+    {
+        return legendreCache_;
+    }
 
+    void setComputeFirstDerivatives( const bool computeFirstDerivatives )
+    {
+        legendreCache_.setComputeFirstDerivatives( computeFirstDerivatives );
+    }
+
+private:
     //! Update cached values of sines and cosines of longitude/
     /*!
      * Update cached values of sines and cosines of longitude/
@@ -238,12 +246,11 @@ private:
     std::vector< double > referenceRadiusRatioPowers_;
 
     //! Object for caching and computing Legendre polynomials.
-    std::shared_ptr< LegendreCache > legendreCache_;
-
+    LegendreCache legendreCache_;
 };
 
 //! Spherical coordinate indices.
-enum SphericalCoordinatesIndices{ radiusIndex, latitudeIndex, longitudeIndex };
+enum SphericalCoordinatesIndices { radiusIndex, latitudeIndex, longitudeIndex };
 
 //! Compute the gradient of a single term of a spherical harmonics potential field.
 /*!
@@ -273,21 +280,18 @@ enum SphericalCoordinatesIndices{ radiusIndex, latitudeIndex, longitudeIndex };
  *          gradient( 1 ) = derivative with respect to latitude angle,
  *          gradient( 2 ) = derivative with respect to longitude angle.
  */
-Eigen::Vector3d computePotentialGradient(
-        const double distance,
-        const double radiusPowerTerm,
-        const double cosineOfOrderLongitude,
-        const double sineOfOrderLongitude,
-        const double cosineOfLatitude,
-        const double preMultiplier,
-        const int degree,
-        const int order,
-        const double cosineHarmonicCoefficient,
-        const double sineHarmonicCoefficient,
-        const double legendrePolynomial,
-        const double legendrePolynomialDerivative );
-
-
+Eigen::Vector3d computePotentialGradient( const double distance,
+                                          const double radiusPowerTerm,
+                                          const double cosineOfOrderLongitude,
+                                          const double sineOfOrderLongitude,
+                                          const double cosineOfLatitude,
+                                          const double preMultiplier,
+                                          const int degree,
+                                          const int order,
+                                          const double cosineHarmonicCoefficient,
+                                          const double sineHarmonicCoefficient,
+                                          const double legendrePolynomial,
+                                          const double legendrePolynomialDerivative );
 
 //! Compute the gradient of a single term of a spherical harmonics potential field.
 /*!
@@ -392,9 +396,9 @@ Eigen::Vector3d computePotentialGradient( const Eigen::Vector3d& sphericalPositi
                                           const double sineHarmonicCoefficient,
                                           const double legendrePolynomial,
                                           const double legendrePolynomialDerivative,
-                                          const std::shared_ptr< SphericalHarmonicsCache > sphericalHarmonicsCache );
+                                          const SphericalHarmonicsCache& sphericalHarmonicsCache );
 
-} // namespace basic_mathematics
-} // namespace tudat
+}  // namespace basic_mathematics
+}  // namespace tudat
 
-#endif // TUDAT_SPHERICAL_HARMONICS_H
+#endif  // TUDAT_SPHERICAL_HARMONICS_H

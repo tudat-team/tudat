@@ -10,7 +10,7 @@
 # TODO: https://dev.azure.com/tudat-team/feedstock-builds/_build/results?buildId=26&view=logs&j=4b3757f9-99c5-5891-6c0c-93d7030cdf7d&t=f047df50-a233-5ae9-bf8f-c7dd8e5684ad -> https://stackoverflow.com/questions/36567072/why-do-i-get-ld-warning-direct-access-in-main-to-global-weak-symbol-in-this
 
 # Specify minimum cmake version required to compile Tudat.
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.5)
 
 # Trick for recompiling changes for BUILD-TREE.
 if (EXISTS "${CMAKE_BINARY_DIR}/CMakeCache.txt")
@@ -67,15 +67,14 @@ option(TUDAT_BUILD_STATIC_LIBRARY "Build tudat as a static library, instead of d
 
 # Build static library instead of dynamic.
 option(TUDAT_BUILD_WITH_FILTERS "Build Tudat with preliminary Kalman Filter functionality." OFF)
-
+ 
 # Build sofa interface.
 option(TUDAT_BUILD_WITH_SOFA_INTERFACE "Build Tudat with sofa interface." ON)
 
 # Build json interface.
 option(TUDAT_BUILD_WITH_JSON_INTERFACE "Build Tudat with json interface." OFF)
 
-# Build with nrlmsise-00 atmosphere model.
-option(TUDAT_BUILD_WITH_NRLMSISE00 "Build with nrlmsise-00 atmosphere model." OFF)
+option(TUDAT_BUILD_WITH_FFTW3 "Build Tudat with FFTW3." OFF)
 
 # Build pagmo-dependent code
 option(TUDAT_BUILD_WITH_PAGMO "Build Tudat with pagmo." OFF)
@@ -119,14 +118,14 @@ message(STATUS "TUDAT_BUILD_TUDAT_TUTORIALS                           ${TUDAT_BU
 message(STATUS "TUDAT_BUILD_STATIC_LIBRARY                            ${TUDAT_BUILD_STATIC_LIBRARY}")
 message(STATUS "TUDAT_BUILD_WITH_FILTERS                              ${TUDAT_BUILD_WITH_FILTERS}")
 message(STATUS "TUDAT_BUILD_WITH_SOFA_INTERFACE                       ${TUDAT_BUILD_WITH_SOFA_INTERFACE}")
+message(STATUS "TUDAT_BUILD_WITH_FFTW3                                ${TUDAT_BUILD_WITH_FFTW3}")
 message(STATUS "TUDAT_BUILD_WITH_JSON_INTERFACE                       ${TUDAT_BUILD_WITH_JSON_INTERFACE}")
-message(STATUS "TUDAT_BUILD_WITH_NRLMSISE00                           ${TUDAT_BUILD_WITH_NRLMSISE00}")
 message(STATUS "TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS ${TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS}")
 message(STATUS "TUDAT_DOWNLOAD_AND_BUILD_BOOST                        ${TUDAT_DOWNLOAD_AND_BUILD_BOOST}")
 
 set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_FILTERS=${TUDAT_BUILD_WITH_FILTERS}")
-set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_NRLMSISE00=${TUDAT_BUILD_WITH_NRLMSISE00}")
 set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_SOFA_INTERFACE=${TUDAT_BUILD_WITH_SOFA_INTERFACE}")
+set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_FFTW3=${TUDAT_BUILD_WITH_FFTW3}")
 set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_JSON_INTERFACE=${TUDAT_BUILD_WITH_JSON_INTERFACE}")
 set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS=${TUDAT_BUILD_WITH_EXTENDED_PRECISION_PROPAGATION_TOOLS}")
 # +============================================================================
@@ -134,13 +133,19 @@ set(Tudat_DEFINITIONS "${Tudat_DEFINITIONS} -DTUDAT_BUILD_WITH_EXTENDED_PRECISIO
 #  Offer the user the choice of overriding the installation directories.
 # +============================================================================
 # TODO: Consider if this can work with <tudat/paths.hpp> going forward.
-set(INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib/" CACHE PATH "Installation directory for libraries")
-set(INSTALL_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin/" CACHE PATH "Installation directory for executables")
-set(INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include/" CACHE PATH "Installation directory for header files")
-set(INSTALL_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data/" CACHE PATH "Installation directory for data files")
-set(INSTALL_MAN_DIR "${CMAKE_INSTALL_PREFIX}/" CACHE PATH "Installation directory for man documentation")
-#set(INSTALL_TESTS_DIR "${CMAKE_INSTALL_PREFIX}/tests/" CACHE PATH "Installation directory for tests (default=OFF)")
-set(INSTALL_CMAKE_DIR "${INSTALL_LIB_DIR}/cmake/${PROJECT_NAME_LOWER}" CACHE PATH "Installation directory for cmake config files")
+
+set(INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+set(INSTALL_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin")
+set(INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
+set(INSTALL_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
+set(INSTALL_MAN_DIR "${CMAKE_INSTALL_PREFIX}")
+#set(INSTALL_TESTS_DIR "${CMAKE_INSTALL_PREFIX}/tests")
+set(INSTALL_CMAKE_DIR "${INSTALL_LIB_DIR}/cmake/${PROJECT_NAME_LOWER}")
+
+message("")
+message(STATUS "INSTALLATION PREFIX: ${CMAKE_INSTALL_PREFIX}")
+message("")
+
 
 # Make relative paths absolute (needed later on)
 foreach (p LIB BIN INCLUDE DATA CMAKE)
@@ -321,13 +326,32 @@ if (TUDAT_BUILD_WITH_SOFA_INTERFACE)
     add_definitions(-DTUDAT_BUILD_WITH_SOFA_INTERFACE=1)
 endif ()
 
-if (TUDAT_BUILD_WITH_NRLMSISE00)
-    find_package(nrlmsise00 REQUIRED 0.1)
-    message(STATUS ${NRLMSISE00_LIBRARIES})
-    add_definitions(-DTUDAT_BUILD_WITH_NRLMSISE=1)
+find_package(nrlmsise00 REQUIRED 0.1)
+message(STATUS ${NRLMSISE00_LIBRARIES})
+add_definitions(-DTUDAT_BUILD_WITH_NRLMSISE=1)
+
+if (TUDAT_BUILD_WITH_FFTW3)
+    if(NOT APPLE)
+        find_package(FFTW3)
+        message(STATUS "FFTW " ${FFTW3_LIBRARIES})
+        include_directories(SYSTEM AFTER "${FFTW3_INCLUDE_DIRS}")
+        if(WIN32)
+            set (FFTW3_LIBRARIES "${FFTW3_LIBRARY_DIRS}/fftw3.lib")
+        else()
+            set (FFTW3_LIBRARIES "${FFTW3_LIBRARY_DIRS}/libfftw3.so")
+        endif()
+        add_definitions(-DTUDAT_BUILD_WITH_FFTW3=1)
+    else( )
+        find_package(FFTW3)
+        message(STATUS ${FFTW3_LIBRARIES})
+        include_directories(SYSTEM AFTER "${FFTW3_INCLUDE_DIRS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${FFTW3_INCLUDE_DIR}\"")
+        set (FFTW3_LIBRARIES "${FFTW3_LIBRARY_DIRS}/libfftw3.dylib")
+        add_definitions(-DTUDAT_BUILD_WITH_FFTW3=1)
+    endif( )
 else( )
-    add_definitions(-DTUDAT_BUILD_WITH_NRLMSISE=0)
-endif ()
+    add_definitions(-DTUDAT_BUILD_WITH_FFTW3=0)
+endif( )
 
 # JSON
 if (TUDAT_BUILD_WITH_JSON_INTERFACE)
