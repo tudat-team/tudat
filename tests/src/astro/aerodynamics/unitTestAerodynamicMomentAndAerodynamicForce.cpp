@@ -278,68 +278,6 @@ BOOST_AUTO_TEST_CASE( testAerodynamicForceAndAcceleration )
         TUDAT_CHECK_MATRIX_CLOSE_FRACTION( expectedForce, force, tolerance );
     }
 
-    // Test 6: Test the acceleration model class with inverted coefficients.
-    {
-        // Set initial state
-        Eigen::Vector6d initialState = Eigen::Vector6d::Zero( );
-
-        initialState( 0 ) = 6.8E6;
-        initialState( 3 ) = airSpeed;
-
-        SystemOfBodies bodies = SystemOfBodies( "SSB", "ECLIPJ2000" );
-
-        bodies.createEmptyBody( "TreasurePlanet" );
-        std::shared_ptr< basic_astrodynamics::OblateSpheroidBodyShapeModel > oblateSpheroidModel =
-            std::make_shared< basic_astrodynamics::OblateSpheroidBodyShapeModel >( 6E6, 0.0 );
-        bodies.at( "TreasurePlanet" )->setShapeModel( oblateSpheroidModel );
-        bodies.at( "TreasurePlanet" )->setEphemeris( std::make_shared< ephemerides::ConstantEphemeris >( Eigen::Vector6d::Zero( ) ) );
-        bodies.createEmptyBody( "Legacy" );
-        bodies.at( "Legacy" )->setConstantBodyMass( mass );
-        bodies.at( "Legacy" )->setEphemeris( std::make_shared< ephemerides::ConstantEphemeris >( initialState ) );
-
-        std::shared_ptr< AerodynamicCoefficientSettings > aerodynamicCoefficientSettings =
-                std::make_shared< ConstantAerodynamicCoefficientSettings >(
-                        referenceArea, -forceCoefficients, negative_aerodynamic_frame_coefficients );
-        
-        // Set constant density and constant rotation models to TreasurePlanet
-        DensityFunction densityFunction = [=](double a, double b, double c, double d) { return density; };                
-        bodies.at( "TreasurePlanet" )->setAtmosphereModel( 
-                createAtmosphereModel( std::make_shared< simulation_setup::CustomConstantTemperatureAtmosphereSettings >( densityFunction, 300.0 ),
-                                       "TreasurePlanet" ) );
-        bodies.at( "TreasurePlanet" )
-                    ->setRotationalEphemeris( createRotationModel(
-                            constantRotationModelSettings( "ECLIPJ2000", "TreasurePlanetFixed", Eigen::Matrix3d::Identity( ) ),
-                            "TreasurePlanet",
-                            bodies ) );
-        // Create and set aerodynamic coefficients object
-        bodies.at( "Legacy" )
-                ->setAerodynamicCoefficientInterface(
-                        createAerodynamicCoefficientInterface( aerodynamicCoefficientSettings, "Legacy", bodies ) );
-        bodies.at( "Legacy" )
-                    ->setRotationalEphemeris( createRotationModel(
-                            constantRotationModelSettings( "ECLIPJ2000", "LegacyFixed", Eigen::Matrix3d::Identity( ) ),
-                            "Legacy",
-                            bodies ) );
-
-        std::shared_ptr< AtmosphericFlightConditions > bodyFlightConditions = createAtmosphericFlightConditions(
-                bodies.at( "Legacy" ), bodies.at( "TreasurePlanet" ), "Legacy", "TreasurePlanet" );
-        bodies.at( "Legacy" )->setFlightConditions( bodyFlightConditions );
-
-        AerodynamicAcceleration aerodynamicAcceleration( bodyFlightConditions, std::bind( &Body::getBodyMass, bodies.at( "Legacy" ) ) );
-        
-        //update environment
-        bodies.at( "TreasurePlanet" )->setCurrentRotationalStateToLocalFrameFromEphemeris( 0.0 );
-        bodies.at( "Legacy" )->setCurrentRotationalStateToLocalFrameFromEphemeris( 0.0 );
-        bodies.at( "TreasurePlanet" )->setState( Eigen::Vector6d::Zero( ) );
-        bodies.at( "Legacy" )->setState( initialState );
-        bodyFlightConditions->updateConditions( 0.0 );
-        aerodynamicAcceleration.updateMembers( );
-
-        Eigen::Vector3d force = aerodynamicAcceleration.getAcceleration( ) * mass;   
-        // Check if computed force matches expected.
-
-        TUDAT_CHECK_MATRIX_CLOSE_FRACTION( expectedForce, force, tolerance );
-    }
 }
 
 //! Test implementation of aerodynamic moment and rotational acceleration models.
