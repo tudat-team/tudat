@@ -483,6 +483,22 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME_LOWER}-config-version.
 # ========
 message(STATUS "TUDAT_DATA_DIR_RELATIVE_TO_INSTALL_PREFIX: ${TUDAT_DATA_DIR_RELATIVE_TO_INSTALL_PREFIX}")
 
+# ===========
+# Unity Build
+# ===========
+
+# Function to enable Unity Builds for a target
+function(enable_unity_builds target)
+    set_property(TARGET ${target} PROPERTY UNITY_BUILD ON)
+    set_property(TARGET ${target} PROPERTY UNITY_BUILD_BATCH_SIZE 8)
+endfunction()
+
+# Enable Unity Builds for all targets
+get_property(targets GLOBAL PROPERTY TARGETS)
+foreach(target IN LISTS targets)
+    enable_unity_builds(${target})
+endforeach()
+
 # +============================================================================
 # CLEAN UP (Project name independent)
 #  Cleanup in case project is not top level.
