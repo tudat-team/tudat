@@ -228,19 +228,8 @@ public:
         ObservationScalarType currentReferenceTurnAroundRatio =
                 static_cast< ObservationScalarType >( turnaroundRatio_( referenceUplinkBand, downlinkBand ) );
 
-        Eigen::Vector3d nominalReceivingStationState = ( stationStates_.count( receiver ) == 0 )
-                ? Eigen::Vector3d::Zero( )
-                : stationStates_.at( receiver )->getNominalCartesianPosition( );
-        TimeType utcTime = terrestrialTimeScaleConverter_->getCurrentTime< TimeType >(
-                basic_astrodynamics::tdb_scale, basic_astrodynamics::utc_scale, time, nominalReceivingStationState );
-
-        TimeType receptionUtcStartTime = utcTime - integrationTime / 2.0;
-        TimeType receptionUtcEndTime = utcTime + integrationTime / 2.0;
-
-        TimeType receptionTdbStartTime = terrestrialTimeScaleConverter_->getCurrentTime< TimeType >(
-                basic_astrodynamics::utc_scale, basic_astrodynamics::tdb_scale, receptionUtcStartTime, nominalReceivingStationState );
-        TimeType receptionTdbEndTime = terrestrialTimeScaleConverter_->getCurrentTime< TimeType >(
-                basic_astrodynamics::utc_scale, basic_astrodynamics::tdb_scale, receptionUtcEndTime, nominalReceivingStationState );
+        TimeType receptionTdbStartTime = time - integrationTime / 2.0;
+        TimeType receptionTdbEndTime = time + integrationTime / 2.0;
 
         Eigen::Vector3d nominalTransmittingStationState = ( stationStates_.count( transmitter ) == 0 )
                 ? Eigen::Vector3d::Zero( )
@@ -285,14 +274,9 @@ public:
         TimeType transmissionTdbStartTime = receptionTdbStartTime - startLightTime;
         TimeType transmissionTdbEndTime = receptionTdbEndTime - endLightTime;
 
-        TimeType transmissionUtcStartTime = terrestrialTimeScaleConverter_->getCurrentTime< TimeType >(
-                basic_astrodynamics::tdb_scale, basic_astrodynamics::utc_scale, transmissionTdbStartTime, nominalTransmittingStationState );
-        TimeType transmissionUtcEndTime = terrestrialTimeScaleConverter_->getCurrentTime< TimeType >(
-                basic_astrodynamics::tdb_scale, basic_astrodynamics::utc_scale, transmissionTdbEndTime, nominalTransmittingStationState );
-
         ObservationScalarType transmitterFrequencyIntegral =
                 transmittingFrequencyCalculator_->template getTemplatedFrequencyIntegral< ObservationScalarType, TimeType >(
-                        transmissionUtcStartTime, transmissionUtcEndTime );
+                        transmissionTdbStartTime, transmissionTdbEndTime );
 
         // Moyer (2000), eq. 13-54
         Eigen::Matrix< ObservationScalarType, 1, 1 > observation =
