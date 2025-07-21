@@ -786,6 +786,8 @@ BOOST_AUTO_TEST_CASE( test_aerodynamicAccelerationModelSetupWithCoefficientIndep
 //! Test setup of rtg accelerations
 BOOST_AUTO_TEST_CASE( test_rtgAccelerationModelSetup )
 {
+    // untested: rtgAcceleration factory function that is exposed to python
+
     using namespace tudat::simulation_setup;
     using namespace tudat;
 
@@ -852,7 +854,8 @@ BOOST_AUTO_TEST_CASE( test_rtgAccelerationModelSetup )
     bodiesToPropagate.push_back( "Vehicle" );
     centralBodies.push_back( "Earth" );
 
-
+    //accelerationSettingsMap[ "Vehicle" ][ "Vehicle" ].push_back(
+    //                    std::make_shared< RTGAccelerationSettings >(rtgForceVector, decayScaleFactor, referenceEpoch));
     accelerationSettingsMap[ "Vehicle" ][ "Vehicle" ].push_back(
                         std::make_shared< RTGAccelerationSettings >(rtgForceVector, decayScaleFactor, referenceEpoch));
 

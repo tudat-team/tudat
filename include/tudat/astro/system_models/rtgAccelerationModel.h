@@ -73,14 +73,12 @@ public:
      */
     void updateMembers( const double currentTime = TUDAT_NAN )
     {
-        if( !( this->currentTime_ == currentTime ) )
+        if( !( this->currentTime_ == currentTime ) && ( currentTime == currentTime) )
         {
             rotationToIntegrationFrame_ = rotationFromBodyFixedToIntegrationFrameFunction_( );
-
             currentTimeDelta_ = currentTime - referenceEpoch_;
             currentDecayTerm_ = std::exp(-decayScaleFactor_ * currentTimeDelta_);
             currentBodyFixedForceVector_ = bodyFixedForceVectorAtReferenceEpoch_ * currentDecayTerm_;
-
             currentAcceleration_ = rotationToIntegrationFrame_ * currentBodyFixedForceVector_ / bodyMassFunction_();
         }
     }
@@ -146,6 +144,11 @@ public:
     double getCurrentDecayTerm( ) const
     {
         return currentDecayTerm_;
+    }
+
+    double evaluateBodyMassFunction( ) const
+    {
+        return bodyMassFunction_( );
     }
 
 

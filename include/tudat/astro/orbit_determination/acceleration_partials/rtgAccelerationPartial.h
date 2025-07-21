@@ -8,8 +8,8 @@
  *    http://tudat.tudelft.nl/LICENSE.
  */
 
-#ifndef TUDAT_EMPIRICALACCELERATIONPARTIAL_H
-#define TUDAT_EMPIRICALACCELERATIONPARTIAL_H
+#ifndef TUDAT_RTGACCELERATIONPARTIAL_H
+#define TUDAT_RTGACCELERATIONPARTIAL_H
 
 #include <functional>
 #include <boost/lambda/lambda.hpp>
@@ -51,11 +51,15 @@ public:
                                   std::string acceleratedBody,
                                   std::string acceleratingBody ):
         AccelerationPartial( acceleratedBody, acceleratingBody, basic_astrodynamics::rtg_acceleration ),
-        rtgAcceleration_( rtgAcceleration ),
-        currentPositionPartial_(Eigen::Matrix3d::Zero( )),    // RTG Acceleration position and velocity independent
-        currentVelocityPartial_(Eigen::Matrix3d::Zero( ))    // pos/vel partials declared to be const
+        rtgAcceleration_( rtgAcceleration )    // pos/vel partials declared to be const
     {
-        cartesianStateElementPerturbations << 0.1, 0.1, 0.1, 0.001, 0.001, 0.001;
+
+      if (acceleratedBody != acceleratingBody)
+      {
+        throw std::runtime_error(
+                "Error when setting up parameter partial of rtg acceleration - body undergoing and excerting are not the same (but are required to be the same for given acceleration model)" );
+      }
+
     }
 
     //! Function for calculating the partial of the acceleration w.r.t. the position of body undergoing acceleration..
@@ -74,14 +78,6 @@ public:
                                        const int startRow = 0,
                                        const int startColumn = 0 )
     {
-        if( addContribution )
-        {
-            partialMatrix.block( startRow, startColumn, 3, 3 ) += currentPositionPartial_;
-        }
-        else
-        {
-            partialMatrix.block( startRow, startColumn, 3, 3 ) -= currentPositionPartial_;
-        }
     }
 
     //! Function for calculating the partial of the acceleration w.r.t. the position of body undergoing acceleration..
@@ -100,14 +96,7 @@ public:
                                         const int startRow = 0,
                                         const int startColumn = 0 )
     {
-        if( addContribution )
-        {
-            partialMatrix.block( startRow, startColumn, 3, 3 ) -= currentPositionPartial_;
-        }
-        else
-        {
-            partialMatrix.block( startRow, startColumn, 3, 3 ) += currentPositionPartial_;
-        }
+
     }
 
     //! Function for calculating the partial of the acceleration w.r.t. the velocity of body undergoing acceleration..
@@ -126,14 +115,7 @@ public:
                                        const int startRow = 0,
                                        const int startColumn = 0 )
     {
-        if( addContribution )
-        {
-            partialMatrix.block( startRow, startColumn, 3, 3 ) += currentVelocityPartial_;
-        }
-        else
-        {
-            partialMatrix.block( startRow, startColumn, 3, 3 ) -= currentVelocityPartial_;
-        }
+
     }
 
     //! Function for calculating the partial of the acceleration w.r.t. the velocity of body undergoing acceleration..
@@ -152,14 +134,7 @@ public:
                                         const int startRow = 0,
                                         const int startColumn = 0 )
     {
-        if( addContribution )
-        {
-            partialMatrix.block( startRow, startColumn, 3, 3 ) -= currentVelocityPartial_;
-        }
-        else
-        {
-            partialMatrix.block( startRow, startColumn, 3, 3 ) += currentVelocityPartial_;
-        }
+
     }
 
     //! Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.
@@ -220,16 +195,10 @@ public:
 
     void wrtRTGForceVectorMagnitude(Eigen::MatrixXd& partialDerivativeMatrix );
 
-
 private:
+
     //! Acceleration w.r.t. which partials are to be computed.
     std::shared_ptr< system_models::RTGAccelerationModel > rtgAcceleration_;
-
-    //! Current partial of empirical acceleration w.r.t. position of body undergoing acceleration.
-    const Eigen::Matrix3d currentPositionPartial_;
-
-    //! Current partial of empirical acceleration w.r.t. velocity of body undergoing acceleration.
-    const Eigen::Matrix3d currentVelocityPartial_;
 
     //! Perturbations to use on Cartesian state elements when computing partial of true anomaly w.r.t. state.
     Eigen::Matrix< double, 1, 6 > cartesianStateElementPerturbations;
@@ -238,4 +207,4 @@ private:
 }  // namespace acceleration_partials
 }  // namespace tudat
 
-#endif  // TUDAT_EMPIRICALACCELERATIONPARTIAL_H
+#endif  // TUDAT_RTGACCELERATIONPARTIAL_H

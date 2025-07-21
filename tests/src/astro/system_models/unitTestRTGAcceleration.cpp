@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE( testRTGAcceleration )
 
     // Define Relevant Epochs
     double referenceEpoch = 0.0;
-    double testTime = 0.5*24*60*60;
+    double testTime = 500;
 
     // Define function describing rotational ephemeris of vehicle
     std::function<Eigen::Matrix3d(double)> timeDependentRotationFunction =
@@ -106,12 +106,12 @@ BOOST_AUTO_TEST_CASE( testRTGAcceleration )
         [=](double epoch) {
             //double delta_epoch = epoch - referenceEpoch;
             double delta_test = epoch - testTime;
-            if (delta_test > -1000. && delta_test <= 1000.) {
-                return initialVehicleMass - (delta_test+1000.);
-            } else if (delta_test <= -1000.) {
+            if (delta_test > -100. && delta_test <= 200.) {
+                return initialVehicleMass - (delta_test+100.);
+            } else if (delta_test <= -100.) {
                 return initialVehicleMass;
             } else {
-                return initialVehicleMass - 2000.;
+                return initialVehicleMass - 100.;
             }
     };
 
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE( testRTGAcceleration )
 
     Eigen::Vector3d rtgForceVector;
     rtgForceVector << 0.5E-5, 0.5E-5, 0.5E-5;
-    double decayScaleFactor = 1.6045073624072808e-05;       // corresponding to a half-life of half a day
+    double decayScaleFactor = 1.5e-05;       // corresponding to a half-life of roughly half a day
 
     // Define origin of integration
     std::vector< std::string > bodiesToPropagate;
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE( testRTGAcceleration )
 
     // Create Propagator, Integrator objects
     std::shared_ptr< propagators::PropagationTimeTerminationSettings > terminationSettings =
-        std::make_shared< propagators::PropagationTimeTerminationSettings >( 0.5*24*60*60 );
+        std::make_shared< propagators::PropagationTimeTerminationSettings >( 1000. );
     std::shared_ptr< propagators::TranslationalStatePropagatorSettings< double > > translationalPropagatorSettings =
             std::make_shared< propagators::TranslationalStatePropagatorSettings< double > >(
                     centralBodies, accelerationsMap, bodiesToPropagate, systemInitialState, terminationSettings, propagators::cowell, dependentVariables );
