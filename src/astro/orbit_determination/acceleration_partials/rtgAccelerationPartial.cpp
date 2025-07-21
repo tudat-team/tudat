@@ -87,6 +87,7 @@ void RTGAccelerationPartial::update( const double currentTime )
         using namespace tudat::linear_algebra;
 
         rtgAcceleration_->updateMembers( currentTime );
+
         currentTime_ = currentTime;
 
     }
@@ -97,7 +98,7 @@ void RTGAccelerationPartial::wrtRTGForceVector( Eigen::MatrixXd& partialDerivati
 {
     // Compute partial derivative w.r.t. reference force vector
     double partialWrtReferenceForceVector = rtgAcceleration_->getCurrentDecayTerm( ) / rtgAcceleration_->evaluateBodyMassFunction( );
-    partialDerivativeMatrix = partialWrtReferenceForceVector * Eigen::Matrix3d::Identity( );
+    partialDerivativeMatrix = partialWrtReferenceForceVector * rtgAcceleration_->getCurrentRotationToIntegrationFrameMatrix(  );
 
 }
 
@@ -106,7 +107,7 @@ void RTGAccelerationPartial::wrtRTGForceVectorMagnitude(Eigen::MatrixXd& partial
 {
     // Compute partial derivative w.r.t. magnitude of reference force vector
     Eigen::Vector3d partialWrtReferenceForceMagnitude = rtgAcceleration_->getCurrentDecayTerm( ) /
-            rtgAcceleration_->evaluateBodyMassFunction( ) * rtgAcceleration_->getBodyFixedForceUnitVectorAtReferenceEpoch( );
+            rtgAcceleration_->evaluateBodyMassFunction( ) * rtgAcceleration_->getCurrentRotationToIntegrationFrameMatrix(  ) * rtgAcceleration_->getBodyFixedForceUnitVectorAtReferenceEpoch( );
     partialDerivativeMatrix = partialWrtReferenceForceMagnitude;
 
 }

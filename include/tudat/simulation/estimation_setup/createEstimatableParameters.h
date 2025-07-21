@@ -163,15 +163,24 @@ std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel3d > > getAc
             }
             break;
         }
-            // Desaturation Delta V needs to be linked to destauration acceleration
+      // Desaturation Delta V needs to be linked to destauration acceleration
         case desaturation_delta_v_values: {
             // Check if acceleration model with required bodies undergoing/exerting accelerations exist
+
+          std::cout << "parameterType_.second.first" << parameterSettings->parameterType_.second.first << std::endl;
+          std::cout << "parameterType_.second.second" << parameterSettings->parameterType_.second.second << std::endl;
+
+          std::cout << "accelerationModelMap.count(parameterType_.second.first)" << accelerationModelMap.count( parameterSettings->parameterType_.second.first ) << std::endl;
+          std::cout << "accelerationModelMap.at( parameterSettings->parameterType_.second.first ).count( parameterSettings->parameterType_.second.first )" << accelerationModelMap.at( parameterSettings->parameterType_.second.first )
+                            .count( parameterSettings->parameterType_.second.first ) << std::endl;
+
             if( accelerationModelMap.count( parameterSettings->parameterType_.second.first ) != 0 )
             {
                 if( accelerationModelMap.at( parameterSettings->parameterType_.second.first )
                             .count( parameterSettings->parameterType_.second.first ) != 0 )
 
                 {
+                    std::cout << "easy money" << std::endl;
                     // Retrieve acceleration model.
                     std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel< Eigen::Vector3d > > >
                             accelerationModelListToCheck = accelerationModelMap.at( parameterSettings->parameterType_.second.first )
@@ -188,6 +197,44 @@ std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel3d > > getAc
             }
             break;
         }
+
+      // Desaturation Delta V needs to be linked to destauration acceleration
+        case rtg_force_vector:
+          case rtg_force_vector_magnitude: {
+            // Check if acceleration model with required bodies undergoing/exerting accelerations exist
+
+          std::cout << "parameterType_.second.first" << parameterSettings->parameterType_.second.first << std::endl;
+          std::cout << "parameterType_.second.second" << parameterSettings->parameterType_.second.second << std::endl;
+
+          std::cout << "accelerationModelMap.count(parameterType_.second.first)" << accelerationModelMap.count( parameterSettings->parameterType_.second.first ) << std::endl;
+          std::cout << "accelerationModelMap.at( parameterSettings->parameterType_.second.first ).count( parameterSettings->parameterType_.second.first )" << accelerationModelMap.at( parameterSettings->parameterType_.second.first )
+                            .count( parameterSettings->parameterType_.second.first ) << std::endl;
+
+            if( accelerationModelMap.count( parameterSettings->parameterType_.second.first ) != 0 )
+            {
+                if( accelerationModelMap.at( parameterSettings->parameterType_.second.first )
+                            .count( parameterSettings->parameterType_.second.first ) != 0 )
+
+                {
+                    std::cout << "easy money" << std::endl;
+                    // Retrieve acceleration model.
+                    std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel< Eigen::Vector3d > > >
+                            accelerationModelListToCheck = accelerationModelMap.at( parameterSettings->parameterType_.second.first )
+                                                                   .at( parameterSettings->parameterType_.second.first );
+                    for( unsigned int i = 0; i < accelerationModelListToCheck.size( ); i++ )
+                    {
+                        if( basic_astrodynamics::getAccelerationModelType( accelerationModelListToCheck[ i ] ) ==
+                            basic_astrodynamics::rtg_acceleration )
+                        {
+                            accelerationModelList.push_back( accelerationModelListToCheck[ i ] );
+                        }
+                    }
+                }
+            }
+            break;
+        }
+
+
         // Inverse tidal quality factor to be linked to direct tidal acceleration
         case inverse_tidal_quality_factor: {
             std::shared_ptr< InverseTidalQualityFactorEstimatableParameterSettings > qualityFactorSettings =

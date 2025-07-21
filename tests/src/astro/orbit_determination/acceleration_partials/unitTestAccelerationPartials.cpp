@@ -1808,7 +1808,13 @@ BOOST_AUTO_TEST_CASE( testRTGPartials )
             std::make_shared< RTGForceVectorMagnitude >( rtgAccelerationModel, "Vehicle" );
 
     // Calculate analytical partials.
-    rtgPartial->update( 0.0 );
+    double evalTime = testTime;
+
+    // Reset environment dependencies
+    bodies.at( "Vehicle" )->setCurrentRotationalStateToLocalFrameFromEphemeris( evalTime );
+    bodies.at( "Vehicle" )->updateMass( evalTime );
+
+    rtgPartial->update( evalTime );
     Eigen::MatrixXd partialWrtVehiclePosition = Eigen::Matrix3d::Zero( );
     rtgPartial->wrtPositionOfAcceleratedBody( partialWrtVehiclePosition.block( 0, 0, 3, 3 ) );
     Eigen::MatrixXd partialWrtVehicleVelocity = Eigen::Matrix3d::Zero( );
@@ -1843,18 +1849,22 @@ BOOST_AUTO_TEST_CASE( testRTGPartials )
 
     // Calculate numerical partials.
     testPartialWrtVehiclePosition = calculateAccelerationWrtStatePartials(
-            vehicleStateSetFunction, rtgAccelerationModel, vehicle->getState( ), positionPerturbation, 0, emptyFunction, 0.0  );
+            vehicleStateSetFunction, rtgAccelerationModel, vehicle->getState( ), positionPerturbation, 0, emptyFunction, evalTime  );
     testPartialWrtVehicleVelocity = calculateAccelerationWrtStatePartials(
-            vehicleStateSetFunction, rtgAccelerationModel, vehicle->getState( ), velocityPerturbation, 3, emptyFunction, 0.0 );
+            vehicleStateSetFunction, rtgAccelerationModel, vehicle->getState( ), velocityPerturbation, 3, emptyFunction, evalTime );
     testPartialWrtEarthPosition = calculateAccelerationWrtStatePartials(
-            earthStateSetFunction, rtgAccelerationModel, earth->getState( ), positionPerturbation, 0, emptyFunction, 0.0 );
+            earthStateSetFunction, rtgAccelerationModel, earth->getState( ), positionPerturbation, 0, emptyFunction, evalTime );
     testPartialWrtEarthVelocity = calculateAccelerationWrtStatePartials(
-            earthStateSetFunction, rtgAccelerationModel, earth->getState( ), velocityPerturbation, 3, emptyFunction, 0.0 );
+            earthStateSetFunction, rtgAccelerationModel, earth->getState( ), velocityPerturbation, 3, emptyFunction, evalTime );
     Eigen::Matrix3d testPartialWrtRTGForceVector =
-            calculateAccelerationWrtParameterPartials( rtgForceVectorParameter, rtgAccelerationModel, Eigen::Vector3d::Constant(1.0e-7) );
+            calculateAccelerationWrtParameterPartials( rtgForceVectorParameter, rtgAccelerationModel, Eigen::Vector3d::Constant(1.0e-7), emptyFunction, evalTime, emptyTimeFunction );
     Eigen::Vector3d testPartialWrtRTGForceMagnitude =
-        calculateAccelerationWrtParameterPartials( rtgForceMagnitudeParameter, rtgAccelerationModel, 1.0E-7);
+        calculateAccelerationWrtParameterPartials( rtgForceMagnitudeParameter, rtgAccelerationModel, 1.0E-7, emptyFunction, evalTime, emptyTimeFunction );
 
+    std::cout << "testPartialWrtRTGForceVector\n" << testPartialWrtRTGForceVector << std::endl;
+    std::cout << "partialWrtRTGForceVector\n" << partialWrtRTGForceVector << std::endl;
+    std::cout << "testPartialWrtRTGForceMagnitude\n" << testPartialWrtRTGForceMagnitude << std::endl;
+    std::cout << "partialWrtRTGForceMagnitude\n" << partialWrtRTGForceMagnitude << std::endl;
 
     // Compare numerical and analytical results.
     TUDAT_CHECK_MATRIX_CLOSE_FRACTION( testPartialWrtEarthPosition, partialWrtEarthPosition, 1.0E-8 );
@@ -1864,7 +1874,6 @@ BOOST_AUTO_TEST_CASE( testRTGPartials )
     TUDAT_CHECK_MATRIX_CLOSE_FRACTION( testPartialWrtRTGForceVector, partialWrtRTGForceVector, 1.0E-8 );
     TUDAT_CHECK_MATRIX_CLOSE_FRACTION( testPartialWrtRTGForceMagnitude, partialWrtRTGForceMagnitude, 1.0E-8 );
 }
-
 
 
 BOOST_AUTO_TEST_SUITE_END( )
