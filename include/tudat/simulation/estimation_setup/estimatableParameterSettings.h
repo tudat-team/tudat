@@ -1350,6 +1350,11 @@ inline std::shared_ptr< EstimatableParameterSettings > rtgForceVector( const std
     return std::make_shared< EstimatableParameterSettings >( associatedBody, rtg_force_vector );
 }
 
+inline std::shared_ptr< EstimatableParameterSettings > rtgForceVectorMagnitude( const std::string bodyName)
+{
+    return std::make_shared< EstimatableParameterSettings >( bodyName, rtg_force_vector_magnitude);
+}
+
 inline std::shared_ptr< EstimatableParameterSettings > ppnParameterGamma( )
 {
     return std::make_shared< EstimatableParameterSettings >( "", ppn_parameter_gamma );
@@ -1498,16 +1503,6 @@ inline std::shared_ptr< EstimatableParameterSettings > scaledLongitudeLibrationA
 inline std::shared_ptr< EstimatableParameterSettings > yarkovskyParameter( const std::string bodyName, const std::string centralBodyName )
 {
     return std::make_shared< EstimatableParameterSettings >( bodyName, yarkovsky_parameter, centralBodyName );
-}
-
-inline std::shared_ptr< EstimatableParameterSettings > rtgForceVector( const std::string bodyName)
-{
-    return std::make_shared< EstimatableParameterSettings >( bodyName, rtg_force_vector);
-}
-
-inline std::shared_ptr< EstimatableParameterSettings > rtgForceVectorMagnitude( const std::string bodyName)
-{
-    return std::make_shared< EstimatableParameterSettings >( bodyName, rtg_force_vector_magnitude);
 }
 
 inline std::shared_ptr< EstimatableParameterSettings > radiationPressureTargetDirectionScaling( const std::string targetName,
