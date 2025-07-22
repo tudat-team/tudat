@@ -157,11 +157,11 @@ private:
     //! Force vector in body-fixed frame at reference epoch
     Eigen::Vector3d bodyFixedForceVectorAtReferenceEpoch_;
 
-    //! Force vector in body-fixed frame at reference epoch
-    Eigen::Vector3d bodyFixedForceUnitVectorAtReferenceEpoch_;
-
     //! Force vector magnitude at reference epoch
     double forceVectorMagnitudeAtReferenceEpoch_;
+
+    //! Force vector in body-fixed frame at reference epoch
+    Eigen::Vector3d bodyFixedForceUnitVectorAtReferenceEpoch_;
 
     //! Scale Factor for force decay process
     double decayScaleFactor_;
