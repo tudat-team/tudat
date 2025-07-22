@@ -207,6 +207,22 @@ BOOST_AUTO_TEST_CASE( testRTGAcceleration )
         BOOST_CHECK_CLOSE(expectedAcceleration[i], rtgAccelerationModel->getAcceleration( )[i], 1e-10);  //
     }
 
+    double newTestTime = -500;
+    bodies.at( "Vehicle" )->setCurrentRotationalStateToLocalFrameFromEphemeris( newTestTime );
+    bodies.at( "Vehicle" )->updateMass( newTestTime );
+    rtgAccelerationModel->updateMembers( newTestTime );
+
+    rotationMatrixFromFunction = timeDependentRotationFunction( newTestTime );
+    std::exp(-decayScaleFactor*(newTestTime-referenceEpoch));
+    expectedAcceleration = rtgForceVector * std::exp(-decayScaleFactor*(newTestTime-referenceEpoch));
+    expectedAcceleration = rotationMatrixFromFunction * expectedAcceleration / initialVehicleMass;
+
+    for (int i = 0; i < 3; ++i)
+    {
+        BOOST_CHECK_CLOSE(expectedAcceleration[i], rtgAccelerationModel->getAcceleration( )[i], 1e-10);  //
+    }
+
+
     ////////////////////////////////////////////////////////////////
     ///       Test 2                                             ///
     ////////////////////////////////////////////////////////////////
