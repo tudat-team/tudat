@@ -85,7 +85,7 @@ public:
 
     std::string getParameterDescription( )
     {
-        std::string parameterDescription = ", components in body-fixed frame; magnitude at user-defined reference epoch";
+        std::string parameterDescription = "RTG force vector (body-fixed) at user-defined reference epoch";
         return parameterDescription;
     }
 
@@ -168,7 +168,7 @@ public:
 
     std::string getParameterDescription( )
     {
-        std::string parameterDescription = ", components in body-fixed frame; magnitude at user-defined reference epoch";
+        std::string parameterDescription = "RTG force magnitude at user-defined reference epoch";
         return parameterDescription;
     }
 
