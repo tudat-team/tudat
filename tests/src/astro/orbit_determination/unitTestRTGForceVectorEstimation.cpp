@@ -218,141 +218,154 @@ BOOST_AUTO_TEST_CASE( test_RTGForceVectorEstimation )
     linkEndsPerObservable[ angular_position ].push_back( stationReceiverLinkEnds[ 2 ] );
     linkEndsPerObservable[ angular_position ].push_back( stationTransmitterLinkEnds[ 1 ] );
 
-    // Define parameters to be estimated.
-    std::vector< std::shared_ptr< EstimatableParameterSettings > > parameterNames =
-            getInitialStateParameterSettings< double >( propagatorSettings, bodies );
 
-    parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Vehicle", rtg_force_vector ) );
+    for (int i=0; i<=1; i++)
 
-    parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Earth", rotation_pole_position ) );
-    parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Earth", ground_station_position, "Station1" ) );
 
-    // Create parameters
-    std::shared_ptr< estimatable_parameters::EstimatableParameterSet< double > > parametersToEstimate =
-            createParametersToEstimate< double >( parameterNames, bodies, propagatorSettings );
-
-    printEstimatableParameterEntries( parametersToEstimate );
-
-    std::vector< std::shared_ptr< ObservationModelSettings > > observationSettingsList;
-    for( std::map< ObservableType, std::vector< LinkDefinition > >::iterator linkEndIterator = linkEndsPerObservable.begin( );
-         linkEndIterator != linkEndsPerObservable.end( );
-         linkEndIterator++ )
     {
-        ObservableType currentObservable = linkEndIterator->first;
-
-        std::vector< LinkDefinition > currentLinkEndsList = linkEndIterator->second;
-        for( unsigned int i = 0; i < currentLinkEndsList.size( ); i++ )
-        {
-            observationSettingsList.push_back( std::make_shared< ObservationModelSettings >(
-                    currentObservable, currentLinkEndsList.at( i ), std::shared_ptr< LightTimeCorrectionSettings >( ) ) );
+        // Define parameters to be estimated.
+        std::vector< std::shared_ptr< EstimatableParameterSettings > > parameterNames =
+                getInitialStateParameterSettings< double >( propagatorSettings, bodies );
+        int parameter_size;
+        if (i==0){
+            parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Vehicle", rtg_force_vector ) );
+            parameter_size=3;
         }
-    }
-
-    // Create orbit determination object.
-    OrbitDeterminationManager< double, double > orbitDeterminationManager = OrbitDeterminationManager< double, double >(
-            bodies, parametersToEstimate, observationSettingsList, integratorSettings, propagatorSettings );
-
-    // Compute list of observation times.
-    std::vector< double > baseTimeList;
-    double observationTimeStart = initialEphemerisTime + 1000.0;
-    double observationInterval = 60.0;
-    for( int i = 0; i < numberOfDaysOfData; i++ )
-    {
-        for( unsigned int j = 0; j < 500; j++ )
-        {
-            baseTimeList.push_back( observationTimeStart + static_cast< double >( i ) * 86400.0 +
-                                    static_cast< double >( j ) * observationInterval );
+        else if (i==1){
+            parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Vehicle", rtg_force_vector_magnitude ) );
+            parameter_size=1;
         }
-    }
 
-    std::vector< std::shared_ptr< ObservationSimulationSettings< double > > > measurementSimulationInput;
-    for( std::map< ObservableType, std::vector< LinkDefinition > >::iterator linkEndIterator = linkEndsPerObservable.begin( );
-         linkEndIterator != linkEndsPerObservable.end( );
-         linkEndIterator++ )
-    {
-        ObservableType currentObservable = linkEndIterator->first;
-        std::vector< LinkDefinition > currentLinkEndsList = linkEndIterator->second;
-        for( unsigned int i = 0; i < currentLinkEndsList.size( ); i++ )
+        parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Earth", rotation_pole_position ) );
+        parameterNames.push_back( std::make_shared< EstimatableParameterSettings >( "Earth", ground_station_position, "Station1" ) );
+
+        // Create parameters
+        std::shared_ptr< estimatable_parameters::EstimatableParameterSet< double > > parametersToEstimate =
+                createParametersToEstimate< double >( parameterNames, bodies, propagatorSettings );
+
+        printEstimatableParameterEntries( parametersToEstimate );
+
+        std::vector< std::shared_ptr< ObservationModelSettings > > observationSettingsList;
+        for( std::map< ObservableType, std::vector< LinkDefinition > >::iterator linkEndIterator = linkEndsPerObservable.begin( );
+             linkEndIterator != linkEndsPerObservable.end( );
+             linkEndIterator++ )
         {
-            measurementSimulationInput.push_back( std::make_shared< TabulatedObservationSimulationSettings<> >(
-                    currentObservable, currentLinkEndsList[ i ], baseTimeList, receiver ) );
+            ObservableType currentObservable = linkEndIterator->first;
+
+            std::vector< LinkDefinition > currentLinkEndsList = linkEndIterator->second;
+            for( unsigned int i = 0; i < currentLinkEndsList.size( ); i++ )
+            {
+                observationSettingsList.push_back( std::make_shared< ObservationModelSettings >(
+                        currentObservable, currentLinkEndsList.at( i ), std::shared_ptr< LightTimeCorrectionSettings >( ) ) );
+            }
         }
-    }
 
-    // Simulate observations.
-    std::shared_ptr< ObservationCollection<> > observationsAndTimes = simulateObservations< double, double >(
-            measurementSimulationInput, orbitDeterminationManager.getObservationSimulators( ), bodies );
+        // Create orbit determination object.
+        OrbitDeterminationManager< double, double > orbitDeterminationManager = OrbitDeterminationManager< double, double >(
+                bodies, parametersToEstimate, observationSettingsList, integratorSettings, propagatorSettings );
 
-    // Set weights
-    std::map< std::shared_ptr< observation_models::ObservationCollectionParser >, double > weightsPerObservationParser;
-    weightsPerObservationParser[ observationParser( one_way_range ) ] = 1.0 / ( 1.0 * 1.0 );
-    weightsPerObservationParser[ observationParser( angular_position ) ] = 1.0 / ( 1.0E-5 * 1.0E-5 );
-    weightsPerObservationParser[ observationParser( one_way_doppler ) ] =
-            1.0 / ( 1.0E-11 * 1.0E-11 * physical_constants::SPEED_OF_LIGHT * physical_constants::SPEED_OF_LIGHT );
-    observationsAndTimes->setConstantWeightPerObservable( weightsPerObservationParser );
+        // Compute list of observation times.
+        std::vector< double > baseTimeList;
+        double observationTimeStart = initialEphemerisTime + 1000.0;
+        double observationInterval = 60.0;
+        for( int i = 0; i < numberOfDaysOfData; i++ )
+        {
+            for( unsigned int j = 0; j < 500; j++ )
+            {
+                baseTimeList.push_back( observationTimeStart + static_cast< double >( i ) * 86400.0 +
+                                        static_cast< double >( j ) * observationInterval );
+            }
+        }
 
-    // Perturb parameter estimate.
-    Eigen::Matrix< double, Eigen::Dynamic, 1 > initialParameterEstimate =
-            parametersToEstimate->template getFullParameterValues< double >( );
-    Eigen::Matrix< double, Eigen::Dynamic, 1 > truthParameters = initialParameterEstimate;
-    Eigen::Matrix< double, Eigen::Dynamic, 1 > parameterPerturbation =
-            Eigen::Matrix< double, Eigen::Dynamic, 1 >::Zero( truthParameters.rows( ) );
+        std::vector< std::shared_ptr< ObservationSimulationSettings< double > > > measurementSimulationInput;
+        for( std::map< ObservableType, std::vector< LinkDefinition > >::iterator linkEndIterator = linkEndsPerObservable.begin( );
+             linkEndIterator != linkEndsPerObservable.end( );
+             linkEndIterator++ )
+        {
+            ObservableType currentObservable = linkEndIterator->first;
+            std::vector< LinkDefinition > currentLinkEndsList = linkEndIterator->second;
+            for( unsigned int i = 0; i < currentLinkEndsList.size( ); i++ )
+            {
+                measurementSimulationInput.push_back( std::make_shared< TabulatedObservationSimulationSettings<> >(
+                        currentObservable, currentLinkEndsList[ i ], baseTimeList, receiver ) );
+            }
+        }
 
-    // Perturbe initial state estimate.
-    parameterPerturbation.segment( 0, 3 ) = Eigen::Vector3d::Constant( 1.0 );
-    parameterPerturbation.segment( 3, 3 ) = Eigen::Vector3d::Constant( 1.E-3 );
+        // Simulate observations.
+        std::shared_ptr< ObservationCollection<> > observationsAndTimes = simulateObservations< double, double >(
+                measurementSimulationInput, orbitDeterminationManager.getObservationSimulators( ), bodies );
 
-    // Perturb deltaVs estimate.
-    for( unsigned int i = 6; i < 6 + 3; i++ )
-    {
-        parameterPerturbation[ i ] = 1.0e-6;
-    }
+        // Set weights
+        std::map< std::shared_ptr< observation_models::ObservationCollectionParser >, double > weightsPerObservationParser;
+        weightsPerObservationParser[ observationParser( one_way_range ) ] = 1.0 / ( 1.0 * 1.0 );
+        weightsPerObservationParser[ observationParser( angular_position ) ] = 1.0 / ( 1.0E-5 * 1.0E-5 );
+        weightsPerObservationParser[ observationParser( one_way_doppler ) ] =
+                1.0 / ( 1.0E-11 * 1.0E-11 * physical_constants::SPEED_OF_LIGHT * physical_constants::SPEED_OF_LIGHT );
+        observationsAndTimes->setConstantWeightPerObservable( weightsPerObservationParser );
 
-    initialParameterEstimate += parameterPerturbation;
-    parametersToEstimate->resetParameterValues( initialParameterEstimate );
+        // Perturb parameter estimate.
+        Eigen::Matrix< double, Eigen::Dynamic, 1 > initialParameterEstimate =
+                parametersToEstimate->template getFullParameterValues< double >( );
+        Eigen::Matrix< double, Eigen::Dynamic, 1 > truthParameters = initialParameterEstimate;
+        Eigen::Matrix< double, Eigen::Dynamic, 1 > parameterPerturbation =
+                Eigen::Matrix< double, Eigen::Dynamic, 1 >::Zero( truthParameters.rows( ) );
 
-    // Define estimation input
-    std::shared_ptr< EstimationInput< double, double > > estimationInput =
-            std::make_shared< EstimationInput< double, double > >( observationsAndTimes );
+        // Perturbe initial state estimate.
+        parameterPerturbation.segment( 0, 3 ) = Eigen::Vector3d::Constant( 1.0 );
+        parameterPerturbation.segment( 3, 3 ) = Eigen::Vector3d::Constant( 1.E-3 );
 
-    estimationInput->defineEstimationSettings( true, true, true, true, false );
-    estimationInput->setConvergenceChecker( std::make_shared< EstimationConvergenceChecker >( 4 ) );
+        // Perturb deltaVs estimate.
+        for( unsigned int i = 6; i < 6 + parameter_size; i++ )
+        {
+            parameterPerturbation[ i ] = 1.0e-6;
+        }
 
-    // Perform estimation
-    std::shared_ptr< EstimationOutput< double > > estimationOutput = orbitDeterminationManager.estimateParameters( estimationInput );
+        initialParameterEstimate += parameterPerturbation;
+        parametersToEstimate->resetParameterValues( initialParameterEstimate );
 
-    Eigen::VectorXd estimationError = estimationOutput->parameterEstimate_ - truthParameters;
-    std::cout << "estimation error: " << ( estimationError ).transpose( ) << std::endl;
+        // Define estimation input
+        std::shared_ptr< EstimationInput< double, double > > estimationInput =
+                std::make_shared< EstimationInput< double, double > >( observationsAndTimes );
 
-    // Check if parameters are correctly estimated
-    Eigen::VectorXd estimatedParametervalues = estimationOutput->parameterEstimate_;
+        estimationInput->defineEstimationSettings( true, true, true, true, false );
+        estimationInput->setConvergenceChecker( std::make_shared< EstimationConvergenceChecker >( 4 ) );
 
-    // Initial state.
-    for( unsigned int i = 0; i < 3; i++ )
-    {
-        BOOST_CHECK_SMALL( std::fabs( truthParameters( i ) - estimationOutput->parameterEstimate_( i ) ), 0.1 );
-        BOOST_CHECK_SMALL( std::fabs( truthParameters( i + 3 ) - estimationOutput->parameterEstimate_( i + 3 ) ), 1.0E-6 );
-    }
-    // Radiation pressure and drag coefficients.
-    BOOST_CHECK_SMALL( std::fabs( truthParameters( 6 ) - estimationOutput->parameterEstimate_( 6 ) ), 1.0e-4 );
-    BOOST_CHECK_SMALL( std::fabs( truthParameters( 7 ) - estimationOutput->parameterEstimate_( 7 ) ), 1.0e-4 );
+        // Perform estimation
+        std::shared_ptr< EstimationOutput< double > > estimationOutput = orbitDeterminationManager.estimateParameters( estimationInput );
 
-    // Momentum wheel desaturation deltaV values.
-    for( unsigned int i = 6; i < 6 + 3; i++ )
-    {
-        BOOST_CHECK_SMALL( std::fabs( truthParameters( i ) - estimationOutput->parameterEstimate_( i ) ), 1.0E-9 );
-    }
+        Eigen::VectorXd estimationError = estimationOutput->parameterEstimate_ - truthParameters;
+        std::cout << "estimation error: " << ( estimationError ).transpose( ) << std::endl;
 
-    // Earth pole position.
-    for( unsigned int i = 9; i < 11; i++ )
-    {
-        BOOST_CHECK_SMALL( std::fabs( truthParameters( i ) - estimationOutput->parameterEstimate_( i ) ), 1.0E-12 );
-    }
+        // Check if parameters are correctly estimated
+        Eigen::VectorXd estimatedParametervalues = estimationOutput->parameterEstimate_;
 
-    // Ground station position.
-    for( unsigned int i = 11; i < 14; i++ )
-    {
-        BOOST_CHECK_SMALL( std::fabs( truthParameters( i ) - estimationOutput->parameterEstimate_( i ) ), 1.0E-6 );
+        // Initial state.
+        for( unsigned int i = 0; i < 3; i++ )
+        {
+            BOOST_CHECK_SMALL( std::fabs( truthParameters( i ) - estimationOutput->parameterEstimate_( i ) ), 0.1 );
+            BOOST_CHECK_SMALL( std::fabs( truthParameters( i + 3 ) - estimationOutput->parameterEstimate_( i + 3 ) ), 1.0E-6 );
+        }
+        // Radiation pressure and drag coefficients.
+        //BOOST_CHECK_SMALL( std::fabs( truthParameters( 6 ) - estimationOutput->parameterEstimate_( 6 ) ), 1.0e-4 );
+        //BOOST_CHECK_SMALL( std::fabs( truthParameters( 7 ) - estimationOutput->parameterEstimate_( 7 ) ), 1.0e-4 );
+
+        // rtg parameter values.
+        for( unsigned int i = 6; i < 6 + parameter_size; i++ )
+        {
+            BOOST_CHECK_SMALL( std::fabs( truthParameters( i ) - estimationOutput->parameterEstimate_( i ) ), 1.0E-9 );
+        }
+
+        // Earth pole position.
+        for( unsigned int i = 6 + parameter_size; i < 8+parameter_size; i++ )
+        {
+            BOOST_CHECK_SMALL( std::fabs( truthParameters( i ) - estimationOutput->parameterEstimate_( i ) ), 1.0E-12 );
+        }
+
+        // Ground station position.
+        for( unsigned int i = 8+parameter_size; i < 11+parameter_size; i++ )
+        {
+            BOOST_CHECK_SMALL( std::fabs( truthParameters( i ) - estimationOutput->parameterEstimate_( i ) ), 1.0E-6 );
+        }
     }
 }
 
