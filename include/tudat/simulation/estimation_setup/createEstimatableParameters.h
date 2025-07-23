@@ -168,20 +168,12 @@ std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel3d > > getAc
         case desaturation_delta_v_values: {
             // Check if acceleration model with required bodies undergoing/exerting accelerations exist
 
-          std::cout << "parameterType_.second.first" << parameterSettings->parameterType_.second.first << std::endl;
-          std::cout << "parameterType_.second.second" << parameterSettings->parameterType_.second.second << std::endl;
-
-          std::cout << "accelerationModelMap.count(parameterType_.second.first)" << accelerationModelMap.count( parameterSettings->parameterType_.second.first ) << std::endl;
-          std::cout << "accelerationModelMap.at( parameterSettings->parameterType_.second.first ).count( parameterSettings->parameterType_.second.first )" << accelerationModelMap.at( parameterSettings->parameterType_.second.first )
-                            .count( parameterSettings->parameterType_.second.first ) << std::endl;
-
             if( accelerationModelMap.count( parameterSettings->parameterType_.second.first ) != 0 )
             {
                 if( accelerationModelMap.at( parameterSettings->parameterType_.second.first )
                             .count( parameterSettings->parameterType_.second.first ) != 0 )
 
                 {
-                    std::cout << "easy money" << std::endl;
                     // Retrieve acceleration model.
                     std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel< Eigen::Vector3d > > >
                             accelerationModelListToCheck = accelerationModelMap.at( parameterSettings->parameterType_.second.first )
@@ -204,20 +196,12 @@ std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel3d > > getAc
           case rtg_force_vector_magnitude: {
             // Check if acceleration model with required bodies undergoing/exerting accelerations exist
 
-          std::cout << "parameterType_.second.first" << parameterSettings->parameterType_.second.first << std::endl;
-          std::cout << "parameterType_.second.second" << parameterSettings->parameterType_.second.second << std::endl;
-
-          std::cout << "accelerationModelMap.count(parameterType_.second.first)" << accelerationModelMap.count( parameterSettings->parameterType_.second.first ) << std::endl;
-          std::cout << "accelerationModelMap.at( parameterSettings->parameterType_.second.first ).count( parameterSettings->parameterType_.second.first )" << accelerationModelMap.at( parameterSettings->parameterType_.second.first )
-                            .count( parameterSettings->parameterType_.second.first ) << std::endl;
-
             if( accelerationModelMap.count( parameterSettings->parameterType_.second.first ) != 0 )
             {
                 if( accelerationModelMap.at( parameterSettings->parameterType_.second.first )
                             .count( parameterSettings->parameterType_.second.first ) != 0 )
 
                 {
-                    std::cout << "easy money" << std::endl;
                     // Retrieve acceleration model.
                     std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel< Eigen::Vector3d > > >
                             accelerationModelListToCheck = accelerationModelMap.at( parameterSettings->parameterType_.second.first )
