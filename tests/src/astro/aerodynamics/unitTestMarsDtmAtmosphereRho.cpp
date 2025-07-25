@@ -56,7 +56,7 @@ namespace tudat {
                 std::string filename = "/Users/ralkahal/OneDrive - Delft University of Technology/PhD/Programs/atmodensitydtm/dtm_mars";
                 std::shared_ptr<AtmosphereSettings> marsDtmAtmosphereSettings;
                 marsDtmAtmosphereSettings = std::make_shared<MarsDtmAtmosphereSettings>(
-                        filename, 3378.0E3);
+                        filename);
                 std::shared_ptr<aerodynamics::AtmosphereModel> marsAtmosphereModel = createAtmosphereModel(
                         marsDtmAtmosphereSettings, "Mars");
                 std::shared_ptr<MarsDtmAtmosphereModel> atmosphereModel =
@@ -70,9 +70,9 @@ namespace tudat {
 
                 // reference density for this specific inputs
                 double rho_ref = 2.57862799E-14;
-
+                double rho_diff = std::abs(rho - rho_ref);
                 // Check density
-                BOOST_CHECK_CLOSE_FRACTION(rho, rho_ref, tolerance);
+                BOOST_CHECK_SMALL(rho - rho_ref, tolerance);
             }
 
         BOOST_AUTO_TEST_SUITE_END()
