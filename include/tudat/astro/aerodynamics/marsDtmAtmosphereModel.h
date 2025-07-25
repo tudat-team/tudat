@@ -106,7 +106,6 @@ public:
 
 
     MarsDtmAtmosphereModel(
-        const std::string &filename,
         const std::function< double( const double ) > f107Function = [](const double){return 65.0;} );
 
     //! Default destructor.

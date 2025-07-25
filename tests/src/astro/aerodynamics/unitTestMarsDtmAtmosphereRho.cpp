@@ -53,10 +53,8 @@ namespace tudat {
             {
                 // Define tolerance for equality
                 double tolerance = 1.0E-15;
-                std::string filename = "/Users/ralkahal/OneDrive - Delft University of Technology/PhD/Programs/atmodensitydtm/dtm_mars";
                 std::shared_ptr<AtmosphereSettings> marsDtmAtmosphereSettings;
-                marsDtmAtmosphereSettings = std::make_shared<MarsDtmAtmosphereSettings>(
-                        filename);
+                marsDtmAtmosphereSettings = std::make_shared<MarsDtmAtmosphereSettings>();
                 std::shared_ptr<aerodynamics::AtmosphereModel> marsAtmosphereModel = createAtmosphereModel(
                         marsDtmAtmosphereSettings, "Mars");
                 std::shared_ptr<MarsDtmAtmosphereModel> atmosphereModel =

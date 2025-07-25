@@ -197,8 +197,7 @@ std::shared_ptr< aerodynamics::AtmosphereModel > createAtmosphereModel( const st
             };
 
             // Create atmosphere model using NRLMISE00 input function
-            atmosphereModel = std::make_shared< aerodynamics::MarsDtmAtmosphereModel >(
-                marsDtmAtmosphereSettings->getMarsDtmFile( ), f107Function );
+            atmosphereModel = std::make_shared< aerodynamics::MarsDtmAtmosphereModel >( f107Function );
             break;
     }
 #if TUDAT_BUILD_WITH_NRLMSISE

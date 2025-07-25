@@ -562,22 +562,12 @@ class MarsDtmAtmosphereSettings: public AtmosphereSettings
 {
 public:
 
-    MarsDtmAtmosphereSettings( const std::string& marsDtmFile, const std::string& spaceWeatherFile = "" ):
-        AtmosphereSettings( mars_dtm_atmosphere ), marsDtmFile_( marsDtmFile ), spaceWeatherFile_( spaceWeatherFile ){ }
-
-
-    std::string getMarsDtmFile( ){ return marsDtmFile_; }
-
-    double getPolarRadius( ){ return polarRadius_; }
+    MarsDtmAtmosphereSettings( const std::string& spaceWeatherFile = "" ):
+        AtmosphereSettings( mars_dtm_atmosphere ), spaceWeatherFile_( spaceWeatherFile ){ }
 
     std::string getSpaceWeatherFile( ){ return spaceWeatherFile_; }
 
 private:
-
-    std::string marsDtmFile_;
-
-    double polarRadius_;
-
     //  File containing space weather data.
     /*
      *  File containing space weather data, as in https://celestrak.com/SpaceData/sw19571001.txt
@@ -1020,10 +1010,9 @@ inline std::shared_ptr< AtmosphereSettings > nrlmsise00AtmosphereSettings( const
     return std::make_shared< NRLMSISE00AtmosphereSettings >( dataFile, useStormConditions, useAnomalousOxygen );
 }
 
-inline std::shared_ptr< AtmosphereSettings > marsDtmAtmosphereSettings(
-    const std::string& marsDtmFile )
+inline std::shared_ptr< AtmosphereSettings > marsDtmAtmosphereSettings( )
 {
-    return std::make_shared< MarsDtmAtmosphereSettings >( marsDtmFile );
+    return std::make_shared< MarsDtmAtmosphereSettings >( );
 }
 
 

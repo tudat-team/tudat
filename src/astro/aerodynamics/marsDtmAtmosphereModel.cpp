@@ -7,6 +7,7 @@
 #include "tudat/math/basic/legendrePolynomials.h"
 #include "tudat/astro/basic_astro/unitConversions.h"
 #include "tudat/astro/basic_astro/celestialBodyConstants.h"
+#include "tudat/io/basicInputOutput.h"
 #include <tuple>
 
 namespace tudat
@@ -140,16 +141,15 @@ namespace aerodynamics
 
 
 
-    MarsDtmAtmosphereModel::MarsDtmAtmosphereModel(const std::string &filename,
-                                                   const std::function< double( const double ) > f107Function ) :
+    MarsDtmAtmosphereModel::MarsDtmAtmosphereModel(const std::function< double( const double ) > f107Function ) :
     polarRadius_( 3378.0e3 ), // polar radius of Mars
-    filename_ ( filename ), // file name of the coefficients
+    filename_ ( paths::getAtmosphereTablesPath( ) + "/dtm_mars.dat" ), // file name of the coefficients
     f107Function_( f107Function ),
     alpha_( {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.38, -0.40, 0.0}), // thermal diffusion coefficients
     mmass_( {44.01, 16.00, 28.0, 40.0, 28.0, 32.0, 4.0, 1.0, 2.0} )// molar mass of the species
     {
         //std::cout<<"MarsDtmAtmosphereModel constructor"<<std::endl;
-        coefficients_ = loadCoefficients( filename );
+        coefficients_ = loadCoefficients( filename_ ); // load the coefficients from the file
         currentLegendrePolynomials_.resize( 7 );
         currentLegendrePolynomials_[ 0 ] = 0.0;
         Ls_ = 0.0;
