@@ -165,7 +165,7 @@ void readIonexFile( const std::string& filePath, IonexTecMap& data )
     {
         mat = mat.colwise( ).reverse( ).eval( );  // flip rows to match new lat order
     }
-    
+
     // Store to output structure
     if( epochQueue.size( ) != mapQueue.size( ) )
     {
@@ -189,13 +189,44 @@ void readIonexFile( const std::string& filePath, IonexTecMap& data )
     //data.printMetadata( );
 }
 
+
 void readIonexFiles( const std::vector< std::string >& filePaths, IonexTecMap& data )
 {
     for( const auto& path: filePaths )
     {
         readIonexFile( path, data );
     }
+
+    // 1. Check for inconsistent reference heights
+    std::set< double > uniqueHeights;
+    for( const auto& [epoch, map] : data.tecMaps )
+    {
+        uniqueHeights.insert( data.referenceIonosphereHeight_ );
+    }
+
+    if ( uniqueHeights.size( ) > 1 )
+    {
+        std::cerr << "Warning: IONEX files use multiple reference heights for the ionospheric shell:\n";
+        for ( const auto& h : uniqueHeights )
+        {
+            std::cerr << "    - " << h << " m\n";
+        }
+    }
+
+    // 2. Check for large epoch gaps (> 2 hours)
+    std::sort( data.epochs.begin( ), data.epochs.end( ) );
+    for ( std::size_t i = 1; i < data.epochs.size( ); ++i )
+    {
+        double delta = data.epochs[i] - data.epochs[i-1];
+        if ( delta > 2.0 * 3600.0 )
+        {
+            std::cerr << "Warning: Gap of " << delta / 3600.0
+                      << " hours between TEC maps at epochs: "
+                      << data.epochs[i-1] << " and " << data.epochs[i] << "\n";
+        }
+    }
 }
+
 
 }  // namespace input_output
 }  // namespace tudat
