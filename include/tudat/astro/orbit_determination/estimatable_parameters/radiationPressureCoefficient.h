@@ -276,6 +276,109 @@ private:
     std::shared_ptr< interpolators::PiecewiseConstantInterpolator< double, double > > coefficientInterpolator_;
 };
 
+class ArcWiseRadiationPressureScalingFactor : public EstimatableParameter< Eigen::VectorXd >
+{
+public:
+
+    ArcWiseRadiationPressureScalingFactor(
+        const std::shared_ptr< electromagnetism::RadiationPressureAcceleration >& acceleration,
+        const std::vector< double >& timeLimits,
+        const EstimatebleParametersEnum parameterType,
+        const std::string& associatedBody,
+        const std::string& exertingBody )
+        : EstimatableParameter< Eigen::VectorXd >( parameterType, associatedBody, exertingBody ),
+          acceleration_( acceleration ), timeLimits_( timeLimits )
+    {
+
+        if (parameterType != arcwise_source_direction_radiation_pressure_scaling_factor &&
+            parameterType != arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor)
+        {
+            throw std::runtime_error("Inconsistent parameter type for arc-wise radiation pressure scaling factor");
+        }
+
+        parameterSize_ = static_cast< int >( timeLimits.size() );
+
+        // Ensure coverage for all time
+        timeLimits_.push_back(std::numeric_limits<double>::max());
+
+        double initialScaling = (parameterType == arcwise_source_direction_radiation_pressure_scaling_factor) ?
+                                    acceleration_->getSourceDirectionScaling() :
+                                    acceleration_->getPerpendicularSourceDirectionScaling();
+
+        parameterValues_ = std::vector< double >( parameterSize_, initialScaling );
+        fullParameterValues_ = parameterValues_;
+        fullParameterValues_.push_back(initialScaling);  // For extrapolation past last arc
+
+        interpolator_ = std::make_shared< interpolators::PiecewiseConstantInterpolator< double, double > >(
+            timeLimits_, fullParameterValues_ );
+
+        typedef interpolators::OneDimensionalInterpolator< double, double > LocalInterpolator;
+        std::function< double( double ) > interpolatorFunction =
+            std::bind( static_cast< double ( LocalInterpolator::* )( const double ) >( &LocalInterpolator::interpolate ),
+                    interpolator_, std::placeholders::_1 );
+
+        if (parameterType == arcwise_source_direction_radiation_pressure_scaling_factor)
+        {
+            acceleration_->setSourceDirectionScalingFunction(interpolatorFunction);
+        }
+        else
+        {
+            acceleration_->setPerpendicularSourceDirectionScalingFunction(interpolatorFunction);
+        }
+    }
+
+    //! Destructor
+    ~ArcWiseRadiationPressureScalingFactor() {}
+
+    //! Get current parameter value as an Eigen vector
+    Eigen::VectorXd getParameterValue( ) override
+    {
+        return utilities::convertStlVectorToEigenVector( parameterValues_ );
+    }
+
+    //! Get the lookup scheme of the interpolator (useful for unit tests)
+    std::shared_ptr< interpolators::LookUpScheme< double > > getArcTimeLookupScheme( )
+    {
+        return interpolator_->getLookUpScheme( );
+    }
+
+    //! Set parameter values and update interpolator
+    void setParameterValue(Eigen::VectorXd parameterValue) override
+    {
+        if (parameterValue.size() != parameterSize_)
+        {
+            throw std::runtime_error("Error: Arc-wise scaling vector size mismatch.");
+        }
+
+        parameterValues_ = utilities::convertEigenVectorToStlVector(parameterValue);
+        for (int i = 0; i < parameterSize_; i++)
+        {
+            fullParameterValues_[i] = parameterValues_[i];
+        }
+
+        // Last value again for overflow
+        fullParameterValues_[parameterSize_] = parameterValues_.back();
+
+        interpolator_->resetDependentValues(fullParameterValues_);
+    }
+
+    int getParameterSize( ) override
+    {
+        return parameterSize_;
+    }
+
+private:
+
+    std::shared_ptr< electromagnetism::RadiationPressureAcceleration > acceleration_;
+    std::vector< double > timeLimits_;
+    std::vector< double > parameterValues_;
+    std::vector< double > fullParameterValues_;
+    std::shared_ptr< interpolators::PiecewiseConstantInterpolator< double, double > > interpolator_;
+
+    int parameterSize_;
+};
+
+
 }  // namespace estimatable_parameters
 
 }  // namespace tudat

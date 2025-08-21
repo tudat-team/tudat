@@ -238,6 +238,8 @@ std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel3d > > getAc
         }
         case source_perpendicular_direction_radiation_pressure_scaling_factor:
         case source_direction_radiation_pressure_scaling_factor:
+        case arcwise_source_direction_radiation_pressure_scaling_factor:
+        case arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:
         case radiation_pressure_coefficient:
         case arc_wise_radiation_pressure_coefficient: {
             if( parameterSettings == nullptr )
@@ -266,41 +268,7 @@ std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel3d > > getAc
             }
             break;
         }
-        case drag_component_scaling_factor:
-        case side_component_scaling_factor:
-        case lift_component_scaling_factor: {
-            if( parameterSettings == nullptr )
-            {
-                throw std::runtime_error( "Error, expected aerodynamic scaling factor parameter settings." );
-            }
-            else
-            {
-                if( accelerationModelMap.count( parameterSettings->parameterType_.second.first ) != 0 )
-                {
-                    // Retrieve acceleration model.
-                    basic_astrodynamics::SingleBodyAccelerationMap accelerationModelListToCheck =
-                            accelerationModelMap.at( parameterSettings->parameterType_.second.first );
-
-                    for( const auto& it: accelerationModelListToCheck )
-                    {
-                        for( const auto& accelerationModel: it.second )
-                        {
-                            if( basic_astrodynamics::getAccelerationModelType( accelerationModel ) == basic_astrodynamics::aerodynamic )
-                            {
-                                accelerationModelList.push_back( accelerationModel );
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    throw std::runtime_error( "Error, trying to setup aerodynamic scaling coefficient for body " +
-                                              parameterSettings->parameterType_.second.first +
-                                              " but no aerodynamic acceleration is defined." );
-                }
-            }
-            break;
-        }
+        
         default:
             break;
     }
@@ -1851,6 +1819,61 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd >
 
                     break;
                 }
+                break;
+            }
+            case arcwise_source_direction_radiation_pressure_scaling_factor:
+            case arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:
+            {
+                std::cout << "create  ArcWiseRadiationPressureScalingFactorSettings vectorParameterToEstimate" << std::endl;
+                std::shared_ptr< estimatable_parameters::ArcWiseRadiationPressureScalingFactorSettings > scalingSettings =
+                    std::dynamic_pointer_cast< estimatable_parameters::ArcWiseRadiationPressureScalingFactorSettings >( vectorParameterName );
+
+                if ( scalingSettings == nullptr )
+                {
+                    throw std::runtime_error(
+                        "Error when trying to make arc-wise radiation pressure scaling parameter, settings type inconsistent." );
+                }
+
+                const std::string& acceleratedBody = vectorParameterName->parameterType_.second.first;
+                const std::string& exertingBody    = vectorParameterName->parameterType_.second.second;
+
+                // Retrieve the acceleration models from the propagator
+                std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel3d > > accelerationModels =
+                    getAccelerationModelsListForParametersFromBase< InitialStateParameterType, TimeType >(
+                        propagatorSettings, vectorParameterName );
+
+                std::shared_ptr< basic_astrodynamics::AccelerationModel3d > accelerationModel = nullptr;
+                for ( const auto& model : accelerationModels )
+                {
+                    if ( basic_astrodynamics::getAccelerationModelType( model ) == basic_astrodynamics::radiation_pressure )
+                    {
+                        accelerationModel = model;
+                        break;
+                    }
+                }
+
+                if ( accelerationModel == nullptr )
+                {
+                    throw std::runtime_error(
+                        "Error: no radiation pressure acceleration model found for " + acceleratedBody +
+                        " exerted by " + exertingBody );
+                }
+
+                auto radiationPressureAcceleration =
+                    std::dynamic_pointer_cast< electromagnetism::RadiationPressureAcceleration >( accelerationModel );
+
+                if ( radiationPressureAcceleration == nullptr )
+                {
+                    throw std::runtime_error( "Error: dynamic cast to RadiationPressureAcceleration failed." );
+                }
+
+                vectorParameterToEstimate = std::make_shared< estimatable_parameters::ArcWiseRadiationPressureScalingFactor >(
+                    radiationPressureAcceleration,
+                    scalingSettings->getArcStartTimes( ),
+                    vectorParameterName->parameterType_.first,
+                    acceleratedBody,
+                    exertingBody );
+
                 break;
             }
 

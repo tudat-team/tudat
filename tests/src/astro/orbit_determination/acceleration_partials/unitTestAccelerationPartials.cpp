@@ -287,6 +287,84 @@ BOOST_AUTO_TEST_CASE( testPanelledRadiationPressureAccelerationPartials )
             BOOST_CHECK_EQUAL( testPartialWrtDiffuseReflectivity.norm( ), 0.0 );
             BOOST_CHECK_EQUAL( partialWrtDiffuseReflectivity.norm( ), 0.0 );
         }
+
+        // Define arcwise times
+        std::vector< double > arcTimes = { 0.0, 1800.0, 3600.0, 7200.0 };
+
+        // Create arc-wise source direction/perpendicular scaling factors
+        std::shared_ptr< EstimatableParameter< Eigen::VectorXd > > arcwiseSourceDirectionScaling =
+        std::make_shared< ArcWiseRadiationPressureScalingFactor >(
+                accelerationModel, arcTimes,
+                arcwise_source_direction_radiation_pressure_scaling_factor, "Vehicle", "Sun" );
+
+        std::shared_ptr< EstimatableParameter< Eigen::VectorXd > > arcwisePerpendicularScaling =
+        std::make_shared< ArcWiseRadiationPressureScalingFactor >(
+                accelerationModel, arcTimes,
+                arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor, "Vehicle", "Sun" );
+        std::vector<double> evaluationTimes = {  0.0, 900, 2500, 5000.0,  9000.0 };
+
+        const int nArcs = static_cast<int>( arcTimes.size() );
+        Eigen::VectorXd arcPerturb = Eigen::VectorXd::Constant( nArcs, 10.0 );
+        auto arcwiseSD = std::dynamic_pointer_cast< ArcWiseRadiationPressureScalingFactor >( arcwiseSourceDirectionScaling );
+        auto arcwiseP  = std::dynamic_pointer_cast< ArcWiseRadiationPressureScalingFactor >( arcwisePerpendicularScaling );
+
+        for (double t : evaluationTimes)
+        {
+        // Keep every model in sync at time t (source, target, acceleration, and panels)
+        std::function<void()> updateAtT = [&, t]() {
+                bodies.at("Sun")->getRadiationSourceModel()->updateMembers(t);
+                bodies.at("Vehicle")->getRadiationPressureTargetModel()->updateMembers(t);
+                if (bodies.at("Vehicle")->getVehicleSystems())
+                bodies.at("Vehicle")->getVehicleSystems()->updatePartOrientations(t);
+                accelerationModel->updateMembers(t);
+        };
+
+        accelerationModel->resetCurrentTime();
+        accelerationModel->updateMembers(t);
+        accelerationPartial->update(t);
+
+        Eigen::MatrixXd partialWrtParallelScaling      = accelerationPartial->wrtParameter( parallelScalingFactor );      // 3x1
+        Eigen::MatrixXd partialWrtPerpendicularScaling = accelerationPartial->wrtParameter( perpendicularScalingFactor ); // 3x1
+
+        Eigen::MatrixXd partialWrtArcwiseSourceDirection = accelerationPartial->wrtParameter( arcwiseSourceDirectionScaling );   // 3 x nArcs
+        Eigen::MatrixXd partialWrtArcwisePerpendicular   = accelerationPartial->wrtParameter( arcwisePerpendicularScaling );     // 3 x nArcs
+
+        const double tMin = arcwiseSD->getArcTimeLookupScheme()->getMinimumValue();
+        int activeCol = -1;
+        if (t >= tMin)
+                activeCol = arcwiseSD->getArcTimeLookupScheme()->findNearestLowerNeighbour(t);
+        for (int i = 0; i < 3; ++i)
+        {
+                for (int j = 0; j < nArcs; ++j)
+                {
+                if (j != activeCol)
+                {
+                        BOOST_CHECK_SMALL( partialWrtArcwiseSourceDirection(i, j), 1.0E-15 );
+                        BOOST_CHECK_SMALL( partialWrtArcwisePerpendicular(i, j),   1.0E-15 );
+                }
+                else if (activeCol >= 0)
+                {
+                        BOOST_CHECK_SMALL( std::fabs( partialWrtArcwiseSourceDirection(i, j)
+                                                - partialWrtParallelScaling(i) ),      1.0E-13 );
+                        BOOST_CHECK_SMALL( std::fabs( partialWrtArcwisePerpendicular(i, j)
+                                                - partialWrtPerpendicularScaling(i) ), 1.0E-13 );
+                }
+                }
+        }
+
+        Eigen::MatrixXd testPartialWrtArcwiseSourceDirection =
+                calculateAccelerationWrtParameterPartials( arcwiseSourceDirectionScaling, accelerationModel,
+                                                        arcPerturb, updateAtT, t );
+        Eigen::MatrixXd testPartialWrtArcwisePerpendicular   =
+                calculateAccelerationWrtParameterPartials( arcwisePerpendicularScaling,   accelerationModel,
+                                                        arcPerturb, updateAtT, t );
+        TUDAT_CHECK_MATRIX_CLOSE_FRACTION( partialWrtArcwiseSourceDirection,
+                                        testPartialWrtArcwiseSourceDirection, 1.0E-13 );
+        TUDAT_CHECK_MATRIX_CLOSE_FRACTION( partialWrtArcwisePerpendicular,
+                                        testPartialWrtArcwisePerpendicular,   1.0E-13 );
+        }
+
+                
     }
 }
 
