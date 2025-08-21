@@ -185,7 +185,6 @@ void readIonexFile( const std::string& filePath, IonexTecMap& data )
         data.tecMaps[ epochQueue[ i ] ] = mapQueue[ i ];
     }
 
-    data.validate( );
     //data.printMetadata( );
 }
 
