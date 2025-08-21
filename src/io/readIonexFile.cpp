@@ -165,11 +165,18 @@ void readIonexFile( const std::string& filePath, IonexTecMap& data )
     {
         mat = mat.colwise( ).reverse( ).eval( );  // flip rows to match new lat order
     }
-
+    
     // Store to output structure
     if( epochQueue.size( ) != mapQueue.size( ) )
     {
         throw std::runtime_error( "IONEX epoch list and TEC map count mismatch." );
+    }
+
+    // Apply microsecond adjustments to avoid boundary overlaps
+    if ( epochQueue.size( ) >= 1 )
+    {
+        epochQueue.front( ) += 1.0e-6;
+        epochQueue.back( )  -= 1.0e-6;
     }
 
     for( std::size_t i = 0; i < epochQueue.size( ); ++i )
@@ -179,7 +186,7 @@ void readIonexFile( const std::string& filePath, IonexTecMap& data )
     }
 
     data.validate( );
-    data.printMetadata( );
+    //data.printMetadata( );
 }
 
 void readIonexFiles( const std::vector< std::string >& filePaths, IonexTecMap& data )
