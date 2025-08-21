@@ -173,10 +173,10 @@ void readIonexFile( const std::string& filePath, IonexTecMap& data )
     }
 
     // Apply microsecond adjustments to avoid boundary overlaps
-    if ( epochQueue.size( ) >= 1 )
+    if( epochQueue.size( ) >= 1 )
     {
         epochQueue.front( ) += 1.0e-6;
-        epochQueue.back( )  -= 1.0e-6;
+        epochQueue.back( ) -= 1.0e-6;
     }
 
     for( std::size_t i = 0; i < epochQueue.size( ); ++i )
@@ -185,9 +185,8 @@ void readIonexFile( const std::string& filePath, IonexTecMap& data )
         data.tecMaps[ epochQueue[ i ] ] = mapQueue[ i ];
     }
 
-    //data.printMetadata( );
+    // data.printMetadata( );
 }
-
 
 void readIonexFiles( const std::vector< std::string >& filePaths, IonexTecMap& data )
 {
@@ -197,33 +196,31 @@ void readIonexFiles( const std::vector< std::string >& filePaths, IonexTecMap& d
     }
 
     std::set< double > uniqueHeights;
-    for( const auto& [epoch, map] : data.tecMaps )
+    for( const auto& [ epoch, map ]: data.tecMaps )
     {
         uniqueHeights.insert( data.referenceIonosphereHeight_ );
     }
 
-    if ( uniqueHeights.size( ) > 1 )
+    if( uniqueHeights.size( ) > 1 )
     {
         std::cerr << "Warning: IONEX files use multiple reference heights for the ionospheric shell:\n";
-        for ( const auto& h : uniqueHeights )
+        for( const auto& h: uniqueHeights )
         {
             std::cerr << "    - " << h << " m\n";
         }
     }
 
     std::sort( data.epochs.begin( ), data.epochs.end( ) );
-    for ( std::size_t i = 1; i < data.epochs.size( ); ++i )
+    for( std::size_t i = 1; i < data.epochs.size( ); ++i )
     {
-        double delta = data.epochs[i] - data.epochs[i-1];
-        if ( delta > 2.0 * 3600.0 )
+        double delta = data.epochs[ i ] - data.epochs[ i - 1 ];
+        if( delta > 2.0 * 3600.0 )
         {
-            std::cerr << "Warning: Gap of " << delta / 3600.0
-                      << " hours between TEC maps at epochs: "
-                      << data.epochs[i-1] << " and " << data.epochs[i] << "\n";
+            std::cerr << "Warning: Gap of " << delta / 3600.0 << " hours between TEC maps at epochs: " << data.epochs[ i - 1 ] << " and "
+                      << data.epochs[ i ] << "\n";
         }
     }
 }
-
 
 }  // namespace input_output
 }  // namespace tudat

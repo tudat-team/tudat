@@ -45,8 +45,6 @@ public:
     std::string samplingInterval;  // e.g., "01H", "02H"
     std::string contentType;       // GIM, ROT
 
-
-
     //! Print metadata to console
     void printMetadata( ) const
     {
