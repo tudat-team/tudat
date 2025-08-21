@@ -197,7 +197,6 @@ void readIonexFiles( const std::vector< std::string >& filePaths, IonexTecMap& d
         readIonexFile( path, data );
     }
 
-    // 1. Check for inconsistent reference heights
     std::set< double > uniqueHeights;
     for( const auto& [epoch, map] : data.tecMaps )
     {
@@ -213,7 +212,6 @@ void readIonexFiles( const std::vector< std::string >& filePaths, IonexTecMap& d
         }
     }
 
-    // 2. Check for large epoch gaps (> 2 hours)
     std::sort( data.epochs.begin( ), data.epochs.end( ) );
     for ( std::size_t i = 1; i < data.epochs.size( ); ++i )
     {

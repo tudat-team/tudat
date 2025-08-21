@@ -45,51 +45,6 @@ public:
     std::string samplingInterval;  // e.g., "01H", "02H"
     std::string contentType;       // GIM, ROT
 
-    void validate( ) const
-    {
-        for( const auto& entry: tecMaps )
-        {
-            const Eigen::MatrixXd& tec = entry.second;
-            if( static_cast< std::size_t >( tec.rows( ) ) != latitudes.size( ) ||
-                static_cast< std::size_t >( tec.cols( ) ) != longitudes.size( ) )
-            {
-                throw std::runtime_error( "IONEX: Data matrix size inconsistent with lat/lon grid." );
-            }
-        }
-
-        if( epochs.size( ) != tecMaps.size( ) )
-        {
-            throw std::runtime_error( "IONEX: Mismatch between epochs and stored TEC maps." );
-        }
-
-        // --- Check for consistent reference height across TEC maps ---
-        double tol = 1.0;  // 1 meter tolerance
-        for ( const auto& [epoch, tecMap] : tecMaps )
-        {
-            if ( std::abs( referenceIonosphereHeight_ - hgtMin * 1e3 ) > tol )
-            {
-                std::cerr << "Warning: Inconsistent reference ionosphere height detected at epoch "
-                        << epoch << ": expected " << referenceIonosphereHeight_
-                        << ", found " << hgtMin * 1e3 << " (from file)\n";
-                break; // only print once
-            }
-        }
-
-        // --- Check for time gaps greater than 2 hours between epochs ---
-        std::vector< double > sortedEpochs = epochs;
-        std::sort( sortedEpochs.begin(), sortedEpochs.end() );
-
-        for ( std::size_t i = 1; i < sortedEpochs.size(); ++i )
-        {
-            double dt = sortedEpochs[ i ] - sortedEpochs[ i - 1 ];
-            if ( dt > 7200.0 )  // 2 hours
-            {
-                std::cerr << "⚠️  Warning: Gap of " << dt / 3600.0
-                        << " hours detected between epochs " << sortedEpochs[ i - 1 ]
-                        << " and " << sortedEpochs[ i ] << "\n";
-            }
-        }
-    }
 
 
     //! Print metadata to console
