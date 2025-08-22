@@ -268,6 +268,41 @@ std::vector< std::shared_ptr< basic_astrodynamics::AccelerationModel3d > > getAc
             }
             break;
         }
+        case drag_component_scaling_factor:
+        case side_component_scaling_factor:
+        case lift_component_scaling_factor: {
+            if( parameterSettings == nullptr )
+            {
+                throw std::runtime_error( "Error, expected aerodynamic scaling factor parameter settings." );
+            }
+            else
+            {
+                if( accelerationModelMap.count( parameterSettings->parameterType_.second.first ) != 0 )
+                {
+                    // Retrieve acceleration model.
+                    basic_astrodynamics::SingleBodyAccelerationMap accelerationModelListToCheck =
+                            accelerationModelMap.at( parameterSettings->parameterType_.second.first );
+
+                    for( const auto& it: accelerationModelListToCheck )
+                    {
+                        for( const auto& accelerationModel: it.second )
+                        {
+                            if( basic_astrodynamics::getAccelerationModelType( accelerationModel ) == basic_astrodynamics::aerodynamic )
+                            {
+                                accelerationModelList.push_back( accelerationModel );
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    throw std::runtime_error( "Error, trying to setup aerodynamic scaling coefficient for body " +
+                                              parameterSettings->parameterType_.second.first +
+                                              " but no aerodynamic acceleration is defined." );
+                }
+            }
+            break;
+        }
         
         default:
             break;
