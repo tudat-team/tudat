@@ -45,24 +45,6 @@ public:
     std::string samplingInterval;  // e.g., "01H", "02H"
     std::string contentType;       // GIM, ROT
 
-    //! Validate consistency
-    void validate( ) const
-    {
-        for( const auto& entry: tecMaps )
-        {
-            const Eigen::MatrixXd& tec = entry.second;
-            if( static_cast< std::size_t >( tec.rows( ) ) != latitudes.size( ) ||
-                static_cast< std::size_t >( tec.cols( ) ) != longitudes.size( ) )
-            {
-                throw std::runtime_error( "IONEX: Data matrix size inconsistent with lat/lon grid." );
-            }
-        }
-        if( epochs.size( ) != tecMaps.size( ) )
-        {
-            throw std::runtime_error( "IONEX: Mismatch between epochs and stored TEC maps." );
-        }
-    }
-
     //! Print metadata to console
     void printMetadata( ) const
     {
