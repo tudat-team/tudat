@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
+#include <set>
 
 namespace tudat
 {
