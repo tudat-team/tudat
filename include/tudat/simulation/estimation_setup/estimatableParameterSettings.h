@@ -763,7 +763,6 @@ public:
         EstimatableParameterSettings( associatedBody, parameterType, exertingBody ),
         arcStartTimes_( arcStartTimes )
     {
-        std::cout<< "ArcWiseRadiationPressureScalingFactorSettings" <<std::endl;
         if( parameterType != arcwise_source_direction_radiation_pressure_scaling_factor &&
             parameterType != arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor )
         {

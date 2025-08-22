@@ -1824,7 +1824,6 @@ std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd >
             case arcwise_source_direction_radiation_pressure_scaling_factor:
             case arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:
             {
-                std::cout << "create  ArcWiseRadiationPressureScalingFactorSettings vectorParameterToEstimate" << std::endl;
                 std::shared_ptr< estimatable_parameters::ArcWiseRadiationPressureScalingFactorSettings > scalingSettings =
                     std::dynamic_pointer_cast< estimatable_parameters::ArcWiseRadiationPressureScalingFactorSettings >( vectorParameterName );
 
