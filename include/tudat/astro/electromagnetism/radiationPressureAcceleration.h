@@ -112,6 +112,16 @@ public:
         perpendicularSourceDirectionScaling_ = perpendicularSourceDirectionScaling;
     }
 
+    void setSourceDirectionScalingFunction( const std::function< double( double ) >& scalingFunction )
+    {
+        sourceDirectionScalingFunction_ = scalingFunction;
+    }
+
+    void setPerpendicularSourceDirectionScalingFunction( const std::function< double( double ) >& scalingFunction )
+    {
+        perpendicularSourceDirectionScalingFunction_ = scalingFunction;
+    }
+
     Eigen::Vector3d getTargetCenterPositionInSourceFrame( )
     {
         return targetCenterPositionInSourceFrame_;
@@ -141,18 +151,35 @@ protected:
 
     virtual void scaleRadiationPressureAcceleration( )
     {
-        if( !isScalingModelSet_ )
+        double parallelScaling = 1.0;
+        double perpendicularScaling = 1.0;
+
+        if( sourceDirectionScalingFunction_ )
         {
-            currentAcceleration_ = currentUnscaledAcceleration_;
+            parallelScaling = sourceDirectionScalingFunction_( currentTime_ );
         }
-        else
+        else if( isScalingModelSet_ )
         {
-            Eigen::Vector3d targetUnitVector = targetCenterPositionInSourceFrame_.normalized( );
-            Eigen::Vector3d perpendicularToTargetComponent =
-                    currentUnscaledAcceleration_ - targetUnitVector.dot( currentUnscaledAcceleration_ ) * targetUnitVector;
-            currentAcceleration_ = perpendicularSourceDirectionScaling_ * perpendicularToTargetComponent +
-                    sourceDirectionScaling_ * ( currentUnscaledAcceleration_ - perpendicularToTargetComponent );
+            parallelScaling = sourceDirectionScaling_;
         }
+
+        if( perpendicularSourceDirectionScalingFunction_ )
+        {
+            perpendicularScaling = perpendicularSourceDirectionScalingFunction_( currentTime_ );
+        }
+        else if( isScalingModelSet_ )
+        {
+            perpendicularScaling = perpendicularSourceDirectionScaling_;
+        }
+
+        Eigen::Vector3d targetUnitVector = targetCenterPositionInSourceFrame_.normalized( );
+        Eigen::Vector3d perpendicularComponent =
+                currentUnscaledAcceleration_ - targetUnitVector.dot( currentUnscaledAcceleration_ ) * targetUnitVector;
+
+        currentAcceleration_ =
+                perpendicularScaling * perpendicularComponent +
+                parallelScaling * ( currentUnscaledAcceleration_ - perpendicularComponent );
+
     }
 
     std::function< Eigen::Vector3d( ) > sourcePositionFunction_;
@@ -175,6 +202,9 @@ protected:
     bool isScalingModelSet_;
     double sourceDirectionScaling_;
     double perpendicularSourceDirectionScaling_;
+
+    std::function< double( double ) > sourceDirectionScalingFunction_;
+    std::function< double( double ) > perpendicularSourceDirectionScalingFunction_;
 
     std::string sourceName_;
 };
