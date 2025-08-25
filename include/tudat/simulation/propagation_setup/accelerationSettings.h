@@ -626,9 +626,10 @@ public:
                              const double referenceEpoch):
         AccelerationSettings( basic_astrodynamics::rtg_acceleration ), bodyFixedForceVectorAtReferenceEpoch_( bodyFixedForceVectorAtReferenceEpoch ),
         decayScaleFactor_( decayScaleFactor ), referenceEpoch_( referenceEpoch )
-    { }
 
-    const Eigen::Vector3d& bodyFixedForceVectorAtReferenceEpoch_;
+    {	}
+
+    const Eigen::Vector3d bodyFixedForceVectorAtReferenceEpoch_;
     const double decayScaleFactor_;
     const double referenceEpoch_;
 };
