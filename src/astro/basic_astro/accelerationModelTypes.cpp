@@ -85,7 +85,7 @@ std::string getAccelerationModelName( const AvailableAcceleration accelerationTy
             break;
         case rtg_acceleration:
             accelerationName = "rtg anisotropic radiation acceleration";
-        break;
+            break;
         case custom_acceleration:
             accelerationName = "custom acceleration";
             break;

@@ -1365,9 +1365,9 @@ inline std::shared_ptr< EstimatableParameterSettings > rtgForceVector( const std
     return std::make_shared< EstimatableParameterSettings >( associatedBody, rtg_force_vector );
 }
 
-inline std::shared_ptr< EstimatableParameterSettings > rtgForceVectorMagnitude( const std::string bodyName)
+inline std::shared_ptr< EstimatableParameterSettings > rtgForceVectorMagnitude( const std::string bodyName )
 {
-    return std::make_shared< EstimatableParameterSettings >( bodyName, rtg_force_vector_magnitude);
+    return std::make_shared< EstimatableParameterSettings >( bodyName, rtg_force_vector_magnitude );
 }
 
 inline std::shared_ptr< EstimatableParameterSettings > ppnParameterGamma( )

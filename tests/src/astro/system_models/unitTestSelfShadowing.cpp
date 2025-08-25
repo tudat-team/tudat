@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE( testFractionAnalytical )
                                           Eigen::Vector3d::Zero( ),
                                           materialPropertiesMap,
                                           instantaneousReradiation,
-                                          "mm");
+                                          "mm" );
 
     std::shared_ptr< FullPanelledBodySettings > panelSettings = fullPanelledBodySettings( bodyPanelSettingList );
 
@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE( testComputationalEfficiency )
                                           Eigen::Vector3d::Zero( ),
                                           materialPropertiesMap,
                                           instantaneousReradiation,
-                                          "mm");
+                                          "mm" );
 
     std::shared_ptr< FullPanelledBodySettings > panelSettings = fullPanelledBodySettings( bodyPanelSettingList );
     // Create spacecraft object.

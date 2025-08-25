@@ -197,7 +197,7 @@ std::string getParameterTypeString( const EstimatebleParametersEnum parameterTyp
             break;
         case rtg_force_vector_magnitude:
             parameterDescription = "magnitude of force vector from anisotropic RTG radiation ";
-        break;
+            break;
         default:
             std::string errorMessage =
                     "Error when getting parameter string, did not recognize parameter " + std::to_string( parameterType );
@@ -404,7 +404,7 @@ bool isDoubleParameter( const EstimatebleParametersEnum parameterType )
             break;
         case rtg_force_vector_magnitude:
             isDoubleParameter = true;
-        break;
+            break;
         default:
             throw std::runtime_error( "Error, parameter type " + std::to_string( parameterType ) +
                                       " not found when getting parameter type" );

@@ -19,7 +19,6 @@ namespace acceleration_partials
 //! Dummy function used for update, performs no calculations.
 void emptyFunction( ) { }
 
-
 //! Dummy function used for update, performs no calculations.
 void emptyTimeFunction( const double time ) { }
 

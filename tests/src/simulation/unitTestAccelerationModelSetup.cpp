@@ -18,7 +18,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <functional>
-#include <cmath> // for M_PI
+#include <cmath>  // for M_PI
 
 #include "tudat/astro/basic_astro/physicalConstants.h"
 #include "tudat/astro/basic_astro/celestialBodyConstants.h"
@@ -782,7 +782,6 @@ BOOST_AUTO_TEST_CASE( test_aerodynamicAccelerationModelSetupWithCoefficientIndep
     }
 }
 
-
 //! Test setup of rtg accelerations
 BOOST_AUTO_TEST_CASE( test_rtgAccelerationModelSetup )
 {
@@ -804,38 +803,39 @@ BOOST_AUTO_TEST_CASE( test_rtgAccelerationModelSetup )
     // Create body objects.
     SystemOfBodies bodies = createSystemOfBodies( bodySettings );
 
-
     // Define function describing rotational ephemeris of vehicle
-    std::function<Eigen::Matrix3d(double)> timeDependentRotationFunction =
-    [](double epoch) {
+    std::function< Eigen::Matrix3d( double ) > timeDependentRotationFunction = []( double epoch ) {
         double angleRad = 0.5 * epoch * mathematical_constants::PI / 180.0;
-        return Eigen::AngleAxisd(angleRad, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+        return Eigen::AngleAxisd( angleRad, Eigen::Vector3d::UnitZ( ) ).toRotationMatrix( );
     };
 
     bodies.at( "Vehicle" )
-            ->setRotationalEphemeris( createRotationModel( std::make_shared< CustomRotationModelSettings >(
-                                                                   "ECLIPJ2000", "VehicleFixed", timeDependentRotationFunction, 1.0 ),
-                                                           "Vehicle",
-                                                           bodies ) );
+            ->setRotationalEphemeris( createRotationModel(
+                    std::make_shared< CustomRotationModelSettings >( "ECLIPJ2000", "VehicleFixed", timeDependentRotationFunction, 1.0 ),
+                    "Vehicle",
+                    bodies ) );
 
     // Set vehicle mass
     double referenceEpoch = 0.0;
     double initialVehicleMass = 5000;
 
     // Define function describing mass function of vehicle
-    std::function<double(double)> vehicleMassFunction =
-        [=](double epoch) {
-            double delta_epoch = epoch - referenceEpoch;
+    std::function< double( double ) > vehicleMassFunction = [ = ]( double epoch ) {
+        double delta_epoch = epoch - referenceEpoch;
 
-            if (delta_epoch > 1000 && delta_epoch < 2000) {
-                return initialVehicleMass - (delta_epoch - 1000.);
-            } else if (delta_epoch <= 1000) {
-                return initialVehicleMass;
-            } else {
-                return initialVehicleMass - 1000.;
-            }
+        if( delta_epoch > 1000 && delta_epoch < 2000 )
+        {
+            return initialVehicleMass - ( delta_epoch - 1000. );
+        }
+        else if( delta_epoch <= 1000 )
+        {
+            return initialVehicleMass;
+        }
+        else
+        {
+            return initialVehicleMass - 1000.;
+        }
     };
-
 
     bodies.at( "Vehicle" )->setBodyMassFunction( vehicleMassFunction );
     bodies.at( "Vehicle" )->updateMass( referenceEpoch );
@@ -854,14 +854,14 @@ BOOST_AUTO_TEST_CASE( test_rtgAccelerationModelSetup )
     bodiesToPropagate.push_back( "Vehicle" );
     centralBodies.push_back( "Earth" );
 
-    //accelerationSettingsMap[ "Vehicle" ][ "Vehicle" ].push_back(
-    //                    std::make_shared< RTGAccelerationSettings >(rtgForceVector, decayScaleFactor, referenceEpoch));
+    // accelerationSettingsMap[ "Vehicle" ][ "Vehicle" ].push_back(
+    //                     std::make_shared< RTGAccelerationSettings >(rtgForceVector, decayScaleFactor, referenceEpoch));
     accelerationSettingsMap[ "Vehicle" ][ "Vehicle" ].push_back(
-                        std::make_shared< RTGAccelerationSettings >(rtgForceVector, decayScaleFactor, referenceEpoch));
+            std::make_shared< RTGAccelerationSettings >( rtgForceVector, decayScaleFactor, referenceEpoch ) );
 
     // Create accelerations
     AccelerationMap accelerationsMap = createAccelerationModelsMap( bodies, accelerationSettingsMap, bodiesToPropagate, centralBodies );
-    std::shared_ptr< AccelerationModel3d > accelerationModel = accelerationsMap[ "Vehicle"] ["Vehicle"][ 0 ];
+    std::shared_ptr< AccelerationModel3d > accelerationModel = accelerationsMap[ "Vehicle" ][ "Vehicle" ][ 0 ];
     BOOST_CHECK_EQUAL( accelerationModel != nullptr, true );
 }
 

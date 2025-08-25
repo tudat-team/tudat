@@ -231,7 +231,6 @@ std::shared_ptr< gravitation::RingGravitationalAccelerationModel > createRingGra
         const std::string& nameOfBodyExertingAcceleration,
         const bool useCentralBodyFixedFrame );
 
-
 //! Function to create ring gravity acceleration model.
 /*!
  *  Function to create ring gravity acceleration model from bodies exerting and

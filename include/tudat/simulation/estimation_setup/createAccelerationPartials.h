@@ -847,23 +847,23 @@ std::shared_ptr< acceleration_partials::AccelerationPartial > createAnalyticalAc
             break;
         }
         case rtg_acceleration: {
-          // Check if identifier is consistent with type.
-          std::shared_ptr< system_models::RTGAccelerationModel > rtgAcceleration =
-                  std::dynamic_pointer_cast< system_models::RTGAccelerationModel >( accelerationModel );
-          if( rtgAcceleration == nullptr )
-          {
-            throw std::runtime_error(
-                    "Acceleration class type does not match acceleration type enum (yarkovsky_acceleration) set when making "
-                    "acceleration partial." );
-          }
-          else
-          {
-            // Create partial-calculating object.
-            accelerationPartial = std::make_shared< RTGAccelerationPartial >(
-                    rtgAcceleration, acceleratedBody.first , acceleratingBody.first);
-          }
-          break;
-      }
+            // Check if identifier is consistent with type.
+            std::shared_ptr< system_models::RTGAccelerationModel > rtgAcceleration =
+                    std::dynamic_pointer_cast< system_models::RTGAccelerationModel >( accelerationModel );
+            if( rtgAcceleration == nullptr )
+            {
+                throw std::runtime_error(
+                        "Acceleration class type does not match acceleration type enum (yarkovsky_acceleration) set when making "
+                        "acceleration partial." );
+            }
+            else
+            {
+                // Create partial-calculating object.
+                accelerationPartial =
+                        std::make_shared< RTGAccelerationPartial >( rtgAcceleration, acceleratedBody.first, acceleratingBody.first );
+            }
+            break;
+        }
         default:
             std::string errorMessage =
                     "Acceleration model " + std::to_string( accelerationType ) + " not found when making acceleration partial";

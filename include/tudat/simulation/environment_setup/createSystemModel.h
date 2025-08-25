@@ -347,10 +347,22 @@ inline std::vector< std::shared_ptr< BodyPanelSettings > > bodyPanelSettingsList
 
     float conversionFactor;
 
-    if (inputUnit=="mm"){conversionFactor=1/1000.;}
-    else if (inputUnit=="m"){conversionFactor=1;}
-    else if (inputUnit=="in"){conversionFactor=0.0254;}
-    else{ throw std::runtime_error("Input Unit " + inputUnit + " not recognized. Valid options are mm, m, in.");}
+    if( inputUnit == "mm" )
+    {
+        conversionFactor = 1 / 1000.;
+    }
+    else if( inputUnit == "m" )
+    {
+        conversionFactor = 1;
+    }
+    else if( inputUnit == "in" )
+    {
+        conversionFactor = 0.0254;
+    }
+    else
+    {
+        throw std::runtime_error( "Input Unit " + inputUnit + " not recognized. Valid options are mm, m, in." );
+    }
 
     double x1, y1, z1;
     while( dummy1 >> x1 >> y1 >> z1 )
