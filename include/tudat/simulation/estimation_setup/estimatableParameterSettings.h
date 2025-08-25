@@ -755,13 +755,11 @@ public:
 class ArcWiseRadiationPressureScalingFactorSettings : public EstimatableParameterSettings
 {
 public:
-    ArcWiseRadiationPressureScalingFactorSettings(
-            const EstimatebleParametersEnum parameterType,
-            const std::string& associatedBody,
-            const std::string& exertingBody,
-            const std::vector< double >& arcStartTimes ):
-        EstimatableParameterSettings( associatedBody, parameterType, exertingBody ),
-        arcStartTimes_( arcStartTimes )
+    ArcWiseRadiationPressureScalingFactorSettings( const EstimatebleParametersEnum parameterType,
+                                                   const std::string& associatedBody,
+                                                   const std::string& exertingBody,
+                                                   const std::vector< double >& arcStartTimes ):
+        EstimatableParameterSettings( associatedBody, parameterType, exertingBody ), arcStartTimes_( arcStartTimes )
     {
         if( parameterType != arcwise_source_direction_radiation_pressure_scaling_factor &&
             parameterType != arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor )
@@ -778,7 +776,6 @@ public:
 private:
     std::vector< double > arcStartTimes_;
 };
-
 
 //! Class to define settings for estimating a Tidal Love number (k_{n}) at a single degree that is constant for all orders
 /*!
@@ -1211,10 +1208,7 @@ inline std::shared_ptr< EstimatableParameterSettings > arcwiseSourceDirectionRad
         const std::vector< double >& arcStartTimeList )
 {
     return std::make_shared< ArcWiseRadiationPressureScalingFactorSettings >(
-        arcwise_source_direction_radiation_pressure_scaling_factor,
-        associatedBody,
-        exertingBody,
-        arcStartTimeList );
+            arcwise_source_direction_radiation_pressure_scaling_factor, associatedBody, exertingBody, arcStartTimeList );
 }
 
 inline std::shared_ptr< EstimatableParameterSettings > arcwisePerpendicularRadiationPressureScaling(
@@ -1223,10 +1217,7 @@ inline std::shared_ptr< EstimatableParameterSettings > arcwisePerpendicularRadia
         const std::vector< double >& arcStartTimeList )
 {
     return std::make_shared< ArcWiseRadiationPressureScalingFactorSettings >(
-        arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor,
-        associatedBody,
-        exertingBody,
-        arcStartTimeList );
+            arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor, associatedBody, exertingBody, arcStartTimeList );
 }
 
 inline std::shared_ptr< EstimatableParameterSettings > arcwiseDragCoefficient( std::string associatedBody,

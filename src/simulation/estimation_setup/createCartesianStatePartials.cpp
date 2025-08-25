@@ -163,7 +163,7 @@ std::map< observation_models::LinkEndType, std::shared_ptr< CartesianStatePartia
                     case estimatable_parameters::inverse_tidal_quality_factor:
                         break;
                     case estimatable_parameters::source_direction_radiation_pressure_scaling_factor:
-                        break;                    
+                        break;
                     case estimatable_parameters::source_perpendicular_direction_radiation_pressure_scaling_factor:
                         break;
                     case estimatable_parameters::drag_component_scaling_factor:
@@ -171,7 +171,7 @@ std::map< observation_models::LinkEndType, std::shared_ptr< CartesianStatePartia
                     case estimatable_parameters::side_component_scaling_factor:
                         break;
                     case estimatable_parameters::lift_component_scaling_factor:
-                        break;                    
+                        break;
                     case estimatable_parameters::arcwise_source_direction_radiation_pressure_scaling_factor:
                         break;
                     case estimatable_parameters::arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:

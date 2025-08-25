@@ -177,9 +177,7 @@ protected:
                 currentUnscaledAcceleration_ - targetUnitVector.dot( currentUnscaledAcceleration_ ) * targetUnitVector;
 
         currentAcceleration_ =
-                perpendicularScaling * perpendicularComponent +
-                parallelScaling * ( currentUnscaledAcceleration_ - perpendicularComponent );
-
+                perpendicularScaling * perpendicularComponent + parallelScaling * ( currentUnscaledAcceleration_ - perpendicularComponent );
     }
 
     std::function< Eigen::Vector3d( ) > sourcePositionFunction_;
