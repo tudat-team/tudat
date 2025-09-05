@@ -117,12 +117,27 @@ void readIonexFile( const std::string& filePath, IonexTecMap& data )
                     while( tecValues.size( ) < data.longitudes.size( ) )
                     {
                         std::getline( file, line );
-                        for( std::size_t i = 0; i + 5 <= line.size( ); i += 5 )
+                        for ( std::size_t i = 0; i + 5 <= line.size(); i += 5 )
                         {
                             std::string val = line.substr( i, 5 );
-                            tecValues.push_back( std::stod( val ) * 0.1 );
+                            boost::algorithm::trim( val );  // Remove trailing spaces
+                            if ( val.empty() )
+                            {
+                                // Skip or assign 0/NaN if needed
+                                continue;
+                            }
+
+                            try
+                            {
+                                tecValues.push_back( std::stod( val ) * 0.1 );
+                            }
+                            catch ( const std::invalid_argument& )
+                            {
+                                std::cerr << "Warning: invalid TEC value \"" << val << "\" at epoch " << currentEpoch << ". Replacing with 0.0.\n";
+                                tecValues.push_back( 0.0 );  // or std::numeric_limits<double>::quiet_NaN();
+                            }
                         }
-                    }
+                                            }
 
                     for( std::size_t j = 0; j < tecValues.size( ); ++j )
                     {
