@@ -189,25 +189,6 @@ public:
         deformingBodies_ = deformingBodies;
     }
 
-    //! Function to set meanForcingCosineTerms_ map
-    /*!
-     * \brief Function to set meanForcingCosineTerms_ map
-     * \param newMeanCosineTerms New map of vectors containing mean cosine forcing terms, where keys refer to forcing degree m and vector position to order n
-     */
-    void setMeanForcingCosineTerms( const std::map<int, std::vector<double>>& newCosineTerms ) {
-
-        // Check same number of keys
-        assert(newCosineTerms.size() == meanForcingCosineTerms_.size() && "Error when setting meanForcingCosineTerms in BasicSolidBodyGravityFieldVariationSettings. Keys of newCosineTerms argument must match with existing love number keys.");
-        if (newCosineTerms.size() != meanForcingCosineTerms_.size()){
-            throw std::runtime_error(
-            "Error when setting meanForcingCosineTerms in BasicSolidBodyGravityFieldVariationSettings. "
-            "Number of keys of newCosineTerms argument " + std::to_string(newCosineTerms.size()) + " must match with existing love number keys " + std::to_string(meanForcingCosineTerms_.size()) + " ."
-
-            );
-        }
-
-
-     }
 
     //! Function to set meanForcingCosineTerms_ map
     /*!

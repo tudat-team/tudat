@@ -35,7 +35,7 @@ std::complex< double > calculateSolidBodyTideSingleCoefficientSetCorrectionFromA
 
     // subtract mean tidal forcing terms
     tidalForcing.real(tidalForcing.real() - meanCosineForcing);
-    tidalForcing.real(tidalForcing.real() + meanSineForcing);                // sine correspons to -i, thus plus.
+    tidalForcing.imag(tidalForcing.imag() + meanSineForcing);                // sine correspons to -i, thus plus.
 
     // Calculate and return corrections.
     return loveNumber * tidalForcing;
@@ -66,7 +66,7 @@ std::complex< double > calculateSolidBodyTideSingleCoefficientSetCorrectionFromA
 
     // subtract mean tidal forcing terms
     tidalForcing.real(tidalForcing.real() - meanCosineForcing);
-    tidalForcing.real(tidalForcing.real() + meanSineForcing);                // sine correspons to -i, thus plus.
+    tidalForcing.imag(tidalForcing.imag() + meanSineForcing);                // sine correspons to -i, thus plus.
 
     // Calculate tidal corrections.
     return loveNumber * tidalForcing;
