@@ -60,6 +60,15 @@ std::complex< double > calculateSolidBodyTideSingleCoefficientSetCorrectionFromA
                                                                                           const double meanCosineForcing = 0.0,
                                                                                           const double meanSineForcing = 0.0 );
 
+
+
+// Handle default values of mean tidal forcing terms when calculateSolidBodyTideSingleCoefficientSetCorrectionFromAmplitude function is called with love numbers as map
+    // this call is only happening in unit tests (as far as I can tell) and the aux function below is thus also only called in unit test application
+void massageMeanTermsIfDefault( std::map< int, std::vector< double > >& input,
+                                const std::map< int, std::vector< std::complex< double > > >& loveNumbersReference);
+
+
+
 //! Function to calculate solid body tide gravity field variations due to single body at single degree and order directly
 //! from perturbing body's Cartesian state.
 /*!
@@ -112,8 +121,8 @@ std::pair< Eigen::MatrixXd, Eigen::MatrixXd > calculateSolidBodyTideSingleCoeffi
         const Eigen::Vector3d& relativeBodyFixedPosition,
         const int maximumDegree,
         const int maximumOrder,
-        const double meanCosineForcing,
-        const double meanSineForcing);
+        std::map< int, std::vector< double > > meanCosineForcing = { {0, {0.0}} },
+        std::map< int, std::vector< double > > meanSineForcing = { {0, {0.0}} });
 
 class SolidBodyTideGravityFieldVariations : public GravityFieldVariations
 {

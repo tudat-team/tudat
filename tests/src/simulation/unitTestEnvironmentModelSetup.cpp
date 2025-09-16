@@ -819,7 +819,7 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldVariationSetup )
     double loveNumber = 0.25;
     double loveNumberDegreeThree = 100.0;
 
-    std::map< int, std::vector< std::complex< double > > > fullLoveNumberVector = getFullLoveNumbersVector( loveNumber, 3, 2 );
+    const std::map< int, std::vector< std::complex< double > > > fullLoveNumberVector = getFullLoveNumbersVector( loveNumber, 3, 2 );
     double testTime = 0.5E7;
 
     Eigen::MatrixXd cosineCorrections1, cosineCorrections2, cosineCorrections3;

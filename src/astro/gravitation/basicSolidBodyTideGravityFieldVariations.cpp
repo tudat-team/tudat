@@ -72,6 +72,24 @@ std::complex< double > calculateSolidBodyTideSingleCoefficientSetCorrectionFromA
     return loveNumber * tidalForcing;
 }
 
+
+void massageMeanTermsIfDefault(std::map< int, std::vector< double > >& input, const std::map< int, std::vector< std::complex< double > > >& loveNumbersReference) {
+
+    const std::map<int, std::vector<double>> default_map = { {0, {0.0}} };
+
+    if (input == default_map) {
+        input.clear(); // reset
+
+        for (const auto &kv : loveNumbersReference) {
+            int key = kv.first;
+            std::size_t length = kv.second.size();
+
+            // Fill vector<double> with zeros of same length
+            input[key] = std::vector<double>(length, 0.0);
+        }
+    }
+}
+
 //! Function to calculate solid body tide gravity field variations due to single body at a set of degrees and orders
 //! from perturbing body's Cartesian state.
 // (is this overload even used currently?)
@@ -85,10 +103,14 @@ std::pair< Eigen::MatrixXd, Eigen::MatrixXd > calculateSolidBodyTideSingleCoeffi
         const Eigen::Vector3d& relativeBodyFixedPosition,
         const int maximumDegree,
         const int maximumOrder,
-        const std::map< int, std::vector< double > > meanForcingCosineTerms,
-        const std::map< int, std::vector< double > > meanForcingSineTerms)
+        std::map< int, std::vector< double > > meanForcingCosineTerms,
+        std::map< int, std::vector< double > > meanForcingSineTerms)
 
 {
+
+    massageMeanTermsIfDefault(meanForcingCosineTerms, loveNumbers);
+    massageMeanTermsIfDefault(meanForcingSineTerms, loveNumbers);
+
     // Initialize results.
     Eigen::MatrixXd cosineCorrections = Eigen::MatrixXd::Zero( maximumDegree + 1, maximumOrder + 1 );
     Eigen::MatrixXd sineCorrections = Eigen::MatrixXd::Zero( maximumDegree + 1, maximumOrder + 1 );
