@@ -822,8 +822,8 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldVariationSetup )
     const std::map< int, std::vector< std::complex< double > > > fullLoveNumberVector = getFullLoveNumbersVector( loveNumber, 3, 2 );
     double testTime = 0.5E7;
 
-    Eigen::MatrixXd cosineCorrections1, cosineCorrections2, cosineCorrections3;
-    Eigen::MatrixXd sineCorrections1, sineCorrections2, sineCorrections3;
+    Eigen::MatrixXd cosineCorrections1, cosineCorrections2, cosineCorrections3, cosineCorrectionsX;
+    Eigen::MatrixXd sineCorrections1, sineCorrections2, sineCorrections3, sineCorrectionsX;
 
     // Calculate non-interpolated corrections from two bodies in single object.
     {
@@ -918,6 +918,58 @@ BOOST_AUTO_TEST_CASE( test_gravityFieldVariationSetup )
         cosineCorrections3 = earthGravityField->getCosineCoefficients( ) - cosineCoefficients;
         sineCorrections3 = earthGravityField->getSineCoefficients( ) - sineCoefficients;
     }
+
+
+// Calculate interpolated corrections from single body with subtraction of mean forcing terms.
+{
+    bodySettings.at( "Earth" )->gravityFieldVariationSettings.clear( );
+
+    // Define correction settings
+    std::vector< std::string > deformingBodies;
+    deformingBodies.push_back( "Moon" );
+
+    std::shared_ptr< BasicSolidBodyGravityFieldVariationSettings > gravityFieldVariationsSettings = std::make_shared< BasicSolidBodyGravityFieldVariationSettings >(
+                        deformingBodies,
+                        fullLoveNumberVector);
+
+    std::map< int, std::vector< double > > meanCosineTerms = {{0, {0.0, 0.0, 0.0}},
+                {1, {0.0, 0.0, 0.0}} , {2, {-3E-09, -3E-09, -1E-09}}, {3, {-1E-11, -1E-11, -1E-11}}};
+
+
+    std::map< int, std::vector< double > > meanSineTerms = {{0, {0.0, 0.0, 0.0}},
+            {1, {0.0, 0.0, 0.0}} , {2, {0.0, -8E-10, -8E-10}}, {3, {0.0, -8E-11, -8E-11}}};
+
+
+    Eigen::MatrixXd meanTermsCosineMatrix = gravitation::convertSHMapToMatrix(meanCosineTerms, 6);
+    Eigen::MatrixXd meanTermsSineMatrix = gravitation::convertSHMapToMatrix(meanSineTerms, 6);
+
+
+    gravityFieldVariationsSettings->setMeanTidalForcingTerms(meanCosineTerms, meanSineTerms);
+
+    bodySettings.at( "Earth" )->gravityFieldVariationSettings.push_back(gravityFieldVariationsSettings);
+
+    // Create bodies
+    SystemOfBodies bodies = createSystemOfBodies( bodySettings );
+
+    // Update states.
+    bodies.at( "Earth" )->setStateFromEphemeris( testTime );
+    bodies.at( "Earth" )->setCurrentRotationalStateToLocalFrameFromEphemeris( testTime );
+    bodies.at( "Sun" )->setStateFromEphemeris( testTime );
+    bodies.at( "Moon" )->setStateFromEphemeris( testTime );
+
+    // Update gravity field
+    std::shared_ptr< gravitation::TimeDependentSphericalHarmonicsGravityField > earthGravityField =
+            std::dynamic_pointer_cast< gravitation::TimeDependentSphericalHarmonicsGravityField >(
+                    bodies.at( "Earth" )->getGravityFieldModel( ) );
+    earthGravityField->update( testTime );
+
+    // Retrieve corrections.
+    cosineCorrectionsX = earthGravityField->getCosineCoefficients( ) + meanTermsCosineMatrix - cosineCoefficients  ;
+    sineCorrectionsX = earthGravityField->getSineCoefficients( ) + meanTermsSineMatrix - sineCoefficients;
+}
+
+
+
 
     // Mutually compare results of three methods.
     TUDAT_CHECK_MATRIX_CLOSE_FRACTION( cosineCorrections1.block( 2, 0, 2, 3 ), cosineCorrections2.block( 2, 0, 2, 3 ), 1.0E-10 );

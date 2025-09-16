@@ -68,6 +68,9 @@ void massageMeanTermsIfDefault( std::map< int, std::vector< double > >& input,
                                 const std::map< int, std::vector< std::complex< double > > >& loveNumbersReference);
 
 
+// This function takes the map of kind key=degree, vector = values at degree, order and maps it onto a nxn matrix
+Eigen::MatrixXd convertSHMapToMatrix(const std::map<int, std::vector<double>>& inputMap, int n);
+
 
 //! Function to calculate solid body tide gravity field variations due to single body at single degree and order directly
 //! from perturbing body's Cartesian state.

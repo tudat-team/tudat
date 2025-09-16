@@ -90,6 +90,21 @@ void massageMeanTermsIfDefault(std::map< int, std::vector< double > >& input, co
     }
 }
 
+// This function takes the map of kind key=degree, vector = values at degree, order and maps it onto a nxn matrix
+Eigen::MatrixXd convertSHMapToMatrix(const std::map<int, std::vector<double>>& inputMap, int n) {
+    Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(n, n);  // Initialize with zeros
+
+    for (const auto& [row, vec] : inputMap) {
+        if (row >= n) continue;  // Skip out-of-bounds rows
+
+        for (size_t col = 0; col < vec.size() && col < static_cast<size_t>(n); ++col) {
+            matrix(row, col) = vec[col];
+        }
+    }
+
+    return matrix;
+}
+
 //! Function to calculate solid body tide gravity field variations due to single body at a set of degrees and orders
 //! from perturbing body's Cartesian state.
 // (is this overload even used currently?)
