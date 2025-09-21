@@ -165,6 +165,12 @@ std::string getParameterTypeString( const EstimatebleParametersEnum parameterTyp
         case source_perpendicular_direction_radiation_pressure_scaling_factor:
             parameterDescription = " Radiation pressure acceleration scaling factor perpendicular to source ";
             break;
+        case arcwise_source_direction_radiation_pressure_scaling_factor:
+            parameterDescription = "Arcwise radiation pressure acceleration scaling factor to source ";
+            break;
+        case arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:
+            parameterDescription = "Arcwise radiation pressure acceleration scaling factor perpendicular to source ";
+            break;
         case specular_reflectivity:
             parameterDescription = " specular reflectivity for panel group ";
             break;
@@ -197,7 +203,7 @@ std::string getParameterTypeString( const EstimatebleParametersEnum parameterTyp
             break;
         case rtg_force_vector_magnitude:
             parameterDescription = "magnitude of force vector from anisotropic RTG radiation ";
-        break;
+            break;
         default:
             std::string errorMessage =
                     "Error when getting parameter string, did not recognize parameter " + std::to_string( parameterType );
@@ -372,6 +378,12 @@ bool isDoubleParameter( const EstimatebleParametersEnum parameterType )
         case source_perpendicular_direction_radiation_pressure_scaling_factor:
             isDoubleParameter = true;
             break;
+        case arcwise_source_direction_radiation_pressure_scaling_factor:
+            isDoubleParameter = false;
+            break;
+        case arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor:
+            isDoubleParameter = false;
+            break;
         case specular_reflectivity:
             isDoubleParameter = true;
             break;
@@ -404,7 +416,7 @@ bool isDoubleParameter( const EstimatebleParametersEnum parameterType )
             break;
         case rtg_force_vector_magnitude:
             isDoubleParameter = true;
-        break;
+            break;
         default:
             throw std::runtime_error( "Error, parameter type " + std::to_string( parameterType ) +
                                       " not found when getting parameter type" );

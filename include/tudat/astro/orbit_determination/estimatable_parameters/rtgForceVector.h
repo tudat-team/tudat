@@ -36,12 +36,9 @@ public:
      *  \param rtgAccelerationModel Class defining properties of rtg acceleration used in propagation.
      *  \param associatedBody Body for which empirical accelerations are estimated
      */
-    RTGForceVector(
-            const std::shared_ptr< system_models::RTGAccelerationModel > rtgAccelerationModel,
-            const std::string& associatedBody):
-        EstimatableParameter< Eigen::VectorXd >( rtg_force_vector, associatedBody),
-        rtgAccelerationModel_( rtgAccelerationModel ),
-        parameterSize_(3)
+    RTGForceVector( const std::shared_ptr< system_models::RTGAccelerationModel > rtgAccelerationModel, const std::string& associatedBody ):
+        EstimatableParameter< Eigen::VectorXd >( rtg_force_vector, associatedBody ), rtgAccelerationModel_( rtgAccelerationModel ),
+        parameterSize_( 3 )
     { }
 
     //! Destructor
@@ -54,7 +51,7 @@ public:
      */
     Eigen::VectorXd getParameterValue( )
     {
-        Eigen::Vector3d parameter = rtgAccelerationModel_->getbodyFixedForceVectorAtReferenceEpoch();
+        Eigen::Vector3d parameter = rtgAccelerationModel_->getbodyFixedForceVectorAtReferenceEpoch( );
         return parameter;
     }
 
@@ -66,14 +63,13 @@ public:
     void setParameterValue( Eigen::VectorXd parameterValue )
     {
         // test size of Xd
-        if( parameterValue.size() != parameterSize_ )
+        if( parameterValue.size( ) != parameterSize_ )
         {
             throw std::runtime_error( "Error when getting rtg force parameter size; inconsistent sizes found." );
         }
 
         // Reset components in acceleration model
         rtgAccelerationModel_->resetForceVectorAtReferenceEpoch( parameterValue );
-
     }
 
     //! Function to retrieve the size of the rtg force vector parameter (always 3)
@@ -92,7 +88,7 @@ public:
     //! Function to retrieve list of components in rtg accelerations that are to be estimated (always 0, 1, 2).
     Eigen::Vector3i getIndices( )
     {
-        Eigen::Vector3i v = (Eigen::Vector3i() << 0, 1, 2).finished();
+        Eigen::Vector3i v = ( Eigen::Vector3i( ) << 0, 1, 2 ).finished( );
         return accelerationIndices_;
     }
 
@@ -107,9 +103,6 @@ private:
     //! List of component indices in rtg accelerations that are to be estimated.
     Eigen::Vector3i accelerationIndices_;
 };
-
-
-
 
 //! Interface class for estimation of a body's time-independent empirical accelerations
 /*!
@@ -126,12 +119,10 @@ public:
      *  \param rtgAccelerationModel Class defining properties of rtg acceleration used in propagation.
      *  \param associatedBody Body for which empirical accelerations are estimated
      */
-    RTGForceVectorMagnitude(
-            const std::shared_ptr< system_models::RTGAccelerationModel > rtgAccelerationModel,
-            const std::string& associatedBody):
-        EstimatableParameter< double >( rtg_force_vector_magnitude, associatedBody),
-        rtgAccelerationModel_( rtgAccelerationModel ),
-        parameterSize_(1)
+    RTGForceVectorMagnitude( const std::shared_ptr< system_models::RTGAccelerationModel > rtgAccelerationModel,
+                             const std::string& associatedBody ):
+        EstimatableParameter< double >( rtg_force_vector_magnitude, associatedBody ), rtgAccelerationModel_( rtgAccelerationModel ),
+        parameterSize_( 1 )
     { }
 
     //! Destructor
@@ -144,7 +135,7 @@ public:
      */
     double getParameterValue( )
     {
-        return rtgAccelerationModel_->getForceVectorMagnitudeAtReferenceEpoch();
+        return rtgAccelerationModel_->getForceVectorMagnitudeAtReferenceEpoch( );
     }
 
     //! Reset value of rtg force magnitude
@@ -156,7 +147,6 @@ public:
     {
         // Reset value of rtg force magnitude
         rtgAccelerationModel_->resetForceMagnitudeAtReferenceEpoch( parameterValue );
-
     }
 
     //! Function to retrieve the size of the rtg force vector parameter (always 3)
@@ -175,7 +165,7 @@ public:
     //! Function to retrieve list of components in rtg accelerations that are to be estimated (always 0, 1, 2).
     Eigen::Vector3i getIndices( )
     {
-        Eigen::Vector3i v = (Eigen::Vector3i() << 0, 1, 2).finished();
+        Eigen::Vector3i v = ( Eigen::Vector3i( ) << 0, 1, 2 ).finished( );
         return accelerationIndices_;
     }
 
@@ -190,7 +180,6 @@ private:
     //! List of component indices in rtg accelerations that are to be estimated.
     Eigen::Vector3i accelerationIndices_;
 };
-
 
 }  // namespace estimatable_parameters
 

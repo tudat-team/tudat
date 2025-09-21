@@ -62,7 +62,7 @@ public:
             }
         }
 
-        unityIlluminationFraction_ = std::vector< double >( panelledTargetModel_->getTotalNumberOfPanels( ), 1.0);
+        unityIlluminationFraction_ = std::vector< double >( panelledTargetModel_->getTotalNumberOfPanels( ), 1.0 );
     }
 
     //! Destructor.
@@ -123,6 +123,14 @@ public:
     void wrtSpecularReflectivity( Eigen::MatrixXd& partial, const std::string& panelTypeId );
 
     void wrtDiffuseReflectivity( Eigen::MatrixXd& partial, const std::string& panelTypeId );
+
+    void wrtArcWiseSourceDirectionScaling(
+            Eigen::MatrixXd& partial,
+            const std::shared_ptr< estimatable_parameters::ArcWiseRadiationPressureScalingFactor > parameter );
+
+    void wrtArcWisePerpendicularDirectionScaling(
+            Eigen::MatrixXd& partial,
+            const std::shared_ptr< estimatable_parameters::ArcWiseRadiationPressureScalingFactor > parameter );
 
     //! Function for updating partial w.r.t. the bodies' positions
     /*!
@@ -223,11 +231,65 @@ public:
      *  \param parameter Parameter w.r.t. which partial is to be taken.
      *  \return Pair of parameter partial function and number of columns in partial (0 for no dependency).
      */
+    // std::pair< std::function< void( Eigen::MatrixXd& ) >, int > getParameterPartialFunction(
+    //         std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > parameter )
+    // {
+    //     std::function< void( Eigen::MatrixXd& ) > partialFunction;
+    //     return std::make_pair( partialFunction, 0 );
+    // }
+    // In PanelledRadiationPressureAccelerationPartial.h/.cpp
+
     std::pair< std::function< void( Eigen::MatrixXd& ) >, int > getParameterPartialFunction(
             std::shared_ptr< estimatable_parameters::EstimatableParameter< Eigen::VectorXd > > parameter )
     {
         std::function< void( Eigen::MatrixXd& ) > partialFunction;
-        return std::make_pair( partialFunction, 0 );
+        int parameterSize = 0;
+
+        const auto& name = parameter->getParameterName( );
+
+        // Bodies must match exactly
+        if( name.second.first == acceleratedBody_ && name.second.second == acceleratingBody_ )
+        {
+            switch( name.first )
+            {
+                case estimatable_parameters::arcwise_source_direction_radiation_pressure_scaling_factor: {
+                    auto arcParam = std::dynamic_pointer_cast< estimatable_parameters::ArcWiseRadiationPressureScalingFactor >( parameter );
+
+                    if( !arcParam )
+                    {
+                        throw std::runtime_error( "PanelledRadiationPressureAccelerationPartial: arcwise source-direction cast failed" );
+                    }
+
+                    partialFunction = std::bind(
+                            &PanelledRadiationPressurePartial::wrtArcWiseSourceDirectionScaling, this, std::placeholders::_1, arcParam );
+
+                    parameterSize = arcParam->getParameterSize( );
+                    break;
+                }
+
+                case estimatable_parameters::arcwise_source_perpendicular_direction_radiation_pressure_scaling_factor: {
+                    auto arcParam = std::dynamic_pointer_cast< estimatable_parameters::ArcWiseRadiationPressureScalingFactor >( parameter );
+
+                    if( !arcParam )
+                    {
+                        throw std::runtime_error( "PanelledRadiationPressurePartial: arcwise perpendicular-direction cast failed" );
+                    }
+
+                    partialFunction = std::bind( &PanelledRadiationPressurePartial::wrtArcWisePerpendicularDirectionScaling,
+                                                 this,
+                                                 std::placeholders::_1,
+                                                 arcParam );
+
+                    parameterSize = arcParam->getParameterSize( );
+                    break;
+                }
+
+                default:
+                    break;
+            }
+        }
+
+        return std::make_pair( partialFunction, parameterSize );
     }
 
     Eigen::Matrix< double, 1, 3 > getCurrentCosineAnglePartial( )

@@ -48,18 +48,17 @@ public:
     using AccelerationPartial::getParameterPartialFunction;
 
     RTGAccelerationPartial( std::shared_ptr< system_models::RTGAccelerationModel > rtgAcceleration,
-                                  std::string acceleratedBody,
-                                  std::string acceleratingBody ):
+                            std::string acceleratedBody,
+                            std::string acceleratingBody ):
         AccelerationPartial( acceleratedBody, acceleratingBody, basic_astrodynamics::rtg_acceleration ),
-        rtgAcceleration_( rtgAcceleration )    // pos/vel partials declared to be const
+        rtgAcceleration_( rtgAcceleration )  // pos/vel partials declared to be const
     {
-
-      if (acceleratedBody != acceleratingBody)
-      {
-        throw std::runtime_error(
-                "Error when setting up parameter partial of rtg acceleration - body undergoing and excerting are not the same (but are required to be the same for given acceleration model)" );
-      }
-
+        if( acceleratedBody != acceleratingBody )
+        {
+            throw std::runtime_error(
+                    "Error when setting up parameter partial of rtg acceleration - body undergoing and excerting are not the same (but are "
+                    "required to be the same for given acceleration model)" );
+        }
     }
 
     //! Function for calculating the partial of the acceleration w.r.t. the position of body undergoing acceleration..
@@ -77,8 +76,7 @@ public:
                                        const bool addContribution = 1,
                                        const int startRow = 0,
                                        const int startColumn = 0 )
-    {
-    }
+    { }
 
     //! Function for calculating the partial of the acceleration w.r.t. the position of body undergoing acceleration..
     /*!
@@ -95,9 +93,7 @@ public:
                                         const bool addContribution = 1,
                                         const int startRow = 0,
                                         const int startColumn = 0 )
-    {
-
-    }
+    { }
 
     //! Function for calculating the partial of the acceleration w.r.t. the velocity of body undergoing acceleration..
     /*!
@@ -114,9 +110,7 @@ public:
                                        const bool addContribution = 1,
                                        const int startRow = 0,
                                        const int startColumn = 0 )
-    {
-
-    }
+    { }
 
     //! Function for calculating the partial of the acceleration w.r.t. the velocity of body undergoing acceleration..
     /*!
@@ -133,9 +127,7 @@ public:
                                         const bool addContribution = 1,
                                         const int startRow = 0,
                                         const int startColumn = 0 )
-    {
-
-    }
+    { }
 
     //! Function for setting up and retrieving a function returning a partial w.r.t. a vector parameter.
     /*!
@@ -157,7 +149,6 @@ public:
     std::pair< std::function< void( Eigen::MatrixXd& ) >, int > getParameterPartialFunction(
             std::shared_ptr< estimatable_parameters::EstimatableParameter< double > > parameter );
 
-
     //! Function to compute the partial w.r.t. time-independent empirical acceleration components
     /*!
      * Function to compute the partial w.r.t. time-independent empirical acceleration components from list of components and
@@ -170,12 +161,10 @@ public:
      * \param partialDerivativeMatrix Matrix of partial derivatives of accelerations w.r.t. empirical accelerations (returned
      * by reference)
      */
-     //void wrtEmpiricalAccelerationCoefficientFromIndices(
-     //       const int numberOfAccelerationComponents,
-     //       const std::map< basic_astrodynamics::EmpiricalAccelerationFunctionalShapes, std::vector< int > >& accelerationIndices,
-     //       Eigen::MatrixXd& partialDerivativeMatrix );
-
-
+    // void wrtEmpiricalAccelerationCoefficientFromIndices(
+    //        const int numberOfAccelerationComponents,
+    //        const std::map< basic_astrodynamics::EmpiricalAccelerationFunctionalShapes, std::vector< int > >& accelerationIndices,
+    //        Eigen::MatrixXd& partialDerivativeMatrix );
 
     //! Function for updating common blocks of partial to current state.
     /*!
@@ -191,12 +180,11 @@ public:
      * \param partialDerivativeMatrix Matrix of partial derivatives of accelerations w.r.t. empirical accelerations (returned
      * by reference)
      */
-    void wrtRTGForceVector(Eigen::MatrixXd& partialDerivativeMatrix );
+    void wrtRTGForceVector( Eigen::MatrixXd& partialDerivativeMatrix );
 
-    void wrtRTGForceVectorMagnitude(Eigen::MatrixXd& partialDerivativeMatrix );
+    void wrtRTGForceVectorMagnitude( Eigen::MatrixXd& partialDerivativeMatrix );
 
 private:
-
     //! Acceleration w.r.t. which partials are to be computed.
     std::shared_ptr< system_models::RTGAccelerationModel > rtgAcceleration_;
 

@@ -164,6 +164,52 @@ void PanelledRadiationPressurePartial::wrtSpecularReflectivity( Eigen::MatrixXd&
         partial += forcePartialWrtSpecularReflectivity / spacecraftMass;
     }
 }
+//! Function to compute partial derivative w.r.t. arc-wise source direction scaling factors.
+void PanelledRadiationPressurePartial::wrtArcWiseSourceDirectionScaling(
+        Eigen::MatrixXd& partial,
+        const std::shared_ptr< estimatable_parameters::ArcWiseRadiationPressureScalingFactor > parameter )
+{
+    Eigen::MatrixXd partialWrtSingleParameter = Eigen::Vector3d::Zero( );
+    computeRadiationPressureAccelerationWrtSourceDirectionScaling( radiationPressureAcceleration_, partialWrtSingleParameter );
+
+    // Retrieve current arc
+    std::shared_ptr< interpolators::LookUpScheme< double > > currentArcIndexLookUp = parameter->getArcTimeLookupScheme( );
+    partial.setZero( );
+    if( currentArcIndexLookUp->getMinimumValue( ) <= currentTime_ )
+    {
+        int currentArc = currentArcIndexLookUp->findNearestLowerNeighbour( currentTime_ );
+        if( currentArc >= partial.cols( ) )
+        {
+            throw std::runtime_error( "Error when getting arc-wise radiation pressure scaling partials, data not consistent" );
+        }
+
+        // Set partial
+        partial.block( 0, currentArc, 3, 1 ) = partialWrtSingleParameter;
+    }
+}
+
+void PanelledRadiationPressurePartial::wrtArcWisePerpendicularDirectionScaling(
+        Eigen::MatrixXd& partial,
+        const std::shared_ptr< estimatable_parameters::ArcWiseRadiationPressureScalingFactor > parameter )
+{
+    Eigen::MatrixXd partialWrtSingleParameter = Eigen::Vector3d::Zero( );
+    computeRadiationPressureAccelerationWrtSourcePerpendicularDirectionScaling( radiationPressureAcceleration_, partialWrtSingleParameter );
+
+    // Retrieve current arc
+    std::shared_ptr< interpolators::LookUpScheme< double > > currentArcIndexLookUp = parameter->getArcTimeLookupScheme( );
+    partial.setZero( );
+    if( currentArcIndexLookUp->getMinimumValue( ) <= currentTime_ )
+    {
+        int currentArc = currentArcIndexLookUp->findNearestLowerNeighbour( currentTime_ );
+        if( currentArc >= partial.cols( ) )
+        {
+            throw std::runtime_error( "Error when getting arc-wise radiation pressure scaling partials, data not consistent" );
+        }
+
+        // Set partial
+        partial.block( 0, currentArc, 3, 1 ) = partialWrtSingleParameter;
+    }
+}
 
 }  // namespace acceleration_partials
 

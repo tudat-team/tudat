@@ -713,7 +713,6 @@ std::shared_ptr< gravitation::RingGravitationalAccelerationModel > createRingGra
     return accelerationModel;
 }
 
-
 std::shared_ptr< system_models::RTGAccelerationModel > createRTGAccelerationModel(
         const std::shared_ptr< Body > bodyUndergoingAcceleration,
         const std::shared_ptr< Body > bodyExertingAcceleration,
@@ -730,16 +729,24 @@ std::shared_ptr< system_models::RTGAccelerationModel > createRTGAccelerationMode
             std::dynamic_pointer_cast< RTGAccelerationSettings >( accelerationSettings );
     if( rtgAccelerationSettings == nullptr )
     {
-        std::string errorMessage = "Error, expected RTG acceleration settings when making acceleration model on " +
-                nameOfBodyUndergoingAcceleration;
+        std::string errorMessage =
+                "Error, expected RTG acceleration settings when making acceleration model on " + nameOfBodyUndergoingAcceleration;
         throw std::runtime_error( errorMessage );
     }
 
     // Check that given bodies are same (undergoing == exerting)
-    if (nameOfBodyUndergoingAcceleration != nameOfBodyExertingAcceleration){
-        throw std::runtime_error( std::string( "Error, nameOfBodyUndergoingAcceleration and nameOfBodyExertingAcceleration should be the same for RTG acceleration type. Values are" + nameOfBodyUndergoingAcceleration + " (undergoing) and ") + nameOfBodyExertingAcceleration + " (exerting). ");
-    } if (bodyUndergoingAcceleration != bodyExertingAcceleration){
-        throw std::runtime_error( std::string( "Error, bodyUndergoingAcceleration and bodyExertingAcceleration should point to same memory address, but do not. Bodies should be the same for RTG acceleration type"));
+    if( nameOfBodyUndergoingAcceleration != nameOfBodyExertingAcceleration )
+    {
+        throw std::runtime_error( std::string( "Error, nameOfBodyUndergoingAcceleration and nameOfBodyExertingAcceleration should be the "
+                                               "same for RTG acceleration type. Values are" +
+                                               nameOfBodyUndergoingAcceleration + " (undergoing) and " ) +
+                                  nameOfBodyExertingAcceleration + " (exerting). " );
+    }
+    if( bodyUndergoingAcceleration != bodyExertingAcceleration )
+    {
+        throw std::runtime_error(
+                std::string( "Error, bodyUndergoingAcceleration and bodyExertingAcceleration should point to same memory address, but do "
+                             "not. Bodies should be the same for RTG acceleration type" ) );
     }
 
     std::shared_ptr< RotationalEphemeris > rotationalEphemeris = bodyUndergoingAcceleration->getRotationalEphemeris( );
@@ -757,14 +764,10 @@ std::shared_ptr< system_models::RTGAccelerationModel > createRTGAccelerationMode
             rtgAccelerationSettings->decayScaleFactor_,
             rtgAccelerationSettings->referenceEpoch_,
             std::bind( &Body::getCurrentRotationToGlobalFrame, bodyUndergoingAcceleration ),
-            std::bind( &Body::getBodyMass, bodyUndergoingAcceleration )
-            );
+            std::bind( &Body::getBodyMass, bodyUndergoingAcceleration ) );
 
     return accelerationModel;
-
 }
-
-
 
 //! Function to create a third body central gravity acceleration model.
 std::shared_ptr< gravitation::ThirdBodyCentralGravityAcceleration > createThirdBodyCentralGravityAccelerationModel(
